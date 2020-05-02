@@ -9,43 +9,59 @@ public class SyncServer {
     }
     
     // MARK: Persistent queuing for upload
-    
-    public func queueCopy(file: FileAttributes) {
+
+    public enum FilePersistence {
+        case copy
+        case immutable
     }
     
-    public func queueImmutable(file: FileAttributes) {
+    public struct FileAttributes: Equatable {
+        let uuid: UUID
+        let sharingGroup: UUID
     }
     
-    public func uploadAppMetaData(file: FileAttributes) {
+    public struct File: Hashable {
+        let url: URL
+        let filePersistence: FilePersistence
+        let attributes: FileAttributes
+        
+        public func hash(into hasher: inout Hasher) {
+            hasher.combine(attributes.uuid)
+        }
     }
     
-    public func delete(fileWithUUID uuid:UUID) {
+    // Get list of pending downloads, and if no conflicting uploads, do these uploads.
+    // If there are conflicting uploads, the downloads will need to be manually started first (see methods below) and then sync retried.
+    // Uploads are done on a background networking URLSession.
+    // If more than one file queued, they must have the the same sharing group.
+    public func queue(files: Set<File>) {
     }
     
-    public func delete(filesWithUUIDs uuids:[UUID]) {
+    public func uploadAppMetaData(attributes: FileAttributes) {
     }
     
-    public func createSharingGroup(sharingGroupUUID: String, sharingGroupName: String? = nil) {
+    public func delete(fileWith uuid:UUID) {
     }
     
-    public func updateSharingGroup(sharingGroupUUID: String, newSharingGroupName: String) {
+    public func delete(filesWith uuids:[UUID]) {
     }
     
-    public func removeFromSharingGroup(sharingGroupUUID: String) {
+    public func createSharingGroup(sharingGroup: UUID, sharingGroupName: String? = nil) {
+    }
+    
+    public func updateSharingGroup(sharingGroup: UUID, newSharingGroupName: String) {
+    }
+    
+    // Remove the current user (indicated in the Configuration) from the sharing group.
+    public func removeFromSharingGroup(sharingGroup: UUID) {
     }
     
     // MARK: Synchronization
     
-    // Get list of pending downloads, and if no conflicting uploads, do those uploads if any.
-    // If there are conflicting uploads, the downloads will need to be manually started first (see methods below) and then this sync retried.
-    // Uploads are done on a background networking URLSession.
     public func sync() {
     }
     
     // MARK: Download
-    
-    public struct FileAttributes {
-    }
     
     // The list of files returned here survive app relaunch.
     func filesNeedingDownload() -> [FileAttributes] {
@@ -72,5 +88,10 @@ public class SyncServer {
     
     public func reset() {
     
+    }
+    
+    // MARK: Migration support.
+    
+    public func importFiles(files: [FileAttributes]) {
     }
 }
