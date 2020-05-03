@@ -1,4 +1,4 @@
-# Re-Design Goals
+# General Re-Design Goals
 These goals are relative to the prior [client](https://github.com/crspybits/SyncServer-iOSClient/).
 
 ## Build the client so as to make it generally possible to later port to Android. 
@@ -47,4 +47,22 @@ sharing group-- which is where I think I have it right now-- I think each sharin
 I'd like to have this more general. E.g., to be able to make one file completely public.
 
 ## Redesign the view container for signin controls.
-Use SwiftUI.
+Use SwiftUI. And not just the code itself-- the UX/UI form and appearance of the controls need work for usability.
+
+## Restructure the synchronization internals of the client. 
+Right now it's too complicated, hard to test, and hard to maintain. Part of this is that there are numerous singletons being used. Part of this has to do with having the completion of one server operation cause the initiation of another-- or rather the next server operation (upload or download). This forms a complicated state machine where download states transition to upload states, transition to a commit-uploads state. Combined with failure states which require forms of rollback.
+
+Part of this restructuring needs to take into account that, for upload at least, we'll be triggering multiple possible uploads (i.e., for a file group) effectively simultaneously. We have to make sure that the server can handle these concurrent uploads from a single client. And, once the group of uploads is completed, that a commit-uploads operation can be triggered-- and that the commit-uploads is triggered only at that point.
+
+## Testing.
+It's too hard to figure out right now if a needed test is present in the set of tests. Testing needs restructuring and simplification.
+
+# Neebla
+
+## Add a sharing extension. 
+From other apps (e.g., Apple's photo app), upload a file or file(s).
+
+## Add another main view which is oriented around time, and discussion threads. 
+Instead of showing the images first, the discussions are displayed. And you can navigate to the related images. 
+
+## This raises the possiblity of having multiple images associated with a single discussion thread.
