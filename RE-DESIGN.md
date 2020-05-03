@@ -34,9 +34,14 @@ One of these issues are dealing with different ordering of file downloads. Shari
 Even if we have to take some strong opinions about conflict resolution.
 	
 ## Need to reconsider UUID collisions. 
-	
+If there is a collision, it will occur on the server. We need to be able to inform the client so it can update its records.
+
 ## Overall "master version" model-- this is constraining. 
 And could use a more general model.
+Some different possible levels:
+file
+file group-- do file groups have versions?
+sharing group-- which is where I think I have it right now-- I think each sharing group has a master version.
 	
 ## Permission model. Rethink.
 I'd like to have this more general. E.g., to be able to make one file completely public.

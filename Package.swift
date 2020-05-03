@@ -1,4 +1,4 @@
-// swift-tools-version:5.1
+// swift-tools-version:5.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -18,7 +18,6 @@ let package = Package(
 
         // Only for test target
         .package(path: "../iOSSignIn")
-
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -26,7 +25,8 @@ let package = Package(
         .target(
             name: "iOSBasics",
             dependencies: [
-                "iOSShared", "SQLite"
+                "iOSShared",
+                .product(name: "SQLite", package: "SQLite.swift")
             ]),
         .testTarget(
             name: "iOSBasicsTests",

@@ -29,6 +29,9 @@ public class SyncServer {
             hasher.combine(attributes.uuid)
         }
     }
+        
+    public func getAttributes(forFileUUID fileUUID: UUID) {
+    }
     
     // Get list of pending downloads, and if no conflicting uploads, do these uploads.
     // If there are conflicting uploads, the downloads will need to be manually started first (see methods below) and then sync retried.
@@ -69,10 +72,11 @@ public class SyncServer {
     }
     
     // Conflict resolution methods are applied automatically when files are downloaded, if there are conflicting pending uploads. See the Configuration.
+    // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.
     func startDownload(attributes: FileAttributes) {
     }
     
-    // MARK: Information operations
+    // MARK: Sharing
     
     public struct SharingGroup {
     }
@@ -81,7 +85,10 @@ public class SyncServer {
         return []
     }
     
-    public func getAttributes(forFileUUID fileUUID: UUID) {
+    public struct Permission {
+    }
+    
+    public func createSharingInvitation(withPermission permission:Permission, sharingGroupUUID: String, numberAcceptors: UInt, allowSharingAcceptance: Bool = true, completion:((_ invitationCode:String?, Error?)->(Void))?) {
     }
     
     // MARK: Reset
