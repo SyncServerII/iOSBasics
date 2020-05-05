@@ -1,7 +1,7 @@
 import XCTest
 @testable import iOSBasics
 import SQLite
-import iOSShared
+import ServerShared
 
 final class DirectoryEntryTableTests: XCTestCase {
     var database: Connection!

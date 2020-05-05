@@ -5,6 +5,10 @@ import PackageDescription
 
 let package = Package(
     name: "iOSBasics",
+        platforms: [
+        // iOSSignIn dependency requires iOS 13
+        .iOS(.v13),
+    ],
     products: [
         // Products define the executables and libraries produced by a package, and make them visible to other packages.
         .library(
@@ -13,6 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../iOSShared"),
+        .package(path: "../ServerShared"),
         
         .package(url: "https://github.com/stephencelis/SQLite.swift.git", from: "0.12.0"),
 
@@ -25,7 +30,7 @@ let package = Package(
         .target(
             name: "iOSBasics",
             dependencies: [
-                "iOSShared",
+                "iOSShared", "ServerShared",
                 .product(name: "SQLite", package: "SQLite.swift")
             ]),
         .testTarget(

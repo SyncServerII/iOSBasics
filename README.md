@@ -1,2 +1,2 @@
 # iOSBasics
-A basic iOS client for SyncServerII
+A basic iOS client for SyncServerII.

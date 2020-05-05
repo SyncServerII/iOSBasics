@@ -1,12 +1,11 @@
 import SQLite
 import Foundation
-import iOSShared
+import ServerShared
 
 class DirectoryEntry: DatabaseModel {
-
-    
     enum DirectoryEntryError: Error {
         case badGoneReason(String)
+        case badCloudStorageType(String)
     }
     
     let db: Connection
@@ -61,6 +60,10 @@ class DirectoryEntry: DatabaseModel {
         guard let goneReasonString = goneReason,
             let _ = GoneReason(rawValue: goneReasonString) else {
             throw DirectoryEntryError.badGoneReason(goneReason!)
+        }
+        
+        guard let _ = CloudStorageType(rawValue: cloudStorageType) else {
+            throw DirectoryEntryError.badCloudStorageType(cloudStorageType)
         }
                 
         self.db = db
