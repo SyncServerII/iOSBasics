@@ -3,6 +3,8 @@ These goals are relative to the prior [client](https://github.com/crspybits/Sync
 
 ## Build the client so as to make it generally possible to later port to Android. 
 E.g., use SqLite, and don't depend in the basic library on iOS UI features such as UIKit. This will also mean splitting off the sign-in components to their own library.
+Windows may be a target too-- Swift is about to be available there.
+Web UI is also a possiblity, but that seems out of the Swift realm.
 	
 ## Design data architecture so extensions can be used. 
 This is so that I can have a Sharing Extension, where in the Apple Photos app, you can get an app like Neebla to upload a file. Currently the architecture of the iOS client and Neebla won't allow for this.
