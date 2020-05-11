@@ -2,6 +2,51 @@
   "object": {
     "pins": [
       {
+        "package": "iOSShared",
+        "repositoryURL": "https://github.com/SyncServerII/iOSShared.git",
+        "state": {
+          "branch": "master",
+          "revision": "5ba4137b142b25ae08eff050e718f047a414ddfd",
+          "version": null
+        }
+      },
+      {
+        "package": "iOSSignIn",
+        "repositoryURL": "https://github.com/SyncServerII/iOSSignIn.git",
+        "state": {
+          "branch": "master",
+          "revision": "f8b4d6c54eccde02842f405d162df1a3ddee1e4f",
+          "version": null
+        }
+      },
+      {
+        "package": "KeychainAccess",
+        "repositoryURL": "https://github.com/kishikawakatsumi/KeychainAccess.git",
+        "state": {
+          "branch": null,
+          "revision": "8d33ffd6f74b3bcfc99af759d4204c6395a3f918",
+          "version": "3.2.1"
+        }
+      },
+      {
+        "package": "PersistentValue",
+        "repositoryURL": "https://github.com/crspybits/PersistentValue.git",
+        "state": {
+          "branch": null,
+          "revision": "995657d86a2101abfc1bb72a2c631d8433707df0",
+          "version": "0.6.0"
+        }
+      },
+      {
+        "package": "ServerShared",
+        "repositoryURL": "https://github.com/SyncServerII/ServerShared.git",
+        "state": {
+          "branch": "master",
+          "revision": "39964ec046bb41884b7346f9f434cdb0ea0a2cf6",
+          "version": null
+        }
+      },
+      {
         "package": "SQLite.swift",
         "repositoryURL": "https://github.com/stephencelis/SQLite.swift.git",
         "state": {
@@ -17,6 +62,15 @@
           "branch": null,
           "revision": "74d7b91ceebc85daf387ebb206003f78813f71aa",
           "version": "1.2.0"
+        }
+      },
+      {
+        "package": "SwiftyUserDefaults",
+        "repositoryURL": "https://github.com/sunshinejr/SwiftyUserDefaults.git",
+        "state": {
+          "branch": null,
+          "revision": "1930a81a299b074fd72eee09e88e452ad37dc34d",
+          "version": "5.0.0"
         }
       }
     ]
