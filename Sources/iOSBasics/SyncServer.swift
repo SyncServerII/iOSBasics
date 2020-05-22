@@ -10,39 +10,19 @@ public class SyncServer {
     
     // MARK: Persistent queuing for upload
 
-    public enum FilePersistence {
-        case copy
-        case immutable
-    }
-    
-    public struct FileAttributes: Equatable {
-        let uuid: UUID
-        let sharingGroup: UUID
-    }
-    
-    public struct File: Hashable {
-        let url: URL
-        let filePersistence: FilePersistence
-        let attributes: FileAttributes
-        
-        public func hash(into hasher: inout Hasher) {
-            hasher.combine(attributes.uuid)
-        }
-    }
-        
     public func getAttributes(forFileUUID fileUUID: UUID) {
     }
     
     // Get list of pending downloads, and if no conflicting uploads, do these uploads.
     // If there are conflicting uploads, the downloads will need to be manually started first (see methods below) and then sync retried.
     // Uploads are done on a background networking URLSession.
-    // If more than one file queued, they must have the the same sharing group.
-    public func queue(files: Set<File>) {
+    public func queue(object: SyncedObject) {
     }
     
-    public func uploadAppMetaData(attributes: FileAttributes) {
+    public func uploadAppMetaData(file: UUID) {
     }
     
+    // TODO: I think a deletion needs to be on an entire SyncedObject basis.
     public func delete(fileWith uuid:UUID) {
     }
     
@@ -67,18 +47,20 @@ public class SyncServer {
     // MARK: Download
     
     // The list of files returned here survive app relaunch.
-    func filesNeedingDownload() -> [FileAttributes] {
+    func filesNeedingDownload() -> [UUID] {
         return []
     }
     
     // Conflict resolution methods are applied automatically when files are downloaded, if there are conflicting pending uploads. See the Configuration.
     // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.
-    func startDownload(attributes: FileAttributes) {
+    func startDownload(file: UUID) {
     }
     
     // MARK: Sharing
     
     public struct SharingGroup {
+        let sharingGroup: UUID
+        let sharingGroupName: String?
     }
     
     public var sharingGroups: [SharingGroup] {
@@ -99,6 +81,6 @@ public class SyncServer {
     
     // MARK: Migration support.
     
-    public func importFiles(files: [FileAttributes]) {
+    public func importFiles(files: [UUID]) {
     }
 }

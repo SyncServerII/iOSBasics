@@ -2,20 +2,20 @@
   "object": {
     "pins": [
       {
-        "package": "iOSShared",
-        "repositoryURL": "https://github.com/SyncServerII/iOSShared.git",
+        "package": "Alamofire",
+        "repositoryURL": "https://github.com/Alamofire/Alamofire.git",
         "state": {
-          "branch": "master",
-          "revision": "5ba4137b142b25ae08eff050e718f047a414ddfd",
-          "version": null
+          "branch": null,
+          "revision": "75bba56748359f297a83f620d45f72cf4ebee4e7",
+          "version": "4.8.2"
         }
       },
       {
-        "package": "iOSSignIn",
-        "repositoryURL": "https://github.com/SyncServerII/iOSSignIn.git",
+        "package": "FileMD5Hash",
+        "repositoryURL": "https://github.com/crspybits/FileMD5Hash.git",
         "state": {
           "branch": "master",
-          "revision": "f8b4d6c54eccde02842f405d162df1a3ddee1e4f",
+          "revision": "56279e6fbad92354ab6dff74afe8cb14a540902a",
           "version": null
         }
       },
@@ -38,15 +38,6 @@
         }
       },
       {
-        "package": "ServerShared",
-        "repositoryURL": "https://github.com/SyncServerII/ServerShared.git",
-        "state": {
-          "branch": "master",
-          "revision": "39964ec046bb41884b7346f9f434cdb0ea0a2cf6",
-          "version": null
-        }
-      },
-      {
         "package": "SQLite.swift",
         "repositoryURL": "https://github.com/stephencelis/SQLite.swift.git",
         "state": {
@@ -65,12 +56,30 @@
         }
       },
       {
+        "package": "SwiftyDropbox",
+        "repositoryURL": "https://github.com/crspybits/SwiftyDropbox.git",
+        "state": {
+          "branch": "master",
+          "revision": "fbedfc164895e4bfece9bb8006e59f195978fe83",
+          "version": null
+        }
+      },
+      {
         "package": "SwiftyUserDefaults",
         "repositoryURL": "https://github.com/sunshinejr/SwiftyUserDefaults.git",
         "state": {
           "branch": null,
           "revision": "1930a81a299b074fd72eee09e88e452ad37dc34d",
           "version": "5.0.0"
+        }
+      },
+      {
+        "package": "Version",
+        "repositoryURL": "https://github.com/mrackwitz/Version.git",
+        "state": {
+          "branch": null,
+          "revision": "fd4b0eb5756aa7f1c33977fb626cf37d2140a3a0",
+          "version": "0.8.0"
         }
       }
     ]

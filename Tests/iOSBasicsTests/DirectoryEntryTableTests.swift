@@ -19,7 +19,7 @@ final class DirectoryEntryTableTests: XCTestCase {
         }
     }
     
-    func assertEntryContentsCorrect(entry1: DirectoryEntry, entry2: DirectoryEntry) {
+    func assertContentsCorrect(entry1: DirectoryEntry, entry2: DirectoryEntry) {
         XCTAssert(entry1.fileUUID == entry2.fileUUID)
         XCTAssert(entry1.mimeType == entry2.mimeType)
         XCTAssert(entry1.fileVersion == entry2.fileVersion)
@@ -67,7 +67,7 @@ final class DirectoryEntryTableTests: XCTestCase {
         var count = 0
         try DirectoryEntry.fetch(db: database,
             where: uuid == DirectoryEntry.fileUUIDField.description) { row in
-            assertEntryContentsCorrect(entry1: entry, entry2: row)
+            assertContentsCorrect(entry1: entry, entry2: row)
             count += 1
         }
         

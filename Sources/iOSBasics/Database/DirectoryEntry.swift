@@ -2,6 +2,8 @@ import SQLite
 import Foundation
 import ServerShared
 
+// Represents a file the iOSBasics client knows about in regards to the current signed in user. Used to represent a directory of all files for the current signed in user.
+
 class DirectoryEntry: DatabaseModel {
     enum DirectoryEntryError: Error {
         case badGoneReason(String)
