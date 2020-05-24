@@ -18,13 +18,13 @@ class BackgroundCache {
     }
     
     func initializeUploadCache(file:Filenaming, taskIdentifer: Int) throws {
-        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: file.fileUUID, fileVersion: file.fileVersion, httpResponse: nil, dateTimeCached: Date(), transfer: .upload(nil))
+        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: file.fileUUID, fileVersion: file.fileVersion, transfer: .upload(nil))
         try cache.insert()
     }
     
     func initializeDownloadCache(file:FilenamingWithAppMetaDataVersion,
         taskIdentifer: Int) throws {
-        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: file.fileUUID, fileVersion: file.fileVersion, httpResponse: nil, dateTimeCached: Date(), transfer: .download(nil), appMetaDataVersion: file.appMetaDataVersion)
+        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: file.fileUUID, fileVersion: file.fileVersion, transfer: .download(nil), appMetaDataVersion: file.appMetaDataVersion)
         try cache.insert()
     }
     
@@ -66,9 +66,7 @@ class BackgroundCache {
         let download = NetworkTransfer.download(localURL)
         
         try cache.update(setters:
-            NetworkCache.transferField.description <- download,
-            NetworkCache.dateTimeCachedField.description <- Date(),
-            NetworkCache.httpResponseField.description <- response
+            NetworkCache.transferField.description <- download
         )
     }
     

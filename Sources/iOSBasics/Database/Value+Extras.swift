@@ -50,20 +50,6 @@ extension Int32: Value {
     }
 }
 
-extension HTTPURLResponse: Value {
-    public static var declaredDatatype: String {
-        return Blob.declaredDatatype
-    }
-    
-    public static func fromDatatypeValue(_ blobValue: Blob) -> HTTPURLResponse {
-        return try! NSKeyedUnarchiver.unarchivedObject(ofClass: HTTPURLResponse.self, from: Data.fromDatatypeValue(blobValue))!
-    }
-    
-    public var datatypeValue: Blob {
-        return try! NSKeyedArchiver.archivedData(withRootObject: self, requiringSecureCoding: true).datatypeValue
-    }
-}
-
 extension NetworkTransfer: Value {
     public static var declaredDatatype: String {
         return Blob.declaredDatatype

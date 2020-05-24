@@ -119,26 +119,19 @@ class NetworkCache: DatabaseModel {
     
     static let fileVersionField = Field("fileVersion", \M.fileVersion)
     var fileVersion: FileVersionInt
-
-    static let httpResponseField = Field("httpResponse", \M.httpResponse)
-    var httpResponse: HTTPURLResponse?
-        
-    static let dateTimeCachedField = Field("dateTimeCached", \M.dateTimeCached)
-    var dateTimeCached: Date
-    
-    static let transferField = Field("transfer", \M.transfer)
-    var transfer: NetworkTransfer?
     
     static let appMetaDataVersionField = Field("appMetaDataVersion", \M.appMetaDataVersion)
     var appMetaDataVersion: AppMetaDataVersionInt?
+    
+    static let transferField = Field("transfer", \M.transfer)
+    var transfer: NetworkTransfer?
+
 
     init(db: Connection,
         id: Int64! = nil,
         taskIdentifier: Int,
         fileUUID: String,
         fileVersion: FileVersionInt,
-        httpResponse: HTTPURLResponse?,
-        dateTimeCached: Date,
         transfer: NetworkTransfer?,
         appMetaDataVersion: AppMetaDataVersionInt? = nil) throws {
                 
@@ -147,8 +140,6 @@ class NetworkCache: DatabaseModel {
         self.taskIdentifier = taskIdentifier
         self.fileUUID = fileUUID
         self.fileVersion = fileVersion
-        self.httpResponse = httpResponse
-        self.dateTimeCached = dateTimeCached
         self.transfer = transfer
         self.appMetaDataVersion = appMetaDataVersion
     }
@@ -161,8 +152,6 @@ class NetworkCache: DatabaseModel {
             t.column(taskIdentifierField.description)
             t.column(fileUUIDField.description)
             t.column(fileVersionField.description)
-            t.column(httpResponseField.description)
-            t.column(dateTimeCachedField.description)
             t.column(transferField.description)
             t.column(appMetaDataVersionField.description)
         }
@@ -174,8 +163,6 @@ class NetworkCache: DatabaseModel {
             taskIdentifier: row[Self.taskIdentifierField.description],
             fileUUID: row[Self.fileUUIDField.description],
             fileVersion: row[Self.fileVersionField.description],
-            httpResponse: row[Self.httpResponseField.description],
-            dateTimeCached: row[Self.dateTimeCachedField.description],
             transfer: row[Self.transferField.description],
             appMetaDataVersion: row[Self.appMetaDataVersionField.description]
         )
@@ -186,8 +173,6 @@ class NetworkCache: DatabaseModel {
             Self.taskIdentifierField.description <- taskIdentifier,
             Self.fileUUIDField.description <- fileUUID,
             Self.fileVersionField.description <- fileVersion,
-            Self.httpResponseField.description <- httpResponse,
-            Self.dateTimeCachedField.description <- dateTimeCached,
             Self.transferField.description <- transfer,
             Self.appMetaDataVersionField.description <- appMetaDataVersion
         )

@@ -10,7 +10,7 @@ class NetworkCacheTests: XCTestCase {
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID().uuidString, fileVersion: 1, httpResponse: nil, dateTimeCached: Date(), transfer: nil, appMetaDataVersion: 56)
+        entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID().uuidString, fileVersion: 1, transfer: nil, appMetaDataVersion: 56)
     }
 
     override func tearDownWithError() throws {
@@ -21,8 +21,6 @@ class NetworkCacheTests: XCTestCase {
         XCTAssert(entry1.taskIdentifier == entry2.taskIdentifier)
         XCTAssert(entry1.fileUUID == entry2.fileUUID)
         XCTAssert(entry1.fileVersion == entry2.fileVersion)
-        XCTAssert(entry1.httpResponse == entry2.httpResponse)
-        XCTAssert(Date.approximatelyEqual(entry1.dateTimeCached, entry2.dateTimeCached))
         XCTAssert(entry1.appMetaDataVersion == entry2.appMetaDataVersion)
         XCTAssert(entry1.transfer == entry2.transfer)
     }
@@ -165,7 +163,7 @@ class NetworkCacheTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different primary key.
-        let entry2 = try NetworkCache(db: database, taskIdentifier: taskIdentifier + 1, fileUUID: UUID().uuidString, fileVersion: 1, httpResponse: nil, dateTimeCached: Date(), transfer: nil)
+        let entry2 = try NetworkCache(db: database, taskIdentifier: taskIdentifier + 1, fileUUID: UUID().uuidString, fileVersion: 1, transfer: nil)
 
         try entry2.insert()
 
@@ -210,7 +208,7 @@ class NetworkCacheTests: XCTestCase {
     func testSavingNilURL() throws {
         try NetworkCache.createTable(db: database)
 
-        let entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID().uuidString, fileVersion: 1, httpResponse: nil, dateTimeCached: Date(), transfer: nil)
+        let entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID().uuidString, fileVersion: 1,transfer: nil)
         try entry.insert()
 
         var count = 0
