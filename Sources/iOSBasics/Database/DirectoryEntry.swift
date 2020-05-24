@@ -47,6 +47,7 @@ class DirectoryEntry: DatabaseModel {
     var goneReason: String?
     
     init(db: Connection,
+        id: Int64! = nil,
         fileUUID: String,
         mimeType: String,
         fileVersion: Int64,
@@ -69,6 +70,7 @@ class DirectoryEntry: DatabaseModel {
         }
                 
         self.db = db
+        self.id = id
         self.fileUUID = fileUUID
         self.mimeType = mimeType
         self.fileVersion = fileVersion
@@ -86,7 +88,8 @@ class DirectoryEntry: DatabaseModel {
     
     static func createTable(db: Connection) throws {
         try startCreateTable(db: db) { t in
-            t.column(fileUUIDField.description, primaryKey: true)
+            t.column(idField.description, primaryKey: true)
+            t.column(fileUUIDField.description)
             t.column(mimeTypeField.description)
             t.column(fileVersionField.description)
             t.column(sharingGroupUUIDField.description)
@@ -102,6 +105,7 @@ class DirectoryEntry: DatabaseModel {
     
     static func rowToModel(db: Connection, row: Row) throws -> DirectoryEntry {
         return try DirectoryEntry(db: db,
+            id: row[Self.idField.description],
             fileUUID: row[Self.fileUUIDField.description],
             mimeType: row[Self.mimeTypeField.description],
             fileVersion: row[Self.fileVersionField.description],

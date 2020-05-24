@@ -4,6 +4,7 @@ import Foundation
 enum DatabaseModelError: Error {
     case noId
     case notExactlyOneRowWithId
+    case moreThanOneRowInResult
 }
 
 // I'd like to be able to automatically extract the property name from the KeyPath. That would make it so that I can omit one parameter from this field structure. But it looks like that's not supported yet. See https://forums.swift.org/t/pitch-improving-keypath/6541
@@ -32,7 +33,11 @@ protocol DatabaseModel: class {
     func insert() throws
 }
 
-extension DatabaseModel {    
+extension DatabaseModel {
+    static var idField: Field<Int64, M> {
+        return Field("id", \M.id)
+    }
+    
     static var table: Table {
         let tableName = String(describing: Self.self)
         return Table(tableName)
@@ -44,10 +49,12 @@ extension DatabaseModel {
         })
     }
     
-    // Assigns the resulting row id to the model.
+    // Assigns the resulting row id to the model. SQLite automatically puts the id into the inserted row as well. Seems to do this just as a result of having an id column.
     func doInsertRow(db: Connection, values: SQLite.Setter...) throws {
         let row = Self.table.insert(values)
         let id = try db.run(row)
+        
+        // Put the id in the returned object
         self.id = id
     }
     
@@ -73,6 +80,33 @@ extension DatabaseModel {
         }
     }
     
+    // There must be 0 or 1 rows in the expected result.
+    static func fetchSingleRow(db: Connection, `where`: Expression<Bool>) throws -> M? {
+        var count = 0
+        var result: M?
+        
+        try fetch(db: db,
+            where: `where`) { row in
+            count += 1
+            result = row
+        }
+        
+        if count > 1 {
+            throw DatabaseModelError.moreThanOneRowInResult
+        }
+        
+        return result
+    }
+    
+    // Use this only when you are expecting 0 or 1 rows to match the where expression.
+    static func isRow(db: Connection, `where`: Expression<Bool>) throws -> Bool {
+        guard let _ = try fetchSingleRow(db: db, where: `where`) else {
+            return false
+        }
+        
+        return true
+    }
+    
     static func fetch(db: Connection, withId id: Int64) throws -> Row {
         let query = Self.table.filter(
             id == rowid
@@ -89,12 +123,16 @@ extension DatabaseModel {
         return row
     }
         
-    // Update the row in the database with the setters.
+    // Update the row in the database with the setters on the basis of the current id field.
     // Returns a copy of the model with the fields updated.
     @discardableResult
     func update(setters: SQLite.Setter...) throws -> M {
+        guard let id = id else {
+            throw DatabaseModelError.noId
+        }
+        
         try db.run(Self.table.update(setters))
-        let row = try Self.fetch(db: db, withId: self.id)
+        let row = try Self.fetch(db: db, withId: id)
         return try Self.rowToModel(db: db, row: row)
     }
     

@@ -3,6 +3,9 @@ import ServerShared
 import Foundation
 import Version
 import iOSShared
+import SQLite
+
+// Requests are handled in two ways: file uploads and downloads-- on a background URL session. Other requests on a regular (non-background) URLSession.
 
 class ServerAPI {
     enum ServerAPIError: Error {
@@ -25,10 +28,11 @@ class ServerAPI {
     let config: Networking.Configuration
     weak var delegate: ServerAPIDelegate!
     
-    init(delegate: ServerAPIDelegate, config: Networking.Configuration) {
-        self.networking = Networking(delegate: delegate, config: config)
+    init(database: Connection, delegate: ServerAPIDelegate, config: Networking.Configuration) {
+        self.networking = Networking(database: database, delegate: delegate, config: config)
         self.config = config
         self.delegate = delegate
+        self.networking.transferDelegate = self
     }
     
     enum CheckForExistingUserResult {
@@ -190,7 +194,7 @@ class ServerAPI {
         let sharingGroups:[SharingGroup]
     }
     
-    func index(sharingGroupUUID: UUID?, completion:((Result<IndexResult, Error>)->())?) {
+    func index(sharingGroupUUID: UUID?, completion:((Swift.Result<IndexResult, Error>)->())?) {
         let endpoint = ServerEndpoints.index
         
         let indexRequest = IndexRequest()

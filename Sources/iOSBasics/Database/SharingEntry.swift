@@ -35,7 +35,16 @@ class SharingEntry: DatabaseModel {
     static let cloudStorageTypeField = Field("cloudStorageType", \M.cloudStorageType)
     var cloudStorageType: String?
     
-    init(db: Connection, masterVersion: Int64, permission: String? = nil, removedFromGroup: Bool, sharingGroupName: String?, sharingGroupUUID: String, syncNeeded: Bool, cloudStorageType: String? = nil) throws {
+    init(db: Connection,
+        id: Int64! = nil,
+        masterVersion: Int64,
+        permission: String? = nil,
+        removedFromGroup: Bool,
+        sharingGroupName: String?,
+        sharingGroupUUID: String,
+        syncNeeded: Bool,
+        cloudStorageType:
+        String? = nil) throws {
 
         if let cloudStorageType = cloudStorageType {
             guard let _ = CloudStorageType(rawValue: cloudStorageType) else {
@@ -50,6 +59,7 @@ class SharingEntry: DatabaseModel {
         }
         
         self.db = db
+        self.id = id
         self.sharingGroupUUID = sharingGroupUUID
         self.masterVersion = masterVersion
         self.permission = permission
@@ -63,7 +73,8 @@ class SharingEntry: DatabaseModel {
     
     static func createTable(db: Connection) throws {
         try startCreateTable(db: db) { t in
-            t.column(sharingGroupUUIDField.description, primaryKey: true)
+            t.column(idField.description, primaryKey: true)
+            t.column(sharingGroupUUIDField.description)
             t.column(masterVersionField.description)
             t.column(permissionField.description)
             t.column(removedFromGroupField.description)
@@ -75,6 +86,7 @@ class SharingEntry: DatabaseModel {
     
     static func rowToModel(db: Connection, row: Row) throws -> SharingEntry {
         return try SharingEntry(db: db,
+            id: row[Self.idField.description],
             masterVersion: row[Self.masterVersionField.description],
             permission: row[Self.permissionField.description],
             removedFromGroup: row[Self.removedFromGroupField.description],

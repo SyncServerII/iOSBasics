@@ -11,17 +11,23 @@ import iOSSignIn
 @testable import iOSDropbox
 import ServerShared
 import iOSShared
+import SQLite
 
 class ServerAPITests: XCTestCase, APITests, ServerBasics, Dropbox {
     var credentials: GenericCredentials!
     var api:ServerAPI!
     let hashing: CloudStorageHashing = DropboxHashing()
     let deviceUUID = UUID()
-    let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: baseURL(), minimumServerVersion: nil)
+    var database: Connection!
+    let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: baseURL(), minimumServerVersion: nil, packageTests: true)
+    var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())?
+
     
     override func setUpWithError() throws {
+        database = try Connection(.inMemory)
         credentials = try setupDropboxCredentials()
-        api = ServerAPI(delegate: self, config: config)
+        api = ServerAPI(database: database, delegate: self, config: config)
+        try NetworkCache.createTable(db: database)
     }
 
     override func tearDownWithError() throws {
@@ -103,7 +109,7 @@ class ServerAPITests: XCTestCase, APITests, ServerBasics, Dropbox {
         let fileUUID = UUID()
 
         let thisDirectory = TestingFile.directoryOfFile(#file)
-        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile())
+        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
         let checkSum = try hashing.hash(forURL: fileURL)
         

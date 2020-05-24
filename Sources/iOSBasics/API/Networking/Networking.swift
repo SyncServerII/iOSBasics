@@ -10,15 +10,33 @@ import ServerShared
 import iOSSignIn
 import iOSShared
 import Version
+import SQLite
 
-protocol ServerFile {
-    var fileUUID:String {get}
-    var fileVersion: FileVersionInt {get}
+struct FileObject: Filenaming {
+    let fileUUID: String!
+    let fileVersion: FileVersionInt!
 }
 
-class Networking {
+enum NetworkingError: Error {
+    case couldNotGetHTTPURLResponse
+    case jsonSerializationError(Error)
+    case errorConvertingServerResponse
+    case urlSessionError(Error?)
+    case couldNotGetData
+    case uploadError(Error)
+    case noUploadResponse
+    case noDownloadResponse
+    case noDownloadURL
+    case unexpectedTransferType
+}
+
+// NSOBject inheritance needed for URLSessionDelegate conformance.
+class Networking: NSObject {
     weak var delegate: ServerAPIDelegate!
+    weak var transferDelegate: FileTransferDelegate!
     let config: Configuration
+    var backgroundSession: URLSession!
+    let backgroundCache: BackgroundCache
     
     struct Configuration {
         let temporaryFileDirectory: URL
@@ -29,11 +47,58 @@ class Networking {
         let baseURL:String
         
         let minimumServerVersion: Version?
+        
+        // Do not set this to true for production build.
+        let packageTests: Bool
+        
+        init(temporaryFileDirectory: URL,
+            temporaryFilePrefix:String,
+            temporaryFileExtension:String,
+            baseURL:String,
+            minimumServerVersion: Version?,
+            packageTests: Bool = false) {
+
+            self.temporaryFileDirectory = temporaryFileDirectory
+            self.temporaryFilePrefix = temporaryFilePrefix
+            self.temporaryFileExtension = temporaryFileExtension
+            self.baseURL = baseURL
+            self.minimumServerVersion = minimumServerVersion
+            self.packageTests = packageTests
+#if !DEBUG
+            assert(!self.packageTests)
+#endif
+        }
     }
     
-    init(delegate: ServerAPIDelegate, config: Configuration) {
+    init(database:Connection, delegate: ServerAPIDelegate, transferDelegate:FileTransferDelegate? = nil, config: Configuration) {
         self.delegate = delegate
+        self.transferDelegate = transferDelegate
         self.config = config
+        self.backgroundCache = BackgroundCache(database: database)
+        super.init()
+        backgroundSession = createBackgroundURLSession()
+    }
+    
+    // An error occurred on the xpc connection to setup the background session: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service on pid 0 named com.apple.nsurlsessiond" UserInfo={NSDebugDescription=connection to service on pid 0 named com.apple.nsurlsessiond}
+    // https://forums.xamarin.com/discussion/170847/an-error-occurred-on-the-xpc-connection-to-setup-the-background-session
+    // https://stackoverflow.com/questions/58212317/an-error-occurred-on-the-xpc-connection-to-setup-the-background-session
+    // I'm working around this currently by not using a background URLSession when doing testing at the Package level.
+    
+    private func createBackgroundURLSession() -> URLSession {
+        let appBundleName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String
+        
+        let sessionConfiguration:URLSessionConfiguration
+        // https://developer.apple.com/reference/foundation/urlsessionconfiguration/1407496-background
+        if config.packageTests {
+            sessionConfiguration = URLSessionConfiguration.default
+        }
+        else {
+            sessionConfiguration = URLSessionConfiguration.background(withIdentifier: "biz.SpasticMuffin.SyncServer." + appBundleName)
+        }
+        
+        sessionConfiguration.timeoutIntervalForRequest = 60
+        
+        return URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: OperationQueue.main)
     }
     
     // Pass `credentials` if you need to replace the instance credentials.
@@ -49,18 +114,6 @@ class Networking {
         
         result[ServerConstants.httpRequestDeviceUUID] = self.delegate.deviceUUID(self).uuidString
         return result
-    }
-    
-    enum NetworkingError: Error {
-        case couldNotGetHTTPURLResponse
-        case jsonSerializationError(Error)
-        case errorConvertingServerResponse
-        case urlSessionError(Error?)
-        case couldNotGetData
-        case uploadError(Error)
-        case noUploadResponse
-        case noDownloadResponse
-        case noDownloadURL
     }
 
     struct RequestConfiguration {
@@ -187,7 +240,7 @@ class Networking {
         return true
     }
     
-    func uploadFile(file localFileURL: URL, to serverURL: URL, method: ServerHTTPMethod, completion: @escaping (HTTPURLResponse?, _ statusCode:Int?, Error?)->()) {
+    private func uploadFile(file localFileURL: URL, to serverURL: URL, method: ServerHTTPMethod) -> URLSessionUploadTask {
     
         // It appears that `session.uploadTask` has a problem with relative URL's. I get "NSURLErrorDomain Code=-1 "unknown error" if I pass one of these. Make sure the URL is not relative.
         let uploadFilePath = localFileURL.path
@@ -196,82 +249,50 @@ class Networking {
         var request = URLRequest(url: serverURL)
         request.httpMethod = method.rawValue.uppercased()
         request.allHTTPHeaderFields = headerAuthentication()
-
-        let sessionConfig = sessionConfiguration()
         
-        sessionConfig.httpAdditionalHeaders = headerAuthentication()
-        
-        logger.info("httpAdditionalHeaders: \(String(describing: sessionConfig.httpAdditionalHeaders))")
-        
-        let session = URLSession(configuration: sessionConfig, delegate: nil, delegateQueue: nil)
-        
-        let task = session.uploadTask(with: request, fromFile: nonRelativeUploadURL) { data, urlResponse, error in
-        
-            if let error = error {
-                completion(nil, nil, NetworkingError.uploadError(error))
-                return
-            }
-
-            guard let response = urlResponse as? HTTPURLResponse else {
-                completion(nil, nil, NetworkingError.noUploadResponse)
-                return
-            }
-                        
-            // Data, when converted to a string, is ""-- I'm not worrying about this for now, becase we're going to convert this over to a background task.
-
-            completion(response, response.statusCode, nil)
-        }
-        
-        task.resume()
+        return backgroundSession.uploadTask(with: request, fromFile: nonRelativeUploadURL)
     }
     
-    func downloadFile(_ serverURL: URL, method: ServerHTTPMethod, completion: @escaping (_ downloadedFile: URL?, HTTPURLResponse?, _ statusCode:Int?, Error?)->()) {
+    // The return value just indicates if the upload could be started, not whether the upload completed. The transferDelegate is used for further indications if the return result is nil.
+    func upload(file:Filenaming, fromLocalURL localURL: URL, toServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
+    
+        let task = uploadFile(file: localURL, to: serverURL, method: method)
+
+        do {
+            try backgroundCache.initializeUploadCache(file: file, taskIdentifer: task.taskIdentifier)
+        } catch let error {
+            task.cancel()
+            delegate.uploadError(self, error: error)
+            return error
+        }
+
+        task.resume()
+        return nil
+    }
+    
+    private func downloadFrom(_ serverURL: URL, method: ServerHTTPMethod) -> URLSessionDownloadTask {
     
         var request = URLRequest(url: serverURL)
         request.httpMethod = method.rawValue.uppercased()
+        request.allHTTPHeaderFields = headerAuthentication()
+                
+        return backgroundSession.downloadTask(with: request)
+    }
+    
+    func download(file:Filenaming, fromServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
+    
+        let task = downloadFrom(serverURL, method: method)
         
-        let sessionConfig = sessionConfiguration()
-        
-        sessionConfig.httpAdditionalHeaders = headerAuthentication()
-        
-        logger.info("httpAdditionalHeaders: \(String(describing: sessionConfig.httpAdditionalHeaders))")
-        
-        let session = URLSession(configuration: sessionConfig, delegate: nil, delegateQueue: nil)
-        
-        let task = session.downloadTask(with: request) { downloadURL, response, error in
-            if let error = error {
-                completion(nil, nil, nil, error)
-                return
-            }
-            
-            guard let response = response as? HTTPURLResponse else {
-                completion(nil, nil, nil, NetworkingError.noDownloadResponse)
-                return
-            }
-            
-            guard let downloadURL = downloadURL else {
-                completion(nil, nil, nil, NetworkingError.noDownloadURL)
-                return
-            }
-                    
-            var temporaryDirectory = self.config.temporaryFileDirectory
-            var temporaryFile:URL!
-
-            // Transfer the temporary file to a more permanent location. Have to do it right now. https://developer.apple.com/reference/foundation/urlsessiondownloaddelegate/1411575-urlsession
-            do {
-                try Files.createDirectoryIfNeeded(
-                    self.config.temporaryFileDirectory)
-                temporaryFile = try Files.createTemporary(withPrefix: self.config.temporaryFilePrefix, andExtension: self.config.temporaryFileExtension, inDirectory: &temporaryDirectory)
-                _ = try FileManager.default.replaceItemAt(temporaryFile, withItemAt: downloadURL)
-            }
-            catch (let error) {
-                logger.error("Could not move file: \(error)")
-                completion(nil, nil, nil, error)
-            }
-            
-            completion(temporaryFile, response, response.statusCode, nil)
+        do {
+            try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: task.taskIdentifier)
+        } catch let error {
+            task.cancel()
+            delegate.downloadError(self, error: error)
+            return error
         }
-        
+
         task.resume()
+        return nil
     }
 }
+

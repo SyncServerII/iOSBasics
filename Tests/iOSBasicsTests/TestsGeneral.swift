@@ -37,13 +37,14 @@ protocol APITests: ServerAPIDelegate {
     var credentials: GenericCredentials! { get set }
     var hashing: CloudStorageHashing { get }
     var api:ServerAPI! { get }
+    
+    var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())? {set get}
 }
 
 extension APITests where Self: XCTestCase {
-    func exampleTextFile() -> String { return "Example.txt" }
+    var exampleTextFile:String { return "Example.txt" }
 
     // Dropbox
-
     
     @discardableResult
     func addDropboxUser() -> Bool {
@@ -118,19 +119,20 @@ extension APITests where Self: XCTestCase {
         return returnResult
     }
     
-    func uploadFile(file: ServerAPI.File, masterVersion:MasterVersionInt) -> ServerAPI.UploadFileResult? {
-        var returnResult:ServerAPI.UploadFileResult?
+    func uploadFile(file: ServerAPI.File, masterVersion:MasterVersionInt) -> Swift.Result<UploadFileResult, Error>? {
+        var returnResult:Swift.Result<UploadFileResult, Error>?
         
         let exp = expectation(description: "exp")
-
-        api.uploadFile(file: file, serverMasterVersion: masterVersion) { result, error in
         
-            if error == nil {
-                returnResult = result
-            }
-            
+        func uploadCompletedHandler(result: Swift.Result<UploadFileResult, Error>) {
+            returnResult = result
             exp.fulfill()
         }
+        
+        self.uploadCompletedHandler = uploadCompletedHandler
+
+        let result = api.uploadFile(file: file, serverMasterVersion: masterVersion)
+        XCTAssert(result == nil)
         
         waitForExpectations(timeout: 10, handler: nil)
         
@@ -162,6 +164,8 @@ extension APITests where Self: XCTestCase {
         
         let fileNaming = FilenamingWithAppMetaDataVersion(fileUUID: fileUUID, fileVersion: fileVersion, appMetaDataVersion: appMetaDataVersion)
         
+        assert(false)
+        /*
         api.downloadFile(fileNamingObject: fileNaming, serverMasterVersion: serverMasterVersion, sharingGroupUUID: sharingGroupUUID) { result, error in
             if error == nil {
                 returnResult = result
@@ -169,7 +173,8 @@ extension APITests where Self: XCTestCase {
             
             exp.fulfill()
         }
-
+        */
+        
         waitForExpectations(timeout: 10, handler: nil)
         
         return returnResult
@@ -187,5 +192,20 @@ extension APITests /* : ServerAPIDelegate */ {
     
     func currentHasher(_ api: AnyObject) -> CloudStorageHashing {
         return hashing
+    }
+    
+    func uploadCompleted(_ api: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
+        uploadCompletedHandler?(result)
+    }
+    
+    func uploadError(_ api: AnyObject, error: Error) {
+        XCTFail()
+    }
+    
+    func downloadCompleted(_ api: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
+        assert(false)
+    }
+    func downloadError(_ api: AnyObject, error: Error) {
+        assert(false)
     }
 }

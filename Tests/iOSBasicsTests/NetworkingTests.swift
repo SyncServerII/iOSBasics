@@ -11,6 +11,7 @@ import XCTest
 import iOSSignIn
 import iOSShared
 import ServerShared
+import SQLite
 
 class NetworkingTests: XCTestCase, Dropbox, ServerBasics {
     var networking: Networking!
@@ -18,12 +19,14 @@ class NetworkingTests: XCTestCase, Dropbox, ServerBasics {
     var savedCredentials: DropboxSavedCreds!
     let hashing = DropboxHashing()
     let deviceUUID = UUID()
-    let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: baseURL(), minimumServerVersion: nil)
+    var database:Connection!
+    let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: baseURL(), minimumServerVersion: nil, packageTests: true)
     
     override func setUpWithError() throws {
+        database = try Connection(.inMemory)
         savedCredentials = try loadDropboxCredentials()
         credentials = DropboxCredentials(savedCreds:savedCredentials)
-        networking = Networking(delegate: self, config: config)
+        networking = Networking(database: database, delegate: self, config: config)
     }
 
     override func tearDownWithError() throws {
@@ -73,6 +76,22 @@ class NetworkingTests: XCTestCase, Dropbox, ServerBasics {
 }
 
 extension NetworkingTests: ServerAPIDelegate {
+    func downloadCompleted(_ api: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
+        assert(false)
+    }
+    
+    func downloadError(_ api: AnyObject, error: Error) {
+        assert(false)
+    }
+    
+    func uploadError(_ api: AnyObject, error: Error) {
+        assert(false)
+    }
+    
+    func uploadCompleted(_ api: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
+        assert(false)
+    }
+    
     func currentHasher(_ api: AnyObject) -> CloudStorageHashing {
         return hashing
     }

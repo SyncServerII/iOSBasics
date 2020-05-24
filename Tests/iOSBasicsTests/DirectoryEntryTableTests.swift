@@ -69,6 +69,7 @@ final class DirectoryEntryTableTests: XCTestCase {
             where: uuid == DirectoryEntry.fileUUIDField.description) { row in
             assertContentsCorrect(entry1: entry, entry2: row)
             count += 1
+            XCTAssert(row.id != nil)
         }
         
         XCTAssert(count == 1)

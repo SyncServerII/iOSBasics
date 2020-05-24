@@ -38,3 +38,5 @@ Why does the gone reason come back in the body where the rest of the response re
 ## Need to put Hashing.hashOf in specific cloud storage libraries
 
 ## contentsChangedOnServer needs documentation in download.
+
+## ServerResponseCheck.session.failover not in networking, along with ServerResponseCheck.session.minimumIOSClientVersion

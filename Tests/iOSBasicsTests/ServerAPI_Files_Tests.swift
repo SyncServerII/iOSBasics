@@ -11,17 +11,23 @@ import iOSSignIn
 import ServerShared
 import iOSShared
 import iOSDropbox
+import SQLite
 
 class ServerAPI_Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
     var credentials: GenericCredentials!
     var api:ServerAPI!
     let deviceUUID = UUID()
+    var database: Connection!
     let hashing:CloudStorageHashing = DropboxHashing()
-    let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: baseURL(), minimumServerVersion: nil)
+    let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: baseURL(), minimumServerVersion: nil, packageTests: true)
+    var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())?
     
     override func setUpWithError() throws {
+        database = try Connection(.inMemory)
         credentials = try setupDropboxCredentials()
-        api = ServerAPI(delegate: self, config: config)
+        api = ServerAPI(database: database, delegate: self, config: config)
+        uploadCompletedHandler = nil
+        try NetworkCache.createTable(db: database)
     }
 
     override func tearDownWithError() throws {
@@ -36,7 +42,7 @@ class ServerAPI_Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         let fileUUID = UUID()
 
         let thisDirectory = TestingFile.directoryOfFile(#file)
-        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile())
+        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
        let checkSum = try hashing.hash(forURL: fileURL)
         
@@ -73,7 +79,7 @@ class ServerAPI_Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         let fileUUID = UUID()
 
         let thisDirectory = TestingFile.directoryOfFile(#file)
-        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile())
+        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
         let checkSum = try hashing.hash(forURL: fileURL)
         
@@ -113,7 +119,7 @@ class ServerAPI_Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         let fileUUID = UUID()
 
         let thisDirectory = TestingFile.directoryOfFile(#file)
-        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile())
+        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
         let checkSum = try hashing.hash(forURL: fileURL)
         
