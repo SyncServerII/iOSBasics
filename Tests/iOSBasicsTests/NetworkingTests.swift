@@ -76,15 +76,7 @@ class NetworkingTests: XCTestCase, Dropbox, ServerBasics {
 }
 
 extension NetworkingTests: ServerAPIDelegate {
-    func downloadCompleted(_ api: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
-        assert(false)
-    }
-    
-    func downloadError(_ api: AnyObject, error: Error) {
-        assert(false)
-    }
-    
-    func uploadError(_ api: AnyObject, error: Error) {
+    func downloadCompleted(_ api: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
         assert(false)
     }
     

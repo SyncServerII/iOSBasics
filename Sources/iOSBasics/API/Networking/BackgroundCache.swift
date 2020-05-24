@@ -22,8 +22,9 @@ class BackgroundCache {
         try cache.insert()
     }
     
-    func initializeDownloadCache(file:Filenaming, taskIdentifer: Int) throws {
-        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: file.fileUUID, fileVersion: file.fileVersion, httpResponse: nil, dateTimeCached: Date(), transfer: .download(nil))
+    func initializeDownloadCache(file:FilenamingWithAppMetaDataVersion,
+        taskIdentifer: Int) throws {
+        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: file.fileUUID, fileVersion: file.fileVersion, httpResponse: nil, dateTimeCached: Date(), transfer: .download(nil), appMetaDataVersion: file.appMetaDataVersion)
         try cache.insert()
     }
     

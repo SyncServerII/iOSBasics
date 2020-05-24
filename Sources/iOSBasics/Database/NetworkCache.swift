@@ -122,12 +122,15 @@ class NetworkCache: DatabaseModel {
 
     static let httpResponseField = Field("httpResponse", \M.httpResponse)
     var httpResponse: HTTPURLResponse?
-    
+        
     static let dateTimeCachedField = Field("dateTimeCached", \M.dateTimeCached)
     var dateTimeCached: Date
     
     static let transferField = Field("transfer", \M.transfer)
     var transfer: NetworkTransfer?
+    
+    static let appMetaDataVersionField = Field("appMetaDataVersion", \M.appMetaDataVersion)
+    var appMetaDataVersion: AppMetaDataVersionInt?
 
     init(db: Connection,
         id: Int64! = nil,
@@ -136,7 +139,8 @@ class NetworkCache: DatabaseModel {
         fileVersion: FileVersionInt,
         httpResponse: HTTPURLResponse?,
         dateTimeCached: Date,
-        transfer: NetworkTransfer?) throws {
+        transfer: NetworkTransfer?,
+        appMetaDataVersion: AppMetaDataVersionInt? = nil) throws {
                 
         self.db = db
         self.id = id
@@ -146,6 +150,7 @@ class NetworkCache: DatabaseModel {
         self.httpResponse = httpResponse
         self.dateTimeCached = dateTimeCached
         self.transfer = transfer
+        self.appMetaDataVersion = appMetaDataVersion
     }
     
     // MARK: DatabaseModel
@@ -159,6 +164,7 @@ class NetworkCache: DatabaseModel {
             t.column(httpResponseField.description)
             t.column(dateTimeCachedField.description)
             t.column(transferField.description)
+            t.column(appMetaDataVersionField.description)
         }
     }
     
@@ -170,7 +176,8 @@ class NetworkCache: DatabaseModel {
             fileVersion: row[Self.fileVersionField.description],
             httpResponse: row[Self.httpResponseField.description],
             dateTimeCached: row[Self.dateTimeCachedField.description],
-            transfer: row[Self.transferField.description]
+            transfer: row[Self.transferField.description],
+            appMetaDataVersion: row[Self.appMetaDataVersionField.description]
         )
     }
     
@@ -181,7 +188,8 @@ class NetworkCache: DatabaseModel {
             Self.fileVersionField.description <- fileVersion,
             Self.httpResponseField.description <- httpResponse,
             Self.dateTimeCachedField.description <- dateTimeCached,
-            Self.transferField.description <- transfer
+            Self.transferField.description <- transfer,
+            Self.appMetaDataVersionField.description <- appMetaDataVersion
         )
     }
 }

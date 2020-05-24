@@ -39,7 +39,7 @@ extension ServerAPI {
         
         guard uploadRequest.valid() else {
             let error = ServerAPIError.couldNotCreateRequest
-            delegate.uploadError(self, error: error)
+            delegate.uploadCompleted(self, result: .failure(error))
             return error
         }
         
@@ -125,18 +125,6 @@ extension ServerAPI {
         }
     }
     
-    enum DownloadedFile {
-        case content(url: URL, appMetaData:AppMetaData?, checkSum:String, cloudStorageType:CloudStorageType, contentsChangedOnServer: Bool)
-        
-        // The GoneReason should never be userRemoved-- because when a user is removed, their files are marked as deleted in the FileIndex, and thus the files are generally not downloadable.
-        case gone(appMetaData:AppMetaData?, cloudStorageType:CloudStorageType, GoneReason)
-    }
-    
-    enum DownloadFileResult {
-        case success(DownloadedFile)
-        case serverMasterVersionUpdate(Int64)
-    }
-    
     func downloadFile(file: FilenamingWithAppMetaDataVersion, serverMasterVersion:MasterVersionInt!, sharingGroupUUID: String) -> Error? {
         let endpoint = ServerEndpoints.downloadFile
         
@@ -149,7 +137,7 @@ extension ServerAPI {
         
         guard downloadFileRequest.valid() else {
             let error = ServerAPIError.couldNotCreateRequest
-            delegate.downloadError(self, error: error)
+            delegate.downloadCompleted(self, result: .failure(error))
             return error
         }
 

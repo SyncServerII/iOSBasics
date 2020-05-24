@@ -21,6 +21,7 @@ class ServerAPI_Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
     let hashing:CloudStorageHashing = DropboxHashing()
     let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: baseURL(), minimumServerVersion: nil, packageTests: true)
     var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())?
+    var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>) -> ())?
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
@@ -150,13 +151,13 @@ class ServerAPI_Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
             return
         }
         
-        guard case .success(let downloadedFile) = downloadFile(fileUUID: fileUUID.uuidString, fileVersion: fileVersion, serverMasterVersion: masterVersion + 1, sharingGroupUUID: sharingGroupUUID, appMetaDataVersion: nil) else {
+        guard case .success(let downloadResult) = downloadFile(fileUUID: fileUUID.uuidString, fileVersion: fileVersion, serverMasterVersion: masterVersion + 1, sharingGroupUUID: sharingGroupUUID, appMetaDataVersion: nil) else {
             XCTFail()
             return
         }
         
-        switch downloadedFile {
-        case .content(url: let url, appMetaData: let appMetaData, checkSum: let checkSumDownloaded, cloudStorageType: let cloudStorageType, contentsChangedOnServer: let changed):
+        switch downloadResult {
+        case .success(url: let url, appMetaData: let appMetaData, checkSum: let checkSumDownloaded, cloudStorageType: let cloudStorageType, contentsChangedOnServer: let changed):
         
             XCTAssert(appMetaData == nil)
             XCTAssert(!changed)

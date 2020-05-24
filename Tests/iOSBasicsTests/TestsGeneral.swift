@@ -39,6 +39,7 @@ protocol APITests: ServerAPIDelegate {
     var api:ServerAPI! { get }
     
     var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())? {set get}
+    var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>) -> ())? {set get}
 }
 
 extension APITests where Self: XCTestCase {
@@ -126,6 +127,7 @@ extension APITests where Self: XCTestCase {
         
         func uploadCompletedHandler(result: Swift.Result<UploadFileResult, Error>) {
             returnResult = result
+            self.uploadCompletedHandler = nil
             exp.fulfill()
         }
         
@@ -156,24 +158,23 @@ extension APITests where Self: XCTestCase {
         return returnResult
     }
     
-    func downloadFile(fileUUID: String, fileVersion: Int32, serverMasterVersion: MasterVersionInt, sharingGroupUUID: String, appMetaDataVersion: AppMetaDataVersionInt?) -> ServerAPI.DownloadFileResult? {
+    func downloadFile(fileUUID: String, fileVersion: Int32, serverMasterVersion: MasterVersionInt, sharingGroupUUID: String, appMetaDataVersion: AppMetaDataVersionInt?) -> Swift.Result<DownloadFileResult, Error>? {
         
-        var returnResult:ServerAPI.DownloadFileResult?
-        
+        var returnResult:Swift.Result<DownloadFileResult, Error>?
         let exp = expectation(description: "exp")
-        
-        let fileNaming = FilenamingWithAppMetaDataVersion(fileUUID: fileUUID, fileVersion: fileVersion, appMetaDataVersion: appMetaDataVersion)
-        
-        assert(false)
-        /*
-        api.downloadFile(fileNamingObject: fileNaming, serverMasterVersion: serverMasterVersion, sharingGroupUUID: sharingGroupUUID) { result, error in
-            if error == nil {
-                returnResult = result
-            }
-            
+
+        func downloadCompletedHandler(result: Swift.Result<DownloadFileResult, Error>) {
+            returnResult = result
+            self.downloadCompletedHandler = nil
             exp.fulfill()
         }
-        */
+        
+        self.downloadCompletedHandler = downloadCompletedHandler
+
+        let file = FilenamingWithAppMetaDataVersion(fileUUID: fileUUID, fileVersion: fileVersion, appMetaDataVersion: appMetaDataVersion)
+        
+        let result = api.downloadFile(file: file, serverMasterVersion: serverMasterVersion, sharingGroupUUID: sharingGroupUUID)
+        XCTAssert(result == nil)
         
         waitForExpectations(timeout: 10, handler: nil)
         
@@ -198,14 +199,7 @@ extension APITests /* : ServerAPIDelegate */ {
         uploadCompletedHandler?(result)
     }
     
-    func uploadError(_ api: AnyObject, error: Error) {
-        XCTFail()
-    }
-    
-    func downloadCompleted(_ api: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
-        assert(false)
-    }
-    func downloadError(_ api: AnyObject, error: Error) {
-        assert(false)
+    func downloadCompleted(_ api: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
+        downloadCompletedHandler?(result)
     }
 }

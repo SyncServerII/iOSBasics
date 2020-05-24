@@ -40,7 +40,7 @@ class BackgroundCacheTests: XCTestCase {
     }
     
     func testInitializeDownloadCache() throws {
-        let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
+        let file = FilenamingWithAppMetaDataVersion(fileUUID: UUID().uuidString, fileVersion: 1, appMetaDataVersion: nil)
         try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: taskIdentifier)
         
         guard let result = try NetworkCache.fetchSingleRow(db: database, where:
@@ -60,7 +60,7 @@ class BackgroundCacheTests: XCTestCase {
     }
     
     func testCacheResultWithURL() throws {
-        let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
+        let file = FilenamingWithAppMetaDataVersion(fileUUID: UUID().uuidString, fileVersion: 1, appMetaDataVersion: nil)
         try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: taskIdentifier)
         
         let url = URL(fileURLWithPath: "foobly")
@@ -86,7 +86,7 @@ class BackgroundCacheTests: XCTestCase {
     }
     
     func testLookupAndRemoveCacheWithDownloadCachePresent() throws {
-        let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
+        let file = FilenamingWithAppMetaDataVersion(fileUUID: UUID().uuidString, fileVersion: 1, appMetaDataVersion: nil)
         try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: taskIdentifier)
         
         let url = URL(fileURLWithPath: "foobly")
@@ -129,7 +129,7 @@ class BackgroundCacheTests: XCTestCase {
     }
     
     func testLookupAndRemoveCacheWithUploadCacheAbsent() throws {
-        let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
+        let file = FilenamingWithAppMetaDataVersion(fileUUID: UUID().uuidString, fileVersion: 1, appMetaDataVersion: nil)
         try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: taskIdentifier)
         
         let url = URL(fileURLWithPath: "foobly")

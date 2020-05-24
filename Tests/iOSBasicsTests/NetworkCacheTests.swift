@@ -10,7 +10,7 @@ class NetworkCacheTests: XCTestCase {
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID().uuidString, fileVersion: 1, httpResponse: nil, dateTimeCached: Date(), transfer: nil)
+        entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID().uuidString, fileVersion: 1, httpResponse: nil, dateTimeCached: Date(), transfer: nil, appMetaDataVersion: 56)
     }
 
     override func tearDownWithError() throws {
@@ -23,7 +23,7 @@ class NetworkCacheTests: XCTestCase {
         XCTAssert(entry1.fileVersion == entry2.fileVersion)
         XCTAssert(entry1.httpResponse == entry2.httpResponse)
         XCTAssert(Date.approximatelyEqual(entry1.dateTimeCached, entry2.dateTimeCached))
-        
+        XCTAssert(entry1.appMetaDataVersion == entry2.appMetaDataVersion)
         XCTAssert(entry1.transfer == entry2.transfer)
     }
     

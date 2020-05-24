@@ -262,7 +262,7 @@ class Networking: NSObject {
             try backgroundCache.initializeUploadCache(file: file, taskIdentifer: task.taskIdentifier)
         } catch let error {
             task.cancel()
-            delegate.uploadError(self, error: error)
+            delegate.uploadCompleted(self, result: .failure(error))
             return error
         }
 
@@ -279,7 +279,7 @@ class Networking: NSObject {
         return backgroundSession.downloadTask(with: request)
     }
     
-    func download(file:Filenaming, fromServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
+    func download(file:FilenamingWithAppMetaDataVersion, fromServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
     
         let task = downloadFrom(serverURL, method: method)
         
@@ -287,7 +287,7 @@ class Networking: NSObject {
             try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: task.taskIdentifier)
         } catch let error {
             task.cancel()
-            delegate.downloadError(self, error: error)
+            delegate.downloadCompleted(self, result: .failure(error))
             return error
         }
 

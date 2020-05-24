@@ -4,99 +4,87 @@ import iOSShared
 
 extension ServerAPI: FileTransferDelegate {
     func error(_ network: Any, file: Filenaming?, statusCode: Int?, error: Error?) {
-    }
-    
-    func downloadError(_ network: Any, file: Filenaming?, statusCode: Int?, error: Error?) {
-    }
-    
-    func downloadCompleted(_ network: Any, file: Filenaming, url: URL?, response: HTTPURLResponse?, _ statusCode: Int?) {
-    
         assert(false)
-        /*
-        networking.downloadFile(serverURL, method: endpoint.method) { (resultURL, response, statusCode, error) in
-        
-            if let error = error {
-                completion(nil, error)
-                return
-            }
-            
-            guard let response = response else {
-                completion(nil, ServerAPIError.nilResponse)
-                return
-            }
-            
-            if let resultError = self.checkForError(statusCode: statusCode, error: error) {
-                completion(nil, resultError)
-                return
-            }
+    }
+    
+    func downloadError(_ network: Any, file: FilenamingWithAppMetaDataVersion?, statusCode: Int?, error: Error?) {
+        assert(false)
+    }
+    
+    func downloadCompleted(_ network: Any, file: FilenamingWithAppMetaDataVersion, url: URL?, response: HTTPURLResponse?, _ statusCode: Int?) {
 
-            logger.info("response!.allHeaderFields: \(response.allHeaderFields)")
-            if let parms = response.allHeaderFields[ServerConstants.httpResponseMessageParams] as? String,
-                let jsonDict = self.toJSONDictionary(jsonString: parms) {
-                logger.info("jsonDict: \(jsonDict)")
-                
-                guard let downloadFileResponse = try? DownloadFileResponse.decode(jsonDict) else {
-                    completion(nil, ServerAPIError.couldNotObtainHeaderParameters)
-                    return
-                }
-                
-                if let masterVersionUpdate = downloadFileResponse.masterVersionUpdate {
-                    completion(DownloadFileResult.serverMasterVersionUpdate(masterVersionUpdate), nil)
-                    return
-                }
-                
-                guard let cloudStorageTypeRaw = downloadFileResponse.cloudStorageType,
-                    let cloudStorageType = CloudStorageType(rawValue: cloudStorageTypeRaw) else {
-                    completion(nil, ServerAPIError.couldNotGetCloudStorageType)
-                    return
-                }
-                
-                var appMetaData:AppMetaData?
-                
-                if fileNamingObject.appMetaDataVersion != nil && downloadFileResponse.appMetaData != nil  {
-                    appMetaData = AppMetaData(version: fileNamingObject.appMetaDataVersion!, contents: downloadFileResponse.appMetaData!)
-                }
-
-                if let goneRaw = downloadFileResponse.gone,
-                    let gone = GoneReason(rawValue: goneRaw) {
-                    
-                    let downloadedFile = DownloadedFile.gone(appMetaData: appMetaData, cloudStorageType: cloudStorageType, gone)
-                    completion(.success(downloadedFile), nil)
-                }
-                else if let checkSum = downloadFileResponse.checkSum,
-                    let contentsChanged = downloadFileResponse.contentsChanged {
-
-                    guard let resultURL = resultURL else {
-                        completion(nil, ServerAPIError.resultURLObtainedWasNil)
-                        return
-                    }
-                    
-                    let hash: String
-                    do {
-                        hash = try self.delegate.currentHasher(self).hash(forURL: resultURL)
-                    } catch (let error) {
-                        completion(nil, error)
-                        return
-                    }
-                    
-                    guard hash == checkSum else {
-                        // Considering this to be a networking error and not something we want to pass up to the client app. This shouldn't happen in normal operation.
-                        completion(nil, ServerAPIError.networkingHashMismatch)
-                        return
-                    }
-
-                    let downloadedFile = DownloadedFile.content(url: resultURL, appMetaData: appMetaData, checkSum: checkSum, cloudStorageType: cloudStorageType, contentsChangedOnServer: contentsChanged)
-                    completion(.success(downloadedFile), nil)
-                }
-                else {
-                    completion(nil, ServerAPIError.noExpectedResultKey)
-                }
-            }
-            else {
-                completion(nil, ServerAPIError.couldNotObtainHeaderParameters)
-            }
+        if let resultError = self.checkForError(statusCode: statusCode, error: nil) {
+            delegate.downloadCompleted(self, result: .failure(resultError))
+            return
         }
-        */
+        
+        guard let response = response else {
+            delegate.downloadCompleted(self, result: .failure(ServerAPIError.nilResponse))
+            return
+        }
+        
+        logger.info("response.allHeaderFields: \(String(describing: response.allHeaderFields))")
+
+        guard let parms = response.allHeaderFields[ServerConstants.httpResponseMessageParams] as? String,
+            let jsonDict = self.toJSONDictionary(jsonString: parms),
+            let downloadFileResponse = try? DownloadFileResponse.decode(jsonDict)  else {
+            delegate.downloadCompleted(self, result: .failure(ServerAPIError.couldNotObtainHeaderParameters))
+            return
+        }
+        
+        logger.info("Download response jsonDict: \(jsonDict)")
+        
+        if let masterVersionUpdate = downloadFileResponse.masterVersionUpdate {
+            delegate.downloadCompleted(self, result: .success(DownloadFileResult.serverMasterVersionUpdate(masterVersionUpdate)))
+            return
+        }
+        
+        guard let cloudStorageTypeRaw = downloadFileResponse.cloudStorageType,
+            let cloudStorageType = CloudStorageType(rawValue: cloudStorageTypeRaw) else {
+            delegate.downloadCompleted(self, result: .failure(ServerAPIError.couldNotGetCloudStorageType))
+            return
+        }
+        
+        var appMetaData:AppMetaData?
+        
+        if let appMetaDataVersion = file.appMetaDataVersion,
+            let contents = downloadFileResponse.appMetaData  {
+            appMetaData = AppMetaData(version: appMetaDataVersion, contents: contents)
+        }
+
+        if let goneRaw = downloadFileResponse.gone,
+            let gone = GoneReason(rawValue: goneRaw) {
+            let result = DownloadFileResult.gone(appMetaData: appMetaData, cloudStorageType: cloudStorageType, gone)
+            delegate.downloadCompleted(self, result: .success(result))
+        }
+        else if let checkSum = downloadFileResponse.checkSum,
+            let contentsChanged = downloadFileResponse.contentsChanged {
+
+            guard let url = url else {
+                delegate.downloadCompleted(self, result: .failure(ServerAPIError.resultURLObtainedWasNil))
+                return
+            }
+            
+            let hash: String
+            do {
+                hash = try self.delegate.currentHasher(self).hash(forURL: url)
+            } catch (let error) {
+                delegate.downloadCompleted(self, result: .failure(error))
+                return
+            }
+            
+            guard hash == checkSum else {
+                // Considering this to be a networking error and not something we want to pass up to the client app. This shouldn't happen in normal operation.
+                delegate.downloadCompleted(self, result: .failure(ServerAPIError.networkingHashMismatch))
+                return
+            }
+            
+            let result = DownloadFileResult.success(url: url, appMetaData: appMetaData, checkSum: checkSum, cloudStorageType: cloudStorageType, contentsChangedOnServer: contentsChanged)
+            delegate.downloadCompleted(self, result: .success(result))
+        }
+        else {
+            delegate.downloadCompleted(self, result: .failure(ServerAPIError.noExpectedResultKey))
+        }
     }
     
     func uploadError(_ network: Any, file: Filenaming?, statusCode: Int?, error: Error?) {
@@ -112,7 +100,7 @@ extension ServerAPI: FileTransferDelegate {
         }
 
         if let resultError = self.checkForError(statusCode: statusCode, error: nil) {
-            delegate.uploadError(self, error: resultError)
+            delegate.uploadCompleted(self, result: .failure(resultError))
             return
         }
 
@@ -121,7 +109,7 @@ extension ServerAPI: FileTransferDelegate {
             logger.info("jsonDict: \(jsonDict)")
             
             guard let uploadFileResponse = try? UploadFileResponse.decode(jsonDict) else {
-                delegate.uploadError(self, error: ServerAPIError.couldNotCreateResponse)
+                delegate.uploadCompleted(self, result: .failure(ServerAPIError.couldNotCreateResponse))
                 return
             }
             
@@ -133,14 +121,14 @@ extension ServerAPI: FileTransferDelegate {
             }
             
             guard let creationDate = uploadFileResponse.creationDate, let updateDate = uploadFileResponse.updateDate else {
-                delegate.uploadError(self, error: ServerAPIError.noExpectedResultKey)
+                delegate.uploadCompleted(self, result: .failure(ServerAPIError.noExpectedResultKey))
                 return
             }
             
             delegate.uploadCompleted(self, result: .success(UploadFileResult.success(creationDate: creationDate, updateDate: updateDate)))
         }
         else {
-            delegate.uploadError(self, error: ServerAPIError.couldNotObtainHeaderParameters)
+            delegate.uploadCompleted(self, result: .failure(ServerAPIError.couldNotObtainHeaderParameters))
         }
     }
 }

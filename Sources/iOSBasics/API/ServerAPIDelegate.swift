@@ -10,6 +10,14 @@ enum UploadFileResult {
     // The GoneReason should never be fileRemovedOrRenamed-- because a new upload would upload the next version, not accessing the current version.
     case gone(GoneReason)
 }
+
+enum DownloadFileResult {
+    case success(url: URL, appMetaData:AppMetaData?, checkSum:String, cloudStorageType:CloudStorageType, contentsChangedOnServer: Bool)
+    case serverMasterVersionUpdate(Int64)
+    
+    // The GoneReason should never be userRemoved-- because when a user is removed, their files are marked as deleted in the FileIndex, and thus the files are generally not downloadable.
+    case gone(appMetaData:AppMetaData?, cloudStorageType:CloudStorageType, GoneReason)
+}
     
 protocol ServerAPIDelegate: AnyObject {
     // Methods for the ServerAPI to get information from its user/caller
@@ -19,8 +27,5 @@ protocol ServerAPIDelegate: AnyObject {
     
     // Methods for the ServerAPI to report results
     func uploadCompleted(_ api: AnyObject, result: Swift.Result<UploadFileResult, Error>)
-    func uploadError(_ api: AnyObject, error: Error)
-    
-    func downloadCompleted(_ api: AnyObject, result: Swift.Result<UploadFileResult, Error>)
-    func downloadError(_ api: AnyObject, error: Error)
+    func downloadCompleted(_ api: AnyObject, result: Swift.Result<DownloadFileResult, Error>)
 }

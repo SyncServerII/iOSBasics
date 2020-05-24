@@ -21,7 +21,7 @@ class ServerAPITests: XCTestCase, APITests, ServerBasics, Dropbox {
     var database: Connection!
     let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: baseURL(), minimumServerVersion: nil, packageTests: true)
     var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())?
-
+    var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>) -> ())?
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
