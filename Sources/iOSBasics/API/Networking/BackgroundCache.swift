@@ -18,13 +18,13 @@ class BackgroundCache {
     }
     
     func initializeUploadCache(file:Filenaming, taskIdentifer: Int) throws {
-        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: file.fileUUID, fileVersion: file.fileVersion, transfer: .upload(nil))
+        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: UUID(uuidString: file.fileUUID)!, fileVersion: file.fileVersion, transfer: .upload(nil))
         try cache.insert()
     }
     
     func initializeDownloadCache(file:FilenamingWithAppMetaDataVersion,
         taskIdentifer: Int) throws {
-        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: file.fileUUID, fileVersion: file.fileVersion, transfer: .download(nil), appMetaDataVersion: file.appMetaDataVersion)
+        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: UUID(uuidString: file.fileUUID)!, fileVersion: file.fileVersion, transfer: .download(nil), appMetaDataVersion: file.appMetaDataVersion)
         try cache.insert()
     }
     
@@ -72,7 +72,7 @@ class BackgroundCache {
     
     // If the NetworkCache object is returned, it has been removed from the database.
     func lookupAndRemoveCache(file:Filenaming, download: Bool) throws -> NetworkCache? {
-        guard let cache = try NetworkCache.fetchSingleRow(db: database, where: file.fileUUID == NetworkCache.fileUUIDField.description &&
+        guard let cache = try NetworkCache.fetchSingleRow(db: database, where: UUID(uuidString: file.fileUUID)! == NetworkCache.fileUUIDField.description &&
             file.fileVersion == NetworkCache.fileVersionField.description) else {
             throw BackgroundCacheError.couldNotLookup
         }

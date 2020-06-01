@@ -5,14 +5,14 @@ import ServerShared
 
 final class DirectoryEntryTableTests: XCTestCase {
     var database: Connection!
-    let uuid = UUID().uuidString
+    let uuid = UUID()
     var entry:DirectoryEntry!
     
     override func setUp() {
         super.setUp()
         do {
             database = try Connection(.inMemory)
-            entry = try DirectoryEntry(db: database, fileUUID: uuid, mimeType: "text/plain", fileVersion: 1, sharingGroupUUID: UUID().uuidString, cloudStorageType: "Dropbox", deletedLocally: false, deletedOnServer: true, appMetaData: "Stuff", appMetaDataVersion: 20, fileGroupUUID: UUID().uuidString, goneReason: GoneReason.userRemoved.rawValue)
+            entry = try DirectoryEntry(db: database, fileUUID: uuid, mimeType: .text, fileVersion: 1, sharingGroupUUID: UUID(), cloudStorageType: .Dropbox, deletedLocally: false, deletedOnServer: true, appMetaData: "Stuff", appMetaDataVersion: 20, fileGroupUUID: UUID(), goneReason: GoneReason.userRemoved.rawValue)
         } catch {
             XCTFail()
             return
@@ -80,7 +80,7 @@ final class DirectoryEntryTableTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
-        let entry2 = try DirectoryEntry(db: database, fileUUID: UUID().uuidString, mimeType: "text/plain", fileVersion: 1, sharingGroupUUID: UUID().uuidString, cloudStorageType: "Dropbox", deletedLocally: false, deletedOnServer: true, appMetaData: "Stuff", appMetaDataVersion: 20, fileGroupUUID: UUID().uuidString, goneReason: GoneReason.userRemoved.rawValue)
+        let entry2 = try DirectoryEntry(db: database, fileUUID: UUID(), mimeType: .text, fileVersion: 1, sharingGroupUUID: UUID(), cloudStorageType: .Dropbox, deletedLocally: false, deletedOnServer: true, appMetaData: "Stuff", appMetaDataVersion: 20, fileGroupUUID: UUID(), goneReason: GoneReason.userRemoved.rawValue)
 
         try entry2.insert()
 
@@ -96,7 +96,7 @@ final class DirectoryEntryTableTests: XCTestCase {
         try DirectoryEntry.createTable(db: database)
         try entry.insert()
                 
-        let replacement = "foo"
+        let replacement = UUID()
         
         entry = try entry.update(setters:
             DirectoryEntry.fileUUIDField.description <- replacement
@@ -105,7 +105,7 @@ final class DirectoryEntryTableTests: XCTestCase {
         var count = 0
         try DirectoryEntry.fetch(db: database,
             where: replacement == DirectoryEntry.fileUUIDField.description) { row in
-            XCTAssert(row.fileUUID == replacement, row.fileUUID)
+            XCTAssert(row.fileUUID == replacement, "\(row.fileUUID)")
             count += 1
         }
         

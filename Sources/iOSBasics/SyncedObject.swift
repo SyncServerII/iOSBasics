@@ -4,12 +4,17 @@ import ServerShared
 public enum Persistence {
     case copy
     case immutable
+    
+    var isCopy: Bool {
+        return self == .copy
+    }
 }
 
 public struct File: Hashable {
     let uuid: UUID
     let url: URL
     let mimeType: MimeType
+    let appMetaData: String?
     let persistence: Persistence
     
     public func hash(into hasher: inout Hasher) {
@@ -30,14 +35,14 @@ Representations in terms of a set of files are selected both in terms of the nee
 */
 
 public protocol SyncedObject {
+    // An id for this SyncedObject. This is required because we're organizing SyncObject's around these UUID's
+    var fileGroupUUID: UUID { get }
+    
     // The type of object that this collection of files is representing.
     var objectType: String { get }
 
     // An id for the group of users that have access to this SyncedObject
     var sharingGroup: UUID { get }
-    
-    // An id for this SyncedObject (maps to a fileGroupUUID on the server)
-    var objectUUID: UUID { get }
     
     // The collection of files that represent this SyncedObject
     var files: Set<File> { get }

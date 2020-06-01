@@ -15,8 +15,9 @@ import SQLite
 
 class ServerAPITests: XCTestCase, APITests, ServerBasics, Dropbox {
     var credentials: GenericCredentials!
+    let dropboxHasher = DropboxHashing()
+    let hashingManager = HashingManager()
     var api:ServerAPI!
-    let hashing: CloudStorageHashing = DropboxHashing()
     let deviceUUID = UUID()
     var database: Connection!
     let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: baseURL(), minimumServerVersion: nil, packageTests: true)
@@ -26,7 +27,8 @@ class ServerAPITests: XCTestCase, APITests, ServerBasics, Dropbox {
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
         credentials = try setupDropboxCredentials()
-        api = ServerAPI(database: database, delegate: self, config: config)
+        try hashingManager.add(hashing: dropboxHasher)
+        api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
         try NetworkCache.createTable(db: database)
     }
 
@@ -111,6 +113,7 @@ class ServerAPITests: XCTestCase, APITests, ServerBasics, Dropbox {
         let thisDirectory = TestingFile.directoryOfFile(#file)
         let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
+        let hashing = try hashingManager.hashFor(cloudStorageType: .Dropbox)
         let checkSum = try hashing.hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),

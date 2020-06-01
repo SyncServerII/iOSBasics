@@ -10,7 +10,7 @@ class NetworkCacheTests: XCTestCase {
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID().uuidString, fileVersion: 1, transfer: nil, appMetaDataVersion: 56)
+        entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID(), fileVersion: 1, transfer: nil, appMetaDataVersion: 56)
     }
 
     override func tearDownWithError() throws {
@@ -163,7 +163,7 @@ class NetworkCacheTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different primary key.
-        let entry2 = try NetworkCache(db: database, taskIdentifier: taskIdentifier + 1, fileUUID: UUID().uuidString, fileVersion: 1, transfer: nil)
+        let entry2 = try NetworkCache(db: database, taskIdentifier: taskIdentifier + 1, fileUUID: UUID(), fileVersion: 1, transfer: nil)
 
         try entry2.insert()
 
@@ -179,7 +179,7 @@ class NetworkCacheTests: XCTestCase {
         try NetworkCache.createTable(db: database)
         try entry.insert()
                 
-        let replacement = "foo"
+        let replacement = UUID()
         
         entry = try entry.update(setters:
             NetworkCache.fileUUIDField.description <- replacement
@@ -188,7 +188,7 @@ class NetworkCacheTests: XCTestCase {
         var count = 0
         try NetworkCache.fetch(db: database,
             where: replacement == NetworkCache.fileUUIDField.description) { row in
-            XCTAssert(row.fileUUID == replacement, row.fileUUID)
+            XCTAssert(row.fileUUID == replacement, "\(row.fileUUID)")
             count += 1
         }
         
@@ -208,7 +208,7 @@ class NetworkCacheTests: XCTestCase {
     func testSavingNilURL() throws {
         try NetworkCache.createTable(db: database)
 
-        let entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID().uuidString, fileVersion: 1,transfer: nil)
+        let entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID(), fileVersion: 1,transfer: nil)
         try entry.insert()
 
         var count = 0

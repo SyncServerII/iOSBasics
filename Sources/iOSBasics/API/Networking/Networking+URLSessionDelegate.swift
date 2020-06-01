@@ -22,7 +22,7 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
             return
         }
         
-        let downloadFile = FilenamingWithAppMetaDataVersion(fileUUID: cache.fileUUID, fileVersion: cache.fileVersion, appMetaDataVersion: cache.appMetaDataVersion)
+        let downloadFile = FilenamingWithAppMetaDataVersion(fileUUID: cache.fileUUID.uuidString, fileVersion: cache.fileVersion, appMetaDataVersion: cache.appMetaDataVersion)
 
         if response == nil {
             try? cache.delete()
@@ -73,8 +73,8 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
             return
         }
         
-        let file = FileObject(fileUUID: cache.fileUUID, fileVersion: cache.fileVersion)
-        let downloadFile = FilenamingWithAppMetaDataVersion(fileUUID: cache.fileUUID, fileVersion: cache.fileVersion, appMetaDataVersion: cache.appMetaDataVersion)
+        let file = FileObject(fileUUID: cache.fileUUID.uuidString, fileVersion: cache.fileVersion)
+        let downloadFile = FilenamingWithAppMetaDataVersion(fileUUID: cache.fileUUID.uuidString, fileVersion: cache.fileVersion, appMetaDataVersion: cache.appMetaDataVersion)
 
         if response == nil {
             try? cache.delete()

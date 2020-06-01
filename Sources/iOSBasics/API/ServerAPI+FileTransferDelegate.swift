@@ -64,10 +64,11 @@ extension ServerAPI: FileTransferDelegate {
                 delegate.downloadCompleted(self, result: .failure(ServerAPIError.resultURLObtainedWasNil))
                 return
             }
-            
+
             let hash: String
             do {
-                hash = try self.delegate.currentHasher(self).hash(forURL: url)
+                let hasher = try self.delegate.hasher(self, forCloudStorageType: cloudStorageType)
+                hash = try hasher.hash(forURL: url)
             } catch (let error) {
                 delegate.downloadCompleted(self, result: .failure(error))
                 return

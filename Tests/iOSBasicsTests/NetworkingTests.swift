@@ -84,7 +84,7 @@ extension NetworkingTests: ServerAPIDelegate {
         assert(false)
     }
     
-    func currentHasher(_ api: AnyObject) -> CloudStorageHashing {
+    func hasher(_ api: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing {
         return hashing
     }
     

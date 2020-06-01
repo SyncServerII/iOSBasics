@@ -115,7 +115,7 @@ class NetworkCache: DatabaseModel {
     var taskIdentifier: Int
     
     static let fileUUIDField = Field("fileUUID", \M.fileUUID)
-    var fileUUID: String
+    var fileUUID: UUID
     
     static let fileVersionField = Field("fileVersion", \M.fileVersion)
     var fileVersion: FileVersionInt
@@ -130,7 +130,7 @@ class NetworkCache: DatabaseModel {
     init(db: Connection,
         id: Int64! = nil,
         taskIdentifier: Int,
-        fileUUID: String,
+        fileUUID: UUID,
         fileVersion: FileVersionInt,
         transfer: NetworkTransfer?,
         appMetaDataVersion: AppMetaDataVersionInt? = nil) throws {

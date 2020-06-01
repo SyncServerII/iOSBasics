@@ -39,11 +39,13 @@ Even if we have to take some strong opinions about conflict resolution.
 If there is a collision, it will occur on the server. We need to be able to inform the client so it can update its records.
 
 ## Overall "master version" model-- this is constraining. 
-And could use a more general model.
-Some different possible levels:
-file
-file group-- do file groups have versions?
-sharing group-- which is where I think I have it right now-- I think each sharing group has a master version.
+
+I'm going to get rid of "master versions". The purpose behind this was to ensure that a client has the same snapshot of data downloaded whey they were uploading their data. This is very constraining, however. And it introduces possible race conditions, when particular files have a lot of server traffic-- from other clients.
+
+I'm going to keep file versions, but in a more limited manner. Clients will not be required to supply a file version when uploading. Nor when downloading. They will simply act on the current state of the data.
+Versioning will be used when downloading, however-- so that one version of a file can be downloading while the next version is being updated.
+
+I'm also going to remove appMetaData versioning. This seems excessive. Instead, I'm not going to allow changes to the appMetaData beyond that uploaded with v0 of a file. While there are currently methods that allow for appMetaData versioning, they are not being used by Neebla-- the only app using this system.
 	
 ## Permission model. Rethink.
 I'd like to have this more general. E.g., to be able to make one file completely public.

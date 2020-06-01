@@ -1,5 +1,6 @@
 import SQLite
 import Foundation
+import ServerShared
 
 // Extensions for SQLite support.
 
@@ -63,5 +64,75 @@ extension NetworkTransfer: Value {
     public var datatypeValue: Blob {
         let encoder = JSONEncoder()
         return try! encoder.encode(self).datatypeValue
+    }
+}
+
+extension UploadFileTracker.Status: Value {
+    public static var declaredDatatype: String {
+        return "TEXT"
+    }
+    
+    public static func fromDatatypeValue(_ value: String) -> UploadFileTracker.Status {
+        return UploadFileTracker.Status(rawValue: value)!
+    }
+    
+    public var datatypeValue: String {
+        return self.rawValue
+    }
+}
+
+extension UUID: Value {
+    public static var declaredDatatype: String {
+        return "TEXT"
+    }
+    
+    public static func fromDatatypeValue(_ value: String) -> UUID {
+        return UUID(uuidString: value)!
+    }
+    
+    public var datatypeValue: String {
+        return self.uuidString
+    }
+}
+
+extension MimeType: Value {
+    public static var declaredDatatype: String {
+        return "TEXT"
+    }
+    
+    public static func fromDatatypeValue(_ value: String) -> MimeType {
+        return MimeType(rawValue: value)!
+    }
+    
+    public var datatypeValue: String {
+        return self.rawValue
+    }
+}
+
+extension GoneReason: Value {
+    public static var declaredDatatype: String {
+        return "TEXT"
+    }
+    
+    public static func fromDatatypeValue(_ value: String) -> GoneReason {
+        return GoneReason(rawValue: value)!
+    }
+    
+    public var datatypeValue: String {
+        return self.rawValue
+    }
+}
+
+extension CloudStorageType: Value {
+    public static var declaredDatatype: String {
+        return "TEXT"
+    }
+    
+    public static func fromDatatypeValue(_ value: String) -> CloudStorageType {
+        return CloudStorageType(rawValue: value)!
+    }
+    
+    public var datatypeValue: String {
+        return self.rawValue
     }
 }

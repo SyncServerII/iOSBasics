@@ -12,7 +12,7 @@ import ServerShared
 
 class SharingEntryTests: XCTestCase {
     var database: Connection!
-    let uuid = UUID().uuidString
+    let uuid = UUID()
     var entry:SharingEntry!
     
     override func setUpWithError() throws {
@@ -79,7 +79,7 @@ class SharingEntryTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
-        let entry2 = try SharingEntry(db: database, masterVersion: 0, removedFromGroup: true, sharingGroupName: "Foobly", sharingGroupUUID: UUID().uuidString, syncNeeded: false)
+        let entry2 = try SharingEntry(db: database, masterVersion: 0, removedFromGroup: true, sharingGroupName: "Foobly", sharingGroupUUID: UUID(), syncNeeded: false)
 
         try entry2.insert()
 
@@ -95,7 +95,7 @@ class SharingEntryTests: XCTestCase {
         try SharingEntry.createTable(db: database)
         try entry.insert()
                 
-        let replacement = "foo"
+        let replacement = UUID()
         
         entry = try entry.update(setters:
             SharingEntry.sharingGroupUUIDField.description <- replacement
@@ -104,7 +104,7 @@ class SharingEntryTests: XCTestCase {
         var count = 0
         try SharingEntry.fetch(db: database,
             where: replacement == SharingEntry.sharingGroupUUIDField.description) { row in
-            XCTAssert(row.sharingGroupUUID == replacement, row.sharingGroupUUID)
+            XCTAssert(row.sharingGroupUUID == replacement, "\(row.sharingGroupUUID)")
             count += 1
         }
         

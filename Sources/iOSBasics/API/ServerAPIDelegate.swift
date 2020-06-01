@@ -23,7 +23,7 @@ protocol ServerAPIDelegate: AnyObject {
     // Methods for the ServerAPI to get information from its user/caller
     func credentialsForNetworkRequests(_ api: AnyObject) -> GenericCredentials
     func deviceUUID(_ api: AnyObject) -> UUID
-    func currentHasher(_ api: AnyObject) -> CloudStorageHashing
+    func hasher(_ api: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing
     
     // Methods for the ServerAPI to report results
     func uploadCompleted(_ api: AnyObject, result: Swift.Result<UploadFileResult, Error>)

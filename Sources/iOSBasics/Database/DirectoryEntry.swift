@@ -14,19 +14,19 @@ class DirectoryEntry: DatabaseModel {
     var id: Int64!
         
     static let fileUUIDField = Field("fileUUID", \M.fileUUID)
-    var fileUUID: String
+    var fileUUID: UUID
     
     static let mimeTypeField = Field("mimeType", \M.mimeType)
-    var mimeType: String
+    var mimeType: MimeType
     
     static let fileVersionField = Field("fileVersion", \M.fileVersion)
-    var fileVersion: Int64
+    var fileVersion: Int64?
     
     static let sharingGroupUUIDField = Field("sharingGroupUUID", \M.sharingGroupUUID)
-    var sharingGroupUUID: String
+    var sharingGroupUUID: UUID
 
     static let fileGroupUUIDField = Field("fileGroupUUID", \M.fileGroupUUID)
-    var fileGroupUUID: String?
+    var fileGroupUUID: UUID?
     
     static let appMetaDataField = Field("appMetaData", \M.appMetaData)
     var appMetaData: String?
@@ -35,7 +35,7 @@ class DirectoryEntry: DatabaseModel {
     var appMetaDataVersion: Int64?
 
     static let cloudStorageTypeField = Field("cloudStorageType", \M.cloudStorageType)
-    var cloudStorageType: String
+    var cloudStorageType: CloudStorageType
 
     static let deletedLocallyField = Field("deletedLocally", \M.deletedLocally)
     var deletedLocally: Bool
@@ -48,25 +48,21 @@ class DirectoryEntry: DatabaseModel {
     
     init(db: Connection,
         id: Int64! = nil,
-        fileUUID: String,
-        mimeType: String,
-        fileVersion: Int64,
-        sharingGroupUUID: String,
-        cloudStorageType: String,
+        fileUUID: UUID,
+        mimeType: MimeType,
+        fileVersion: Int64?,
+        sharingGroupUUID: UUID,
+        cloudStorageType: CloudStorageType,
         deletedLocally: Bool,
         deletedOnServer: Bool,
         appMetaData: String? = nil,
         appMetaDataVersion: Int64? = nil,
-        fileGroupUUID: String? = nil,
+        fileGroupUUID: UUID? = nil,
         goneReason: String? = nil) throws {
         
         guard let goneReasonString = goneReason,
             let _ = GoneReason(rawValue: goneReasonString) else {
             throw DirectoryEntryError.badGoneReason(goneReason!)
-        }
-        
-        guard let _ = CloudStorageType(rawValue: cloudStorageType) else {
-            throw DirectoryEntryError.badCloudStorageType(cloudStorageType)
         }
                 
         self.db = db

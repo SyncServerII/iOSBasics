@@ -107,6 +107,22 @@ extension DatabaseModel {
         return true
     }
     
+    // Returns the number of rows matching the `where` expression or in table if nil.
+    static func numberRows(db: Connection, `where`: Expression<Bool>? = nil) throws -> Int {
+       let query: Table
+        
+        if let `where` = `where` {
+            query = Self.table.filter(
+                `where`
+            )
+        }
+        else {
+            query = Self.table
+        }
+        
+        return try db.scalar(query.count)
+    }
+    
     static func fetch(db: Connection, withId id: Int64) throws -> Row {
         let query = Self.table.filter(
             id == rowid

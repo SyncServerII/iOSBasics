@@ -30,7 +30,7 @@ class BackgroundCacheTests: XCTestCase {
         }
         
         XCTAssert(result.fileVersion == file.fileVersion)
-        XCTAssert(result.fileUUID == file.fileUUID)
+        XCTAssert(result.fileUUID.uuidString == file.fileUUID)
         XCTAssert(result.taskIdentifier == taskIdentifier)
         
         guard case .upload(let body) = result.transfer, body == nil else {
@@ -50,7 +50,7 @@ class BackgroundCacheTests: XCTestCase {
         }
         
         XCTAssert(result.fileVersion == file.fileVersion)
-        XCTAssert(result.fileUUID == file.fileUUID)
+        XCTAssert(result.fileUUID.uuidString == file.fileUUID)
         XCTAssert(result.taskIdentifier == taskIdentifier)
         
         guard case .download(let url) = result.transfer, url == nil else {
@@ -109,7 +109,7 @@ class BackgroundCacheTests: XCTestCase {
         let result = try backgroundCache.lookupAndRemoveCache(file: file, download: true)
         XCTAssert(result == nil)
                 
-        let present = try NetworkCache.isRow(db: database, where: NetworkCache.fileUUIDField.description == file.fileUUID)
+        let present = try NetworkCache.isRow(db: database, where: NetworkCache.fileUUIDField.description == UUID(uuidString: file.fileUUID)!)
         XCTAssert(present)
     }
     
@@ -124,7 +124,7 @@ class BackgroundCacheTests: XCTestCase {
             return
         }
                 
-        let present = try NetworkCache.isRow(db: database, where: NetworkCache.fileUUIDField.description == file.fileUUID)
+        let present = try NetworkCache.isRow(db: database, where: NetworkCache.fileUUIDField.description == UUID(uuidString: file.fileUUID)!)
         XCTAssert(!present)
     }
     
@@ -139,7 +139,7 @@ class BackgroundCacheTests: XCTestCase {
         let result = try backgroundCache.lookupAndRemoveCache(file: file, download: false)
         XCTAssert(result == nil)
         
-        let present = try NetworkCache.isRow(db: database, where: NetworkCache.fileUUIDField.description == file.fileUUID)
+        let present = try NetworkCache.isRow(db: database, where: NetworkCache.fileUUIDField.description == UUID(uuidString: file.fileUUID)!)
         XCTAssert(present)
     }
     

@@ -27,7 +27,7 @@ class SharingEntry: DatabaseModel {
     var sharingGroupName: String?
 
     static let sharingGroupUUIDField = Field("sharingGroupUUID", \M.sharingGroupUUID)
-    var sharingGroupUUID: String
+    var sharingGroupUUID: UUID
 
     static let syncNeededField = Field("syncNeeded", \M.syncNeeded)
     var syncNeeded: Bool
@@ -41,7 +41,7 @@ class SharingEntry: DatabaseModel {
         permission: String? = nil,
         removedFromGroup: Bool,
         sharingGroupName: String?,
-        sharingGroupUUID: String,
+        sharingGroupUUID: UUID,
         syncNeeded: Bool,
         cloudStorageType:
         String? = nil) throws {

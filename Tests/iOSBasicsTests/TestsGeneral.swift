@@ -35,7 +35,7 @@ extension Dropbox {
 protocol APITests: ServerAPIDelegate {
     var deviceUUID:UUID { get }
     var credentials: GenericCredentials! { get set }
-    var hashing: CloudStorageHashing { get }
+    var hashingManager: HashingManager { get }
     var api:ServerAPI! { get }
     
     var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())? {set get}
@@ -191,8 +191,8 @@ extension APITests /* : ServerAPIDelegate */ {
         return deviceUUID
     }
     
-    func currentHasher(_ api: AnyObject) -> CloudStorageHashing {
-        return hashing
+    func hasher(_ api: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing {
+        return try hashingManager.hashFor(cloudStorageType: cloudStorageType)
     }
     
     func uploadCompleted(_ api: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
