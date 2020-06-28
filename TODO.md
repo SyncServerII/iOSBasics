@@ -40,3 +40,23 @@ Why does the gone reason come back in the body where the rest of the response re
 ## contentsChangedOnServer needs documentation in download.
 
 ## ServerResponseCheck.session.failover not in networking, along with ServerResponseCheck.session.minimumIOSClientVersion
+
+## Need the equivalent of "sign in using SyncServer Example client"-- to  get credentials for testing. See TestConfiguration.swift in the Server.
+
+## Server: Need to put something like this back in, for MockStorage:
+```
+extension Account {
+    var cloudStorage:CloudStorage? {
+#if DEBUG
+        if let loadTesting = Configuration.server.loadTestingCloudStorage, loadTesting {
+            return MockStorage()
+        }
+        else {
+            return self as? CloudStorage
+        }
+#else
+        return self as? CloudStorage
+#endif
+    }
+}
+```
