@@ -7,11 +7,11 @@ extension ServerAPI: FileTransferDelegate {
         assert(false)
     }
     
-    func downloadError(_ network: Any, file: FilenamingWithAppMetaDataVersion?, statusCode: Int?, error: Error?) {
+    func downloadError(_ network: Any, file: Filenaming?, statusCode: Int?, error: Error?) {
         assert(false)
     }
     
-    func downloadCompleted(_ network: Any, file: FilenamingWithAppMetaDataVersion, url: URL?, response: HTTPURLResponse?, _ statusCode: Int?) {
+    func downloadCompleted(_ network: Any, file: Filenaming, url: URL?, response: HTTPURLResponse?, _ statusCode: Int?) {
 
         if let resultError = self.checkForError(statusCode: statusCode, error: nil) {
             delegate.downloadCompleted(self, result: .failure(resultError))
@@ -34,11 +34,6 @@ extension ServerAPI: FileTransferDelegate {
         
         logger.info("Download response jsonDict: \(jsonDict)")
         
-        if let masterVersionUpdate = downloadFileResponse.masterVersionUpdate {
-            delegate.downloadCompleted(self, result: .success(DownloadFileResult.serverMasterVersionUpdate(masterVersionUpdate)))
-            return
-        }
-        
         guard let cloudStorageTypeRaw = downloadFileResponse.cloudStorageType,
             let cloudStorageType = CloudStorageType(rawValue: cloudStorageTypeRaw) else {
             delegate.downloadCompleted(self, result: .failure(ServerAPIError.couldNotGetCloudStorageType))
@@ -47,17 +42,21 @@ extension ServerAPI: FileTransferDelegate {
         
         var appMetaData:AppMetaData?
         
-        if let appMetaDataVersion = file.appMetaDataVersion,
-            let contents = downloadFileResponse.appMetaData  {
-            appMetaData = AppMetaData(version: appMetaDataVersion, contents: contents)
+        if let contents = downloadFileResponse.appMetaData {
+            appMetaData = AppMetaData(contents: contents)
         }
 
         if let goneRaw = downloadFileResponse.gone,
             let gone = GoneReason(rawValue: goneRaw) {
             let result = DownloadFileResult.gone(appMetaData: appMetaData, cloudStorageType: cloudStorageType, gone)
             delegate.downloadCompleted(self, result: .success(result))
+            return
         }
-        else if let checkSum = downloadFileResponse.checkSum,
+        
+        logger.debug("downloadFileResponse.checkSum: \(String(describing: downloadFileResponse.checkSum))")
+        logger.debug("downloadFileResponse.contentsChanged: \(String(describing: downloadFileResponse.contentsChanged))")
+        
+        if let checkSum = downloadFileResponse.checkSum,
             let contentsChanged = downloadFileResponse.contentsChanged {
 
             guard let url = url else {
@@ -114,14 +113,12 @@ extension ServerAPI: FileTransferDelegate {
                 return
             }
             
-            if let versionUpdate = uploadFileResponse.masterVersionUpdate {
-                let message = UploadFileResult.serverMasterVersionUpdate(versionUpdate)
-                logger.info("\(message)")
-                delegate.uploadCompleted(self, result: .success(message))
-                return
-            }
+            logger.debug("uploadFileResponse.creationDate: \(String(describing: uploadFileResponse.creationDate))")
+            logger.debug("uploadFileResponse.updateDate: \(String(describing: uploadFileResponse.updateDate))")
+           
+            let creationDate = uploadFileResponse.creationDate
             
-            guard let creationDate = uploadFileResponse.creationDate, let updateDate = uploadFileResponse.updateDate else {
+            guard let updateDate = uploadFileResponse.updateDate else {
                 delegate.uploadCompleted(self, result: .failure(ServerAPIError.noExpectedResultKey))
                 return
             }

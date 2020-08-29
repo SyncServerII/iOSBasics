@@ -118,25 +118,19 @@ class ServerAPITests: XCTestCase, APITests, ServerBasics, Dropbox {
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
-            let masterVersion = result.sharingGroups[0].masterVersion,
             let sharingGroupUUID = result.sharingGroups[0].sharingGroupUUID else {
             XCTFail()
             return
         }
         
-        let file = ServerAPI.File(localURL: fileURL, fileUUID: fileUUID.uuidString, fileGroupUUID: nil, sharingGroupUUID: sharingGroupUUID, mimeType: MimeType.text, deviceUUID: deviceUUID.uuidString, appMetaData: nil, fileVersion: 0, checkSum: checkSum)
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version: .v0(localURL: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: nil, appMetaData: nil))
         
-        guard case .success = uploadFile(file: file, masterVersion: masterVersion) else {
+        guard case .success = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
             return
         }
         
         guard let sharingGroupUuid = UUID(uuidString: sharingGroupUUID) else {
-            XCTFail()
-            return
-        }
-
-        guard case .success = commitUploads(masterVersion: masterVersion, sharingGroupUUID: sharingGroupUuid) else {
             XCTFail()
             return
         }
@@ -160,7 +154,6 @@ class ServerAPITests: XCTestCase, APITests, ServerBasics, Dropbox {
         XCTAssert(fileInfo.mimeType == MimeType.text.rawValue)
         XCTAssert(fileInfo.sharingGroupUUID == sharingGroupUUID)
         XCTAssert(fileInfo.deleted == false)
-        XCTAssert(fileInfo.appMetaDataVersion == nil)
         XCTAssert(fileInfo.fileVersion == 0)
         XCTAssert(fileInfo.cloudStorageType == "Dropbox")
         XCTAssert(fileInfo.owningUserId != nil)

@@ -22,7 +22,7 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
             return
         }
         
-        let downloadFile = FilenamingWithAppMetaDataVersion(fileUUID: cache.fileUUID.uuidString, fileVersion: cache.fileVersion, appMetaDataVersion: cache.appMetaDataVersion)
+        let downloadFile = FileObject(fileUUID: cache.fileUUID.uuidString, fileVersion: cache.fileVersion)
 
         if response == nil {
             try? cache.delete()
@@ -74,7 +74,6 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
         }
         
         let file = FileObject(fileUUID: cache.fileUUID.uuidString, fileVersion: cache.fileVersion)
-        let downloadFile = FilenamingWithAppMetaDataVersion(fileUUID: cache.fileUUID.uuidString, fileVersion: cache.fileVersion, appMetaDataVersion: cache.appMetaDataVersion)
 
         if response == nil {
             try? cache.delete()
@@ -84,7 +83,7 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
                 transferDelegate.uploadError(self, file: file, statusCode: response?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
                 
             case .some(.download):
-                transferDelegate.downloadError(self, file: downloadFile, statusCode: response?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
+                transferDelegate.downloadError(self, file: file, statusCode: response?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
                 
             case .none:
                 transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
@@ -104,10 +103,10 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
 
         case .some(.download(let url)):
             if let error = error {
-                transferDelegate.downloadError(self, file: downloadFile, statusCode: response?.statusCode, error: error)
+                transferDelegate.downloadError(self, file: file, statusCode: response?.statusCode, error: error)
             }
             else {
-                transferDelegate.downloadCompleted(self, file: downloadFile, url: url, response: response, response?.statusCode)
+                transferDelegate.downloadCompleted(self, file: file, url: url, response: response, response?.statusCode)
             }
 
         default:

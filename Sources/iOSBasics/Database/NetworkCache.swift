@@ -118,10 +118,7 @@ class NetworkCache: DatabaseModel {
     var fileUUID: UUID
     
     static let fileVersionField = Field("fileVersion", \M.fileVersion)
-    var fileVersion: FileVersionInt
-    
-    static let appMetaDataVersionField = Field("appMetaDataVersion", \M.appMetaDataVersion)
-    var appMetaDataVersion: AppMetaDataVersionInt?
+    var fileVersion: FileVersionInt?
     
     static let transferField = Field("transfer", \M.transfer)
     var transfer: NetworkTransfer?
@@ -131,9 +128,8 @@ class NetworkCache: DatabaseModel {
         id: Int64! = nil,
         taskIdentifier: Int,
         fileUUID: UUID,
-        fileVersion: FileVersionInt,
-        transfer: NetworkTransfer?,
-        appMetaDataVersion: AppMetaDataVersionInt? = nil) throws {
+        fileVersion: FileVersionInt? = nil,
+        transfer: NetworkTransfer?) throws {
                 
         self.db = db
         self.id = id
@@ -141,7 +137,6 @@ class NetworkCache: DatabaseModel {
         self.fileUUID = fileUUID
         self.fileVersion = fileVersion
         self.transfer = transfer
-        self.appMetaDataVersion = appMetaDataVersion
     }
     
     // MARK: DatabaseModel
@@ -153,7 +148,6 @@ class NetworkCache: DatabaseModel {
             t.column(fileUUIDField.description)
             t.column(fileVersionField.description)
             t.column(transferField.description)
-            t.column(appMetaDataVersionField.description)
         }
     }
     
@@ -163,8 +157,7 @@ class NetworkCache: DatabaseModel {
             taskIdentifier: row[Self.taskIdentifierField.description],
             fileUUID: row[Self.fileUUIDField.description],
             fileVersion: row[Self.fileVersionField.description],
-            transfer: row[Self.transferField.description],
-            appMetaDataVersion: row[Self.appMetaDataVersionField.description]
+            transfer: row[Self.transferField.description]
         )
     }
     
@@ -173,8 +166,7 @@ class NetworkCache: DatabaseModel {
             Self.taskIdentifierField.description <- taskIdentifier,
             Self.fileUUIDField.description <- fileUUID,
             Self.fileVersionField.description <- fileVersion,
-            Self.transferField.description <- transfer,
-            Self.appMetaDataVersionField.description <- appMetaDataVersion
+            Self.transferField.description <- transfer
         )
     }
 }

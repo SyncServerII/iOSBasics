@@ -10,7 +10,7 @@ class UploadFileTrackerTests: XCTestCase {
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try UploadFileTracker(db: database, status: .notStarted, sharingGroupUUID: sharingGroupUUID, appMetaData: "Foobly", appMetaDataVersion: 100, fileGroupUUID: UUID(), fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), mimeType: .text, goneReason: .userRemoved, uploadCopy: false, uploadUndeletion: true, checkSum: "Meebly")
+        entry = try UploadFileTracker(db: database, status: .notStarted, sharingGroupUUID: sharingGroupUUID, appMetaData: "Foobly", fileGroupUUID: UUID(), fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), mimeType: .text, goneReason: .userRemoved, uploadCopy: false, uploadUndeletion: true, checkSum: "Meebly")
     }
 
     override func tearDownWithError() throws {
@@ -21,7 +21,6 @@ class UploadFileTrackerTests: XCTestCase {
         XCTAssert(entry1.status == entry2.status)
         XCTAssert(entry1.sharingGroupUUID == entry2.sharingGroupUUID)
         XCTAssert(entry1.appMetaData == entry2.appMetaData)
-        XCTAssert(entry1.appMetaDataVersion == entry2.appMetaDataVersion)
         XCTAssert(entry1.fileGroupUUID == entry2.fileGroupUUID)
         XCTAssert(entry1.fileUUID == entry2.fileUUID)
         XCTAssert(entry1.fileVersion == entry2.fileVersion)
@@ -78,7 +77,7 @@ class UploadFileTrackerTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
-        let entry2 = try UploadFileTracker(db: database, status: .notStarted, sharingGroupUUID: sharingGroupUUID, appMetaData: "Foobly", appMetaDataVersion: 100, fileGroupUUID: UUID(), fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), mimeType: .text, goneReason: .userRemoved, uploadCopy: false, uploadUndeletion: true, checkSum: "Meebly")
+        let entry2 = try UploadFileTracker(db: database, status: .notStarted, sharingGroupUUID: sharingGroupUUID, appMetaData: "Foobly", fileGroupUUID: UUID(), fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), mimeType: .text, goneReason: .userRemoved, uploadCopy: false, uploadUndeletion: true, checkSum: "Meebly")
 
         try entry2.insert()
 

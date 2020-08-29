@@ -4,7 +4,9 @@ import iOSShared
 import ServerShared
 
 enum UploadFileResult {
-    case success(creationDate: Date, updateDate: Date)
+    // Creation date is only returned when you upload a new file.
+    case success(creationDate: Date?, updateDate: Date)
+    
     case serverMasterVersionUpdate(Int64)
     
     // The GoneReason should never be fileRemovedOrRenamed-- because a new upload would upload the next version, not accessing the current version.

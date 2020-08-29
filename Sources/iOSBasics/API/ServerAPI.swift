@@ -5,7 +5,7 @@ import Version
 import iOSShared
 import SQLite
 
-// Requests are handled in two ways: file uploads and downloads-- on a background URL session. Other requests on a regular (non-background) URLSession.
+// Server requests are handled in two ways: file uploads and downloads-- on a background URL session. Other requests on a regular (non-background) URLSession.
 
 class ServerAPI {
     enum ServerAPIError: Error {
@@ -22,6 +22,8 @@ class ServerAPI {
         case resultURLObtainedWasNil
         case couldNotComputeHash
         case networkingHashMismatch
+        case badUploadIndex
+        case badURLParameters
     }
     
     let networking: Networking
@@ -192,7 +194,6 @@ class ServerAPI {
         // This is nil if there are no files.
         let fileIndex: [FileInfo]?
         
-        let masterVersion: MasterVersionInt?
         let sharingGroups:[SharingGroup]
     }
     
@@ -218,7 +219,7 @@ class ServerAPI {
             }
             else if let response = response,
                 let indexResponse = try? IndexResponse.decode(response) {
-                let result = IndexResult(fileIndex: indexResponse.fileIndex, masterVersion: indexResponse.masterVersion, sharingGroups: indexResponse.sharingGroups)
+                let result = IndexResult(fileIndex: indexResponse.fileIndex, sharingGroups: indexResponse.sharingGroups)
                 completion?(.success(result))
             }
             else {

@@ -45,7 +45,7 @@ extension SyncServer {
         let hasher = try hashingManager.hashFor(cloudStorageType: cloudStorageType)
         let checkSum = try hasher.hash(forURL: file.url)
         
-        let uploadTracker = try UploadFileTracker(db: database, status: .notStarted, sharingGroupUUID: object.sharingGroup, appMetaData: file.appMetaData, appMetaDataVersion: nil, fileGroupUUID: object.fileGroupUUID, fileUUID: file.uuid, fileVersion: nil, localURL: file.url, mimeType: file.mimeType, goneReason: nil, uploadCopy: file.persistence.isCopy, uploadUndeletion: false, checkSum: checkSum)
+        let uploadTracker = try UploadFileTracker(db: database, status: .notStarted, sharingGroupUUID: object.sharingGroup, appMetaData: file.appMetaData, fileGroupUUID: object.fileGroupUUID, fileUUID: file.uuid, fileVersion: nil, localURL: file.url, mimeType: file.mimeType, goneReason: nil, uploadCopy: file.persistence.isCopy, uploadUndeletion: false, checkSum: checkSum)
         try uploadTracker.insert()
         
         return uploadTracker

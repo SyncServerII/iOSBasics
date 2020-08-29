@@ -25,9 +25,6 @@ class UploadFileTracker: DatabaseModel {
     static let appMetaDataField = Field("appMetaData", \M.appMetaData)
     var appMetaData: String?
 
-    static let appMetaDataVersionField = Field("appMetaDataVersion", \M.appMetaDataVersion)
-    var appMetaDataVersion: AppMetaDataVersionInt?
-
     static let fileGroupUUIDField = Field("fileGroupUUID", \M.fileGroupUUID)
     var fileGroupUUID: UUID
 
@@ -60,7 +57,6 @@ class UploadFileTracker: DatabaseModel {
         status: Status,
         sharingGroupUUID: UUID,
         appMetaData: String?,
-        appMetaDataVersion: AppMetaDataVersionInt?,
         fileGroupUUID: UUID,
         fileUUID: UUID,
         fileVersion: FileVersionInt?,
@@ -76,7 +72,6 @@ class UploadFileTracker: DatabaseModel {
         self.status = status
         self.sharingGroupUUID = sharingGroupUUID
         self.appMetaData = appMetaData
-        self.appMetaDataVersion = appMetaDataVersion
         self.fileGroupUUID = fileGroupUUID
         self.fileUUID = fileUUID
         self.fileVersion = fileVersion
@@ -96,7 +91,6 @@ class UploadFileTracker: DatabaseModel {
             t.column(statusField.description)
             t.column(sharingGroupUUIDField.description)
             t.column(appMetaDataField.description)
-            t.column(appMetaDataVersionField.description)
             t.column(fileGroupUUIDField.description)
             t.column(fileUUIDField.description)
             t.column(fileVersionField.description)
@@ -115,7 +109,6 @@ class UploadFileTracker: DatabaseModel {
             status: row[Self.statusField.description],
             sharingGroupUUID: row[Self.sharingGroupUUIDField.description],
             appMetaData: row[Self.appMetaDataField.description],
-            appMetaDataVersion: row[Self.appMetaDataVersionField.description],
             fileGroupUUID: row[Self.fileGroupUUIDField.description],
             fileUUID: row[Self.fileUUIDField.description],
             fileVersion: row[Self.fileVersionField.description],
@@ -133,7 +126,6 @@ class UploadFileTracker: DatabaseModel {
             Self.statusField.description <- status,
             Self.sharingGroupUUIDField.description <- sharingGroupUUID,
             Self.appMetaDataField.description <- appMetaData,
-            Self.appMetaDataVersionField.description <- appMetaDataVersion,
             Self.fileGroupUUIDField.description <- fileGroupUUID,
             Self.fileUUIDField.description <- fileUUID,
             Self.fileVersionField.description <- fileVersion,

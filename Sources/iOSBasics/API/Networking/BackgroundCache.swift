@@ -17,14 +17,14 @@ class BackgroundCache {
         self.database = database
     }
     
-    func initializeUploadCache(file:Filenaming, taskIdentifer: Int) throws {
-        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: UUID(uuidString: file.fileUUID)!, fileVersion: file.fileVersion, transfer: .upload(nil))
+    func initializeUploadCache(fileUUID:String, taskIdentifer: Int) throws {
+        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: UUID(uuidString: fileUUID)!, transfer: .upload(nil))
         try cache.insert()
     }
     
-    func initializeDownloadCache(file:FilenamingWithAppMetaDataVersion,
+    func initializeDownloadCache(file:Filenaming,
         taskIdentifer: Int) throws {
-        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: UUID(uuidString: file.fileUUID)!, fileVersion: file.fileVersion, transfer: .download(nil), appMetaDataVersion: file.appMetaDataVersion)
+        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: UUID(uuidString: file.fileUUID)!, fileVersion: file.fileVersion, transfer: .download(nil))
         try cache.insert()
     }
     
@@ -72,10 +72,17 @@ class BackgroundCache {
     
     // If the NetworkCache object is returned, it has been removed from the database.
     func lookupAndRemoveCache(file:Filenaming, download: Bool) throws -> NetworkCache? {
-        guard let cache = try NetworkCache.fetchSingleRow(db: database, where: UUID(uuidString: file.fileUUID)! == NetworkCache.fileUUIDField.description &&
-            file.fileVersion == NetworkCache.fileVersionField.description) else {
-            throw BackgroundCacheError.couldNotLookup
+        let caches = try NetworkCache.fetch(db: database, where: UUID(uuidString: file.fileUUID)! == NetworkCache.fileUUIDField.description)
+            .filter {$0.fileVersion == file.fileVersion}
+        if caches.count == 0 {
+            return nil
         }
+        
+        guard caches.count == 1 else {
+            throw NetworkingError.moreThanOneNetworkCache
+        }
+        
+        let cache = caches[0]
         
         guard let transfer = cache.transfer else {
             logger.warning("transfer field of cache was nil")

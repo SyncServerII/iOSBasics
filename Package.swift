@@ -21,6 +21,8 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/crspybits/FileMD5Hash.git", .branch("master")),
 
+        .package(url: "https://github.com/SyncServerII/ChangeResolvers.git", .branch("master")),
+
         .package(path: "../iOSShared"),
         //.package(url: "https://github.com/SyncServerII/iOSShared.git", .branch("master")),
         
@@ -45,13 +47,15 @@ let package = Package(
         .target(
             name: "iOSBasics",
             dependencies: [
-                "iOSShared", "ServerShared", "iOSSignIn", "Version", "FileMD5Hash",
+                "ServerShared",
+                "iOSShared", "iOSSignIn", "Version", "FileMD5Hash", "ChangeResolvers",
                 .product(name: "SQLite", package: "SQLite.swift")
             ]),
         .testTarget(
             name: "iOSBasicsTests",
             dependencies: [
-                "iOSBasics", "iOSShared", "ServerShared", "iOSSignIn", "Version", "iOSDropbox",
+                "iOSBasics", "iOSShared", "iOSSignIn", "Version", "iOSDropbox",
+                "ChangeResolvers",
                 .product(name: "SQLite", package: "SQLite.swift")
             ]),
     ]

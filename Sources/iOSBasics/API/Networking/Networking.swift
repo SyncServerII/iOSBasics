@@ -12,11 +12,6 @@ import iOSShared
 import Version
 import SQLite
 
-struct FileObject: Filenaming {
-    let fileUUID: String!
-    let fileVersion: FileVersionInt!
-}
-
 enum NetworkingError: Error {
     case couldNotGetHTTPURLResponse
     case jsonSerializationError(Error)
@@ -28,9 +23,10 @@ enum NetworkingError: Error {
     case noDownloadResponse
     case noDownloadURL
     case unexpectedTransferType
+    case moreThanOneNetworkCache
 }
 
-// NSOBject inheritance needed for URLSessionDelegate conformance.
+// NSObject inheritance needed for URLSessionDelegate conformance.
 class Networking: NSObject {
     weak var delegate: ServerAPIDelegate!
     weak var transferDelegate: FileTransferDelegate!
@@ -240,26 +236,36 @@ class Networking: NSObject {
         return true
     }
     
-    private func uploadFile(file localFileURL: URL, to serverURL: URL, method: ServerHTTPMethod) -> URLSessionUploadTask {
+    enum UploadFileDataSource {
+        case localFile(URL)
+        case data(Data)
+    }
     
-        // It appears that `session.uploadTask` has a problem with relative URL's. I get "NSURLErrorDomain Code=-1 "unknown error" if I pass one of these. Make sure the URL is not relative.
-        let uploadFilePath = localFileURL.path
-        let nonRelativeUploadURL = URL(fileURLWithPath: uploadFilePath)
-        
+    private func uploadFile(fileDataSource: UploadFileDataSource, to serverURL: URL, method: ServerHTTPMethod) -> URLSessionUploadTask {
+
         var request = URLRequest(url: serverURL)
         request.httpMethod = method.rawValue.uppercased()
         request.allHTTPHeaderFields = headerAuthentication()
         
-        return backgroundSession.uploadTask(with: request, fromFile: nonRelativeUploadURL)
+        switch fileDataSource {
+        case .data(let data):
+            return backgroundSession.uploadTask(with: request, from: data)
+        
+        case .localFile(let url):
+            // It appears that `session.uploadTask` has a problem with relative URL's. I get "NSURLErrorDomain Code=-1 "unknown error" if I pass one of these. Make sure the URL is not relative.
+            let uploadFilePath = url.path
+            let nonRelativeUploadURL = URL(fileURLWithPath: uploadFilePath)
+            return backgroundSession.uploadTask(with: request, fromFile: nonRelativeUploadURL)
+        }
     }
     
     // The return value just indicates if the upload could be started, not whether the upload completed. The transferDelegate is used for further indications if the return result is nil.
-    func upload(file:Filenaming, fromLocalURL localURL: URL, toServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
+    func upload(fileUUID:String, from uploadDataSource:UploadFileDataSource, toServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
     
-        let task = uploadFile(file: localURL, to: serverURL, method: method)
+        let task = uploadFile(fileDataSource: uploadDataSource, to: serverURL, method: method)
 
         do {
-            try backgroundCache.initializeUploadCache(file: file, taskIdentifer: task.taskIdentifier)
+            try backgroundCache.initializeUploadCache(fileUUID: fileUUID, taskIdentifer: task.taskIdentifier)
         } catch let error {
             task.cancel()
             delegate.uploadCompleted(self, result: .failure(error))
@@ -279,7 +285,7 @@ class Networking: NSObject {
         return backgroundSession.downloadTask(with: request)
     }
     
-    func download(file:FilenamingWithAppMetaDataVersion, fromServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
+    func download(file:Filenaming, fromServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
     
         let task = downloadFrom(serverURL, method: method)
         

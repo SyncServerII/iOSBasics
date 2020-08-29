@@ -120,7 +120,7 @@ extension APITests where Self: XCTestCase {
         return returnResult
     }
     
-    func uploadFile(file: ServerAPI.File, masterVersion:MasterVersionInt) -> Swift.Result<UploadFileResult, Error>? {
+    func uploadFile(file: ServerAPI.File, uploadIndex: Int32, uploadCount: Int32) -> Swift.Result<UploadFileResult, Error>? {
         var returnResult:Swift.Result<UploadFileResult, Error>?
         
         let exp = expectation(description: "exp")
@@ -133,7 +133,7 @@ extension APITests where Self: XCTestCase {
         
         self.uploadCompletedHandler = uploadCompletedHandler
 
-        let result = api.uploadFile(file: file, serverMasterVersion: masterVersion)
+        let result = api.uploadFile(file: file, uploadIndex: uploadIndex, uploadCount: uploadCount)
         XCTAssert(result == nil)
         
         waitForExpectations(timeout: 10, handler: nil)
@@ -141,24 +141,7 @@ extension APITests where Self: XCTestCase {
         return returnResult
     }
     
-    func commitUploads(masterVersion: MasterVersionInt, sharingGroupUUID: UUID, options: ServerAPI.CommitUploadsOptions? = nil) -> ServerAPI.CommitUploadsResult? {
-        var returnResult:ServerAPI.CommitUploadsResult?
-        
-        let exp = expectation(description: "exp")
-
-        api.commitUploads(serverMasterVersion: masterVersion, sharingGroupUUID: sharingGroupUUID, options: options) { result, error in
-            if error == nil {
-                returnResult = result
-            }
-            exp.fulfill()
-        }
-        
-        waitForExpectations(timeout: 10, handler: nil)
-        
-        return returnResult
-    }
-    
-    func downloadFile(fileUUID: String, fileVersion: Int32, serverMasterVersion: MasterVersionInt, sharingGroupUUID: String, appMetaDataVersion: AppMetaDataVersionInt?) -> Swift.Result<DownloadFileResult, Error>? {
+    func downloadFile(fileUUID: String, fileVersion: Int32, sharingGroupUUID: String) -> Swift.Result<DownloadFileResult, Error>? {
         
         var returnResult:Swift.Result<DownloadFileResult, Error>?
         let exp = expectation(description: "exp")
@@ -171,9 +154,9 @@ extension APITests where Self: XCTestCase {
         
         self.downloadCompletedHandler = downloadCompletedHandler
 
-        let file = FilenamingWithAppMetaDataVersion(fileUUID: fileUUID, fileVersion: fileVersion, appMetaDataVersion: appMetaDataVersion)
+        let file = FileObject(fileUUID: fileUUID, fileVersion: fileVersion)
         
-        let result = api.downloadFile(file: file, serverMasterVersion: serverMasterVersion, sharingGroupUUID: sharingGroupUUID)
+        let result = api.downloadFile(file: file, sharingGroupUUID: sharingGroupUUID)
         XCTAssert(result == nil)
         
         waitForExpectations(timeout: 10, handler: nil)

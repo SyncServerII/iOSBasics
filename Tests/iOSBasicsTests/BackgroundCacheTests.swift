@@ -21,7 +21,7 @@ class BackgroundCacheTests: XCTestCase {
 
     func testInitializeUploadCache() throws {
         let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
-        try backgroundCache.initializeUploadCache(file: file, taskIdentifer: taskIdentifier)
+        try backgroundCache.initializeUploadCache(fileUUID: file.fileUUID, taskIdentifer: taskIdentifier)
         
         guard let result = try NetworkCache.fetchSingleRow(db: database, where:
             taskIdentifier == NetworkCache.taskIdentifierField.description) else {
@@ -40,7 +40,7 @@ class BackgroundCacheTests: XCTestCase {
     }
     
     func testInitializeDownloadCache() throws {
-        let file = FilenamingWithAppMetaDataVersion(fileUUID: UUID().uuidString, fileVersion: 1, appMetaDataVersion: nil)
+        let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
         try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: taskIdentifier)
         
         guard let result = try NetworkCache.fetchSingleRow(db: database, where:
@@ -60,7 +60,7 @@ class BackgroundCacheTests: XCTestCase {
     }
     
     func testCacheResultWithURL() throws {
-        let file = FilenamingWithAppMetaDataVersion(fileUUID: UUID().uuidString, fileVersion: 1, appMetaDataVersion: nil)
+        let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
         try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: taskIdentifier)
         
         let url = URL(fileURLWithPath: "foobly")
@@ -86,7 +86,7 @@ class BackgroundCacheTests: XCTestCase {
     }
     
     func testLookupAndRemoveCacheWithDownloadCachePresent() throws {
-        let file = FilenamingWithAppMetaDataVersion(fileUUID: UUID().uuidString, fileVersion: 1, appMetaDataVersion: nil)
+        let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
         try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: taskIdentifier)
         
         let url = URL(fileURLWithPath: "foobly")
@@ -104,7 +104,7 @@ class BackgroundCacheTests: XCTestCase {
     
     func testLookupAndRemoveCacheWithDownloadCacheAbsent() throws {
         let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
-        try backgroundCache.initializeUploadCache(file: file, taskIdentifer: taskIdentifier)
+        try backgroundCache.initializeUploadCache(fileUUID: file.fileUUID, taskIdentifer: taskIdentifier)
                 
         let result = try backgroundCache.lookupAndRemoveCache(file: file, download: true)
         XCTAssert(result == nil)
@@ -115,7 +115,7 @@ class BackgroundCacheTests: XCTestCase {
     
     func testLookupAndRemoveCacheWithUploadCachePresent() throws {
         let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
-        try backgroundCache.initializeUploadCache(file: file, taskIdentifer: taskIdentifier)
+        try backgroundCache.initializeUploadCache(fileUUID: file.fileUUID, taskIdentifer: taskIdentifier)
                 
         try backgroundCache.cacheUploadResult(taskIdentifer: taskIdentifier, uploadBody: ["Foo": "bar"])
         
@@ -129,7 +129,7 @@ class BackgroundCacheTests: XCTestCase {
     }
     
     func testLookupAndRemoveCacheWithUploadCacheAbsent() throws {
-        let file = FilenamingWithAppMetaDataVersion(fileUUID: UUID().uuidString, fileVersion: 1, appMetaDataVersion: nil)
+        let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
         try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: taskIdentifier)
         
         let url = URL(fileURLWithPath: "foobly")
@@ -145,7 +145,7 @@ class BackgroundCacheTests: XCTestCase {
     
     func testRemoveCache() throws {
         let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
-        try backgroundCache.initializeUploadCache(file: file, taskIdentifer: taskIdentifier)
+        try backgroundCache.initializeUploadCache(fileUUID: file.fileUUID, taskIdentifer: taskIdentifier)
         
         try backgroundCache.removeCache(taskIdentifer: taskIdentifier)
     }

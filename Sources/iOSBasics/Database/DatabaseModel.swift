@@ -80,6 +80,27 @@ extension DatabaseModel {
         }
     }
     
+    static func fetch(db: Connection, `where`: Expression<Bool>? = nil) throws -> [M] {
+        let query: QueryType
+        
+        if let `where` = `where` {
+            query = Self.table.filter(
+                `where`
+            )
+        }
+        else {
+            query = Self.table
+        }
+        
+        var result = [M]()
+        for row in try db.prepare(query) {
+            let model = try rowToModel(db: db, row: row)
+            result += [model]
+        }
+        
+        return result
+    }
+    
     // There must be 0 or 1 rows in the expected result.
     static func fetchSingleRow(db: Connection, `where`: Expression<Bool>) throws -> M? {
         var count = 0

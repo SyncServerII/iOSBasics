@@ -13,7 +13,7 @@ import iOSShared
 import iOSDropbox
 import SQLite
 
-class ServerAPI_Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
+class ServerAPI_v0Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
     var credentials: GenericCredentials!
     var api:ServerAPI!
     let deviceUUID = UUID()
@@ -45,7 +45,10 @@ class ServerAPI_Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
     func fileUpload(upload: FileUpload = .normal) throws {
         // Get ready for test.
         removeDropboxUser()
-        XCTAssert(addDropboxUser())
+        guard addDropboxUser() else {
+            XCTFail()
+            return
+        }
         
         let fileUUID = UUID()
 
@@ -56,7 +59,6 @@ class ServerAPI_Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
-            let masterVersion = result.sharingGroups[0].masterVersion,
             let sharingGroupUUID = result.sharingGroups[0].sharingGroupUUID else {
             XCTFail()
             return
@@ -70,9 +72,9 @@ class ServerAPI_Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
             appMetaData = data
         }
         
-        let file = ServerAPI.File(localURL: fileURL, fileUUID: fileUUID.uuidString, fileGroupUUID: nil, sharingGroupUUID: sharingGroupUUID, mimeType: MimeType.text, deviceUUID: deviceUUID.uuidString, appMetaData: appMetaData, fileVersion: 0, checkSum: checkSum)
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version: .v0(localURL: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: nil, appMetaData: appMetaData))
         
-        guard let uploadResult = uploadFile(file: file, masterVersion: masterVersion) else {
+        guard let uploadResult = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
             return
         }
@@ -92,53 +94,12 @@ class ServerAPI_Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
     }
     
     func testFileUploadWithAppMetaData() throws {
-        let appMetaData = AppMetaData(version: 0, contents: "foobly")
+        let appMetaData = AppMetaData(contents: "foobly")
         try fileUpload(upload: .appMetaData(appMetaData))
-    }
-    
-    func testFileUploadWithCommit() throws {
-        // Get ready for test.
-        removeDropboxUser()
-        XCTAssert(addDropboxUser())
-        
-        let fileUUID = UUID()
-
-        let thisDirectory = TestingFile.directoryOfFile(#file)
-        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
-        
-        let checkSum = try dropboxHashing.hash(forURL: fileURL)
-        
-        guard let result = getIndex(sharingGroupUUID: nil),
-            result.sharingGroups.count > 0,
-            let masterVersion = result.sharingGroups[0].masterVersion,
-            let sharingGroupUUID = result.sharingGroups[0].sharingGroupUUID else {
-            XCTFail()
-            return
-        }
-        
-        let file = ServerAPI.File(localURL: fileURL, fileUUID: fileUUID.uuidString, fileGroupUUID: nil, sharingGroupUUID: sharingGroupUUID, mimeType: MimeType.text, deviceUUID: deviceUUID.uuidString, appMetaData: nil, fileVersion: 0, checkSum: checkSum)
-        
-        guard case .success = uploadFile(file: file, masterVersion: masterVersion) else {
-            XCTFail()
-            return
-        }
-        
-        guard let uuid = UUID(uuidString: sharingGroupUUID) else {
-            XCTFail()
-            return
-        }
-
-        guard case .success = commitUploads(masterVersion: masterVersion, sharingGroupUUID: uuid) else {
-            XCTFail()
-            return
-        }
-        
-        XCTAssert(removeDropboxUser())
     }
     
     // The parameters are set only for failure testing.
     func downloadFile(downloadFileVersion:FileVersionInt? = nil,
-        downloadMasterVersion: MasterVersionInt? = nil,
         expectedFailure: Bool = false) throws {
         
         // Get ready for test.
@@ -154,56 +115,26 @@ class ServerAPI_Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
-            let masterVersion = result.sharingGroups[0].masterVersion,
             let sharingGroupUUID = result.sharingGroups[0].sharingGroupUUID else {
             XCTFail()
             return
         }
+                
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version: .v0(localURL: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: nil, appMetaData: nil))
         
-        let fileVersion:FileVersionInt = 0
-        
-        let file = ServerAPI.File(localURL: fileURL, fileUUID: fileUUID.uuidString, fileGroupUUID: nil, sharingGroupUUID: sharingGroupUUID, mimeType: MimeType.text, deviceUUID: deviceUUID.uuidString, appMetaData: nil, fileVersion: fileVersion, checkSum: checkSum)
-        
-        guard case .success = uploadFile(file: file, masterVersion: masterVersion) else {
+        guard case .success = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
             return
         }
         
-        guard let uuid = UUID(uuidString: sharingGroupUUID) else {
-            XCTFail()
-            return
-        }
-
-        guard case .success = commitUploads(masterVersion: masterVersion, sharingGroupUUID: uuid) else {
-            XCTFail()
-            return
-        }
+        let finalFileVersion = downloadFileVersion ?? 0
         
-        let finalFileVersion = downloadFileVersion ?? fileVersion
-        let finalMasterVersion = downloadMasterVersion ?? masterVersion + 1
-        
-        let download = downloadFile(fileUUID: fileUUID.uuidString, fileVersion: finalFileVersion, serverMasterVersion: finalMasterVersion, sharingGroupUUID: sharingGroupUUID, appMetaDataVersion: nil)
+        let download = downloadFile(fileUUID: fileUUID.uuidString, fileVersion: finalFileVersion, sharingGroupUUID: sharingGroupUUID)
         
         if expectedFailure {
-            if let _ = downloadMasterVersion {
-                guard case .success(let downloadResult) = download else {
-                    XCTFail()
-                    return
-                }
-                
-                switch downloadResult {
-                case .serverMasterVersionUpdate:
-                    break
-                    
-                default:
-                    XCTFail()
-                }
-            }
-            else {
-                guard case .failure = download else {
-                    XCTFail()
-                    return
-                }
+            guard case .failure = download else {
+                XCTFail()
+                return
             }
         }
         else {
@@ -238,9 +169,5 @@ class ServerAPI_Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
     
     func testDownloadFileFailsWithBadFileVersion() throws {
         try downloadFile(downloadFileVersion: 1, expectedFailure: true)
-    }
-    
-    func testDownloadFileFailsWithBadMasterVersion() throws {
-        try downloadFile(downloadMasterVersion: 0, expectedFailure: true)
     }
 }
