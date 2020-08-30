@@ -98,6 +98,61 @@ class ServerAPI_v0Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         try fileUpload(upload: .appMetaData(appMetaData))
     }
     
+    func testFileTwoUploadsInBatchWorks() throws {
+        // Get ready for test.
+        removeDropboxUser()
+        guard addDropboxUser() else {
+            XCTFail()
+            return
+        }
+        
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+        let fileGroupUUID = UUID()
+
+        let thisDirectory = TestingFile.directoryOfFile(#file)
+        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
+        
+        let checkSum = try dropboxHashing.hash(forURL: fileURL)
+        
+        guard let result = getIndex(sharingGroupUUID: nil),
+            result.sharingGroups.count > 0,
+            let sharingGroupUUID = result.sharingGroups[0].sharingGroupUUID else {
+            XCTFail()
+            return
+        }
+        
+        let file1 = ServerAPI.File(fileUUID: fileUUID1.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version: .v0(source: .url(fileURL), mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: fileGroupUUID.uuidString, appMetaData: nil))
+        
+        guard let uploadResult1 = uploadFile(file: file1, uploadIndex: 1, uploadCount: 2) else {
+            XCTFail()
+            return
+        }
+        
+        switch uploadResult1 {
+        case .success:
+            break
+        default:
+            XCTFail()
+        }
+        
+        let file2 = ServerAPI.File(fileUUID: fileUUID2.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version: .v0(source: .url(fileURL), mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: fileGroupUUID.uuidString, appMetaData: nil))
+        
+        guard let uploadResult2 = uploadFile(file: file2, uploadIndex: 2, uploadCount: 2) else {
+            XCTFail()
+            return
+        }
+        
+        switch uploadResult2 {
+        case .success:
+            break
+        default:
+            XCTFail("\(uploadResult2)")
+        }
+        
+        XCTAssert(removeDropboxUser())
+    }
+    
     // The parameters are set only for failure testing.
     func downloadFile(downloadFileVersion:FileVersionInt? = nil,
         expectedFailure: Bool = false) throws {

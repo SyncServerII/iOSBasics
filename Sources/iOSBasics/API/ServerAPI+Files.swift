@@ -2,7 +2,45 @@ import ServerShared
 import Foundation
 import iOSShared
 
-extension ServerAPI {
+extension ServerAPI {    
+    struct IndexResult {
+        // This is nil if there are no files.
+        let fileIndex: [FileInfo]?
+        
+        let sharingGroups:[SharingGroup]
+    }
+    
+    func index(sharingGroupUUID: UUID?, completion: @escaping (Swift.Result<IndexResult, Error>)->()) {
+        let endpoint = ServerEndpoints.index
+        
+        let indexRequest = IndexRequest()
+        indexRequest.sharingGroupUUID = sharingGroupUUID?.uuidString
+        
+        guard indexRequest.valid() else {
+            completion(.failure(ServerAPIError.couldNotCreateRequest))
+            return
+        }
+
+        let urlParameters = indexRequest.urlParameters()
+        let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: urlParameters)
+        
+        networking.sendRequestTo(serverURL, method: endpoint.method) { response,  httpStatus, error in
+            let resultError = self.checkForError(statusCode: httpStatus, error: error)
+            
+            if let resultError = resultError {
+                completion(.failure(resultError))
+            }
+            else if let response = response,
+                let indexResponse = try? IndexResponse.decode(response) {
+                let result = IndexResult(fileIndex: indexResponse.fileIndex, sharingGroups: indexResponse.sharingGroups)
+                completion(.success(result))
+            }
+            else {
+                completion(.failure(ServerAPIError.couldNotCreateResponse))
+            }
+        }
+    }
+    
     struct File {
         enum Version {
             enum Source {
