@@ -72,7 +72,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
             appMetaData = data
         }
         
-        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version: .v0(localURL: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: nil, appMetaData: appMetaData))
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version: .v0(source: .url(fileURL), mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: nil, appMetaData: appMetaData))
         
         guard let uploadResult = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
@@ -120,7 +120,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
             return
         }
                 
-        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version: .v0(localURL: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: nil, appMetaData: nil))
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version: .v0(source: .url(fileURL), mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: nil, appMetaData: nil))
         
         guard case .success = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()

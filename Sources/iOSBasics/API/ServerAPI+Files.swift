@@ -5,8 +5,12 @@ import iOSShared
 extension ServerAPI {
     struct File {
         enum Version {
+            enum Source {
+                case url(URL)
+                case data(Data)
+            }
             case v0(
-                localURL:URL,
+                source:Source,
                 mimeType:MimeType,
                 checkSum:String,
                 changeResolverName: String?,
@@ -26,6 +30,7 @@ extension ServerAPI {
         let version: Version
     }
 
+    // Upload results, if nil is returned, are reported via the ServerAPIDelegate.
     func uploadFile(file:File, uploadIndex: Int32, uploadCount: Int32) -> Error? {
         guard uploadIndex >= 1, uploadIndex <= uploadCount, uploadCount > 0 else {
             return ServerAPIError.badUploadIndex
@@ -42,17 +47,25 @@ extension ServerAPI {
         uploadRequest.uploadCount = uploadCount
         
         var url:URL!
+        var data: Data?
         
         switch file.version {
-        case .v0(localURL: let localURL, mimeType: let mimeType, checkSum: let checkSum, changeResolverName: let changeResolver, fileGroupUUID: let fileGroupUUID, appMetaData: let appMetaData):
-            url = localURL
+        case .v0(source: let source, mimeType: let mimeType, checkSum: let checkSum, changeResolverName: let changeResolver, fileGroupUUID: let fileGroupUUID, appMetaData: let appMetaData):
+        
+            switch source {
+            case .data(let d):
+                data = d
+            case .url(let u):
+                url = u
+            }
+            
             uploadRequest.checkSum = checkSum
             uploadRequest.fileGroupUUID = fileGroupUUID
             uploadRequest.mimeType = mimeType.rawValue
             uploadRequest.changeResolverName = changeResolver
             uploadRequest.appMetaData = appMetaData
-        case .vN:
-            break
+        case .vN(let d):
+            data = d
         }
 
         guard uploadRequest.valid() else {
@@ -69,11 +82,52 @@ extension ServerAPI {
         
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: parameters)
         
-        switch file.version {
-        case .v0:
-            return networking.upload(fileUUID: file.fileUUID, from: .localFile(url), toServerURL: serverURL, method: endpoint.method)
-        case .vN(change: let data):
+        if let data = data {
             return networking.upload(fileUUID: file.fileUUID, from: .data(data), toServerURL: serverURL, method: endpoint.method)
+        } else if let url = url {
+            return networking.upload(fileUUID: file.fileUUID, from: .localFile(url), toServerURL: serverURL, method: endpoint.method)
+        }
+        
+        return ServerAPIError.noExpectedResultKey
+    }
+    
+    func getUploadsResults(deferredUploadId: Int64, completion: @escaping (Result<DeferredUploadStatus?, Error>)->()) {
+
+        let endpoint = ServerEndpoints.getUploadsResults
+                
+        let request = GetUploadsResultsRequest()
+        request.deferredUploadId = deferredUploadId
+        
+        guard request.valid() else {
+            completion(.failure(ServerAPIError.couldNotCreateRequest))
+            return
+        }
+        
+        guard let parameters = request.urlParameters() else {
+            completion(.failure(ServerAPIError.couldNotCreateRequest))
+            return
+        }
+
+        let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: parameters)
+        
+        networking.sendRequestTo(serverURL, method: endpoint.method) { response, httpStatus, error in
+           
+            guard let response = response else {
+                completion(.failure(ServerAPIError.nilResponse))
+                return
+            }
+            
+            if let error = self.checkForError(statusCode: httpStatus, error: error) {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let messageResponse = try? GetUploadsResultsResponse.decode(response) else {
+                completion(.failure(ServerAPIError.couldNotCreateResponse))
+                return
+            }
+
+            completion(.success(messageResponse.status))
         }
     }
     
@@ -81,7 +135,8 @@ extension ServerAPI {
         case success(numberUploadsTransferred:Int64)
         case serverMasterVersionUpdate(Int64)
     }
-
+    
+    // Download results, if nil is returned, are reported via the ServerAPIDelegate.
     func downloadFile(file: Filenaming, sharingGroupUUID: String) -> Error? {
         let endpoint = ServerEndpoints.downloadFile
         

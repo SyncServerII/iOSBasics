@@ -122,8 +122,8 @@ extension ServerAPI: FileTransferDelegate {
                 delegate.uploadCompleted(self, result: .failure(ServerAPIError.noExpectedResultKey))
                 return
             }
-            
-            delegate.uploadCompleted(self, result: .success(UploadFileResult.success(creationDate: creationDate, updateDate: updateDate)))
+
+            delegate.uploadCompleted(self, result: .success(UploadFileResult.success(creationDate: creationDate, updateDate: updateDate, deferredUploadId: uploadFileResponse.deferredUploadId)))
         }
         else {
             delegate.uploadCompleted(self, result: .failure(ServerAPIError.couldNotObtainHeaderParameters))

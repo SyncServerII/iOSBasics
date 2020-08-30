@@ -38,9 +38,13 @@ class ServerAPITests: XCTestCase, APITests, ServerBasics, Dropbox {
     func testHealthCheck() throws {
         let exp = expectation(description: "exp")
 
-        api.healthCheck { response, error  in
-            XCTAssert(response?.currentServerDateTime != nil)
-            XCTAssert(error == nil)
+        api.healthCheck { result in
+            switch result {
+            case .success(let response):
+                XCTAssert(response.currentServerDateTime != nil)
+            case .failure:
+                XCTFail()
+            }
             exp.fulfill()
         }
         
@@ -123,7 +127,7 @@ class ServerAPITests: XCTestCase, APITests, ServerBasics, Dropbox {
             return
         }
         
-        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version: .v0(localURL: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: nil, appMetaData: nil))
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version: .v0(source: .url(fileURL), mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: nil, appMetaData: nil))
         
         guard case .success = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
@@ -158,6 +162,22 @@ class ServerAPITests: XCTestCase, APITests, ServerBasics, Dropbox {
         XCTAssert(fileInfo.cloudStorageType == "Dropbox")
         XCTAssert(fileInfo.owningUserId != nil)
                 
+        XCTAssert(removeDropboxUser())
+    }
+    
+    func testGetUploadsResultsGivesNilStatusWhenUnknownDeferredIdGiven() throws {
+        // Get ready for test.
+        removeDropboxUser()
+        XCTAssert(addDropboxUser())
+        
+        let result = getUploadsResults(deferredUploadId: 0)
+        guard case .success(let status) = result else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(status == nil)
+        
         XCTAssert(removeDropboxUser())
     }
 }

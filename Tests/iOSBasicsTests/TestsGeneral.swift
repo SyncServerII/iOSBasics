@@ -54,8 +54,13 @@ extension APITests where Self: XCTestCase {
         var success = true
         let uuid = UUID()
         
-        api.addUser(cloudFolderName: nil, sharingGroupUUID: uuid, sharingGroupName: nil) { userId, error in
-            success = userId != nil && error == nil
+        api.addUser(cloudFolderName: nil, sharingGroupUUID: uuid, sharingGroupName: nil) { result in
+            switch result {
+            case .success:
+                break
+            case .failure:
+                success = false
+            }
             exp.fulfill()
         }
         
@@ -86,9 +91,12 @@ extension APITests where Self: XCTestCase {
         let exp = expectation(description: "exp")
         var returnResult: ServerAPI.CheckCredsResult?
         
-        api.checkCreds(credentials) { result, error in
-            if error == nil {
+        api.checkCreds(credentials) { result in
+            switch result {
+            case .success(let result):
                 returnResult = result
+            case .failure:
+                break
             }
             exp.fulfill()
         }
@@ -162,6 +170,21 @@ extension APITests where Self: XCTestCase {
         waitForExpectations(timeout: 10, handler: nil)
         
         return returnResult
+    }
+    
+    func getUploadsResults(deferredUploadId: Int64) -> Result<DeferredUploadStatus?, Error> {
+        var theResult: Result<DeferredUploadStatus?, Error>!
+        
+        let exp = expectation(description: "exp")
+
+        api.getUploadsResults(deferredUploadId: deferredUploadId) { result in
+            logger.debug("getUploadsResults: \(result)")
+            theResult = result
+            exp.fulfill()
+        }
+        
+        waitForExpectations(timeout: 10, handler: nil)
+        return theResult
     }
 }
 

@@ -60,12 +60,11 @@ class ServerAPI_vNFiles_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         }
         
         let fileUUID = UUID()
-
-        let thisDirectory = TestingFile.directoryOfFile(#file)
-        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
-        let checkSum = try dropboxHashing.hash(forURL: fileURL)
-        
+        let commentFileString = "{\"elements\":[]}"
+        let commentFileData = commentFileString.data(using: .utf8)!
+        let dropboxCheckSum =  "3ffce28e9fc6181b1e52226cba61dbdbd13fc1b75decb770f075541b25010575"
+                
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
             let sharingGroupUUID = result.sharingGroups[0].sharingGroupUUID else {
@@ -76,7 +75,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         let changeResolverName = CommentFile.changeResolverName
 
         let file1 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version:
-            .v0(localURL: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: changeResolverName, fileGroupUUID: nil, appMetaData: nil)
+            .v0(source: .data(commentFileData), mimeType: MimeType.text, checkSum: dropboxCheckSum, changeResolverName: changeResolverName, fileGroupUUID: nil, appMetaData: nil)
         )
         
         guard let uploadResult1 = uploadFile(file: file1, uploadIndex: 1, uploadCount: 1) else {
@@ -88,7 +87,8 @@ class ServerAPI_vNFiles_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         case .success:
             break
         default:
-            XCTFail()
+            XCTFail("\(uploadResult1)")
+            return
         }
         
         let comment1 = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
@@ -102,11 +102,35 @@ class ServerAPI_vNFiles_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
             return
         }
         
+        var deferredUploadId: Int64!
+        
         switch uploadResult2 {
-        case .success:
-            break
+        case .success(let result):
+            guard case .success(creationDate: _, updateDate: _, deferredUploadId: let id) = result, let deferredId = id else {
+                XCTFail()
+                return
+            }
+            deferredUploadId = deferredId
+            
         default:
             XCTFail("\(uploadResult2)")
+        }
+        
+        if let deferredUploadId = deferredUploadId {
+            // Wait for a bit, before polling server to see if the upload is done.
+            let exp = expectation(description: "Deferred Upload")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                exp.fulfill()
+            }
+            waitForExpectations(timeout: 10, handler: nil)
+            
+            var status: DeferredUploadStatus?
+            let getUploadsResult = self.getUploadsResults(deferredUploadId: deferredUploadId)
+            if case .success(let s) = getUploadsResult {
+                status = s
+            }
+            
+            XCTAssert(status == .completed, "\(String(describing: status))")
         }
         
         XCTAssert(removeDropboxUser())

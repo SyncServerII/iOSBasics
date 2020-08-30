@@ -64,26 +64,24 @@ class ServerAPI {
     
     // MARK: Health check
 
-    func healthCheck(completion:((HealthCheckResponse?, Error?)->(Void))?) {
+    func healthCheck(completion: @escaping (Swift.Result<HealthCheckResponse, Error>)->(Void)) {
         let endpoint = ServerEndpoints.healthCheck
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL)
         
         networking.sendRequestTo(serverURL, method: endpoint.method) {
             response, httpStatus, error in
             
-            let resultError = self.checkForError(statusCode: httpStatus, error: error)
-            
-            if resultError == nil {
-                if let response = response,
-                    let healthCheckResponse = try? HealthCheckResponse.decode(response) {
-                    completion?(healthCheckResponse, nil)
-                }
-                else {
-                    completion?(nil, ServerAPIError.couldNotCreateResponse)
-                }
+            if let resultError = self.checkForError(statusCode: httpStatus, error: error) {
+                completion(.failure(resultError))
             }
             else {
-                completion?(nil, resultError)
+                if let response = response,
+                    let healthCheckResponse = try? HealthCheckResponse.decode(response) {
+                    completion(.success(healthCheckResponse))
+                }
+                else {
+                    completion(.failure(ServerAPIError.couldNotCreateResponse))
+                }
             }
         }
     }
@@ -92,7 +90,7 @@ class ServerAPI {
     
     // Adds the user specified by the creds property (or authenticationDelegate in ServerNetworking if that is nil).
     // If the type of owning user being added needs a cloud folder name, you must give it here (e.g., Google).
-    func addUser(cloudFolderName: String? = nil, sharingGroupUUID: UUID, sharingGroupName: String?, completion:((UserId?, Error?)->(Void))?) {
+    func addUser(cloudFolderName: String? = nil, sharingGroupUUID: UUID, sharingGroupName: String?, completion: @escaping (Swift.Result<UserId, Error>)->(Void)) {
     
         let endpoint = ServerEndpoints.addUser
                 
@@ -102,12 +100,12 @@ class ServerAPI {
         addUserRequest.sharingGroupUUID = sharingGroupUUID.uuidString
         
         guard addUserRequest.valid() else {
-            completion?(nil, ServerAPIError.couldNotCreateRequest)
+            completion(.failure(ServerAPIError.couldNotCreateRequest))
             return
         }
         
         guard let parameters = addUserRequest.urlParameters() else {
-            completion?(nil, ServerAPIError.couldNotCreateRequest)
+            completion(.failure(ServerAPIError.couldNotCreateRequest))
             return
         }
 
@@ -116,23 +114,22 @@ class ServerAPI {
         networking.sendRequestTo(serverURL, method: endpoint.method) { response, httpStatus, error in
            
             guard let response = response else {
-                completion?(nil, ServerAPIError.nilResponse)
+                completion(.failure(ServerAPIError.nilResponse))
                 return
             }
             
-            let error = self.checkForError(statusCode: httpStatus, error: error)
-
-            guard error == nil else {
-                completion?(nil, error)
+            if let error = self.checkForError(statusCode: httpStatus, error: error) {
+                completion(.failure(error))
                 return
             }
             
-            guard let checkCredsResponse = try? AddUserResponse.decode(response) else {
-                completion?(nil, ServerAPIError.badAddUser)
+            guard let checkCredsResponse = try? AddUserResponse.decode(response),
+                let userId = checkCredsResponse.userId else {
+                completion(.failure(ServerAPIError.badAddUser))
                 return
             }
             
-            completion?(checkCredsResponse.userId, nil)
+            completion(.success(userId))
         }
     }
     
@@ -141,7 +138,7 @@ class ServerAPI {
         case user(UserId, accessToken:String?)
     }
     
-    func checkCreds(_ creds: GenericCredentials, completion:((_ checkCredsResult:CheckCredsResult?, Error?)->(Void))?) {
+    func checkCreds(_ creds: GenericCredentials, completion: @escaping (Swift.Result<CheckCredsResult, Error>)->(Void)) {
         let endpoint = ServerEndpoints.checkCreds
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL)
         
@@ -154,7 +151,7 @@ class ServerAPI {
             }
             else if httpStatus == HTTPStatus.ok.rawValue {
                 guard let checkCredsResponse = try? CheckCredsResponse.decode(response!) else {
-                    completion?(nil, ServerAPIError.badCheckCreds)
+                    completion(.failure(ServerAPIError.badCheckCreds))
                     return
                 }
                 
@@ -162,16 +159,16 @@ class ServerAPI {
                 result = .user(checkCredsResponse.userId, accessToken: accessToken)
             }
             
-            if result == nil {
-                if let errorResult = self.checkForError(statusCode: httpStatus, error: error) {
-                    completion?(nil, errorResult)
-                }
-                else {
-                    completion?(nil, ServerAPIError.unknownServerError)
-                }
+            if let result = result {
+                completion(.success(result))
             }
             else {
-                completion?(result, nil)
+                if let errorResult = self.checkForError(statusCode: httpStatus, error: error) {
+                    completion(.failure(errorResult))
+                }
+                else {
+                    completion(.failure(ServerAPIError.unknownServerError))
+                }
             }
         }
     }
@@ -185,7 +182,12 @@ class ServerAPI {
         }
     }
     
-    func redeemSharingInvitation(sharingInvitationUUID:String, cloudFolderName: String?, completion:((_ accessToken:String?, _ sharingGroupUUID: String?, Error?)->(Void))?) {
+    struct RedeemResult {
+        let accessToken: String
+        let sharingGroupUUID: String
+    }
+    
+    func redeemSharingInvitation(sharingInvitationUUID:String, cloudFolderName: String?, completion:(Swift.Result<RedeemResult, Error>)->(Void)) {
     }
     
     // MARK: Files
@@ -197,14 +199,14 @@ class ServerAPI {
         let sharingGroups:[SharingGroup]
     }
     
-    func index(sharingGroupUUID: UUID?, completion:((Swift.Result<IndexResult, Error>)->())?) {
+    func index(sharingGroupUUID: UUID?, completion: @escaping (Swift.Result<IndexResult, Error>)->()) {
         let endpoint = ServerEndpoints.index
         
         let indexRequest = IndexRequest()
         indexRequest.sharingGroupUUID = sharingGroupUUID?.uuidString
         
         guard indexRequest.valid() else {
-            completion?(.failure(ServerAPIError.couldNotCreateRequest))
+            completion(.failure(ServerAPIError.couldNotCreateRequest))
             return
         }
 
@@ -215,15 +217,15 @@ class ServerAPI {
             let resultError = self.checkForError(statusCode: httpStatus, error: error)
             
             if let resultError = resultError {
-                completion?(.failure(resultError))
+                completion(.failure(resultError))
             }
             else if let response = response,
                 let indexResponse = try? IndexResponse.decode(response) {
                 let result = IndexResult(fileIndex: indexResponse.fileIndex, sharingGroups: indexResponse.sharingGroups)
-                completion?(.success(result))
+                completion(.success(result))
             }
             else {
-                completion?(.failure(ServerAPIError.couldNotCreateResponse))
+                completion(.failure(ServerAPIError.couldNotCreateResponse))
             }
         }
     }
