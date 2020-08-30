@@ -9,6 +9,7 @@ class BackgroundCache {
     enum BackgroundCacheError: Error {
         case couldNotLookup
         case wrongTransferType
+        case badUUID
     }
     
     let database: Connection
@@ -18,7 +19,11 @@ class BackgroundCache {
     }
     
     func initializeUploadCache(fileUUID:String, taskIdentifer: Int) throws {
-        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: UUID(uuidString: fileUUID)!, transfer: .upload(nil))
+        guard let uuid = UUID(uuidString: fileUUID) else {
+            throw BackgroundCacheError.badUUID
+        }
+        
+        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: uuid, fileVersion: nil, transfer: .upload(nil))
         try cache.insert()
     }
     

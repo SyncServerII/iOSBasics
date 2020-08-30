@@ -20,8 +20,8 @@ class BackgroundCacheTests: XCTestCase {
     }
 
     func testInitializeUploadCache() throws {
-        let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
-        try backgroundCache.initializeUploadCache(fileUUID: file.fileUUID, taskIdentifer: taskIdentifier)
+        let fileUUID = UUID().uuidString
+        try backgroundCache.initializeUploadCache(fileUUID: fileUUID, taskIdentifer: taskIdentifier)
         
         guard let result = try NetworkCache.fetchSingleRow(db: database, where:
             taskIdentifier == NetworkCache.taskIdentifierField.description) else {
@@ -29,8 +29,7 @@ class BackgroundCacheTests: XCTestCase {
             return
         }
         
-        XCTAssert(result.fileVersion == file.fileVersion)
-        XCTAssert(result.fileUUID.uuidString == file.fileUUID)
+        XCTAssert(result.fileUUID.uuidString == fileUUID)
         XCTAssert(result.taskIdentifier == taskIdentifier)
         
         guard case .upload(let body) = result.transfer, body == nil else {
@@ -103,9 +102,10 @@ class BackgroundCacheTests: XCTestCase {
     }
     
     func testLookupAndRemoveCacheWithDownloadCacheAbsent() throws {
-        let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
-        try backgroundCache.initializeUploadCache(fileUUID: file.fileUUID, taskIdentifer: taskIdentifier)
-                
+        let fileUUID = UUID().uuidString
+        try backgroundCache.initializeUploadCache(fileUUID: fileUUID, taskIdentifer: taskIdentifier)
+        
+        let file = FileObject(fileUUID: fileUUID, fileVersion: nil)
         let result = try backgroundCache.lookupAndRemoveCache(file: file, download: true)
         XCTAssert(result == nil)
                 
@@ -114,11 +114,12 @@ class BackgroundCacheTests: XCTestCase {
     }
     
     func testLookupAndRemoveCacheWithUploadCachePresent() throws {
-        let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
-        try backgroundCache.initializeUploadCache(fileUUID: file.fileUUID, taskIdentifer: taskIdentifier)
+        let fileUUID = UUID().uuidString
+        try backgroundCache.initializeUploadCache(fileUUID: fileUUID, taskIdentifer: taskIdentifier)
                 
         try backgroundCache.cacheUploadResult(taskIdentifer: taskIdentifier, uploadBody: ["Foo": "bar"])
         
+        let file = FileObject(fileUUID: fileUUID, fileVersion: nil)
         guard let _ = try backgroundCache.lookupAndRemoveCache(file: file, download: false) else {
             XCTFail()
             return
@@ -143,9 +144,9 @@ class BackgroundCacheTests: XCTestCase {
         XCTAssert(present)
     }
     
-    func testRemoveCache() throws {
-        let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1)
-        try backgroundCache.initializeUploadCache(fileUUID: file.fileUUID, taskIdentifer: taskIdentifier)
+    func testRemoveUploadCache() throws {
+        let fileUUID = UUID().uuidString
+        try backgroundCache.initializeUploadCache(fileUUID: fileUUID, taskIdentifer: taskIdentifier)
         
         try backgroundCache.removeCache(taskIdentifer: taskIdentifier)
     }

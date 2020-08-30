@@ -58,5 +58,12 @@ let package = Package(
                 "ChangeResolvers",
                 .product(name: "SQLite", package: "SQLite.swift")
             ]),
+        .testTarget(
+            name: "ServerTests",
+            dependencies: [
+                "iOSBasics", "iOSShared", "iOSSignIn", "Version", "iOSDropbox",
+                "ChangeResolvers",
+                .product(name: "SQLite", package: "SQLite.swift")
+            ])
     ]
 )

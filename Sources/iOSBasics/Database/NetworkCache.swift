@@ -128,7 +128,7 @@ class NetworkCache: DatabaseModel {
         id: Int64! = nil,
         taskIdentifier: Int,
         fileUUID: UUID,
-        fileVersion: FileVersionInt? = nil,
+        fileVersion: FileVersionInt?,
         transfer: NetworkTransfer?) throws {
                 
         self.db = db
