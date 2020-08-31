@@ -19,6 +19,12 @@ protocol Dropbox {
 }
 
 extension Dropbox {
+    func createDropboxCredentials() throws -> ServerCredentials {
+        let savedCredentials = try loadDropboxCredentials()
+        let dropboxCredentials = DropboxCredentials(savedCreds:savedCredentials)
+        return ServerCredentials(credentials: dropboxCredentials, hashing: DropboxHashing())
+    }
+    
     func loadDropboxCredentials() throws -> DropboxSavedCreds {
         let dropboxCredentialsFile = "Dropbox.credentials"
         let thisDirectory = TestingFile.directoryOfFile(#file)
@@ -32,14 +38,9 @@ extension Dropbox {
     }
 }
     
-protocol APITests: ServerAPIDelegate {
+protocol APITests: ServerAPIDelegate, NetworkingProtocol {
     var deviceUUID:UUID { get }
-    var credentials: GenericCredentials! { get set }
-    var hashingManager: HashingManager { get }
     var api:ServerAPI! { get }
-    
-    var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())? {set get}
-    var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>) -> ())? {set get}
 }
 
 extension APITests where Self: XCTestCase {
@@ -91,7 +92,7 @@ extension APITests where Self: XCTestCase {
         let exp = expectation(description: "exp")
         var returnResult: ServerAPI.CheckCredsResult?
         
-        api.checkCreds(credentials) { result in
+        api.checkCreds(serverCredentials.credentials) { result in
             switch result {
             case .success(let result):
                 returnResult = result
@@ -185,27 +186,5 @@ extension APITests where Self: XCTestCase {
         
         waitForExpectations(timeout: 10, handler: nil)
         return theResult
-    }
-}
-
-extension APITests /* : ServerAPIDelegate */ {
-    func credentialsForNetworkRequests(_ api: AnyObject) -> GenericCredentials {
-        return credentials
-    }
-    
-    func deviceUUID(_ api: AnyObject) -> UUID {
-        return deviceUUID
-    }
-    
-    func hasher(_ api: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing {
-        return try hashingManager.hashFor(cloudStorageType: cloudStorageType)
-    }
-    
-    func uploadCompleted(_ api: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
-        uploadCompletedHandler?(result)
-    }
-    
-    func downloadCompleted(_ api: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
-        downloadCompletedHandler?(result)
     }
 }

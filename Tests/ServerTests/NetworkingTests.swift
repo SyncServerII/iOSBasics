@@ -13,20 +13,10 @@ import iOSShared
 import ServerShared
 import SQLite
 
-class NetworkingTests: XCTestCase, Dropbox, ServerBasics {
-    var networking: Networking!
-    var credentials: GenericCredentials!
-    var savedCredentials: DropboxSavedCreds!
-    let hashing = DropboxHashing()
-    let deviceUUID = UUID()
-    var database:Connection!
-    let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: baseURL(), minimumServerVersion: nil, packageTests: true)
-    
+class NetworkingTests: NetworkingTestCase, Dropbox {
     override func setUpWithError() throws {
-        database = try Connection(.inMemory)
-        savedCredentials = try loadDropboxCredentials()
-        credentials = DropboxCredentials(savedCreds:savedCredentials)
-        networking = Networking(database: database, delegate: self, config: config)
+        try super.setUpWithError()
+        serverCredentials = try createDropboxCredentials()
     }
 
     override func tearDownWithError() throws {
@@ -56,7 +46,7 @@ class NetworkingTests: XCTestCase, Dropbox, ServerBasics {
         
         let exp = expectation(description: "exp")
         
-        let configuration = Networking.RequestConfiguration(credentials: credentials)
+        let configuration = Networking.RequestConfiguration(credentials: serverCredentials.credentials)
 
         networking.sendRequestTo(serverURL, method: endpoint.method, configuration: configuration) { response, httpStatus, error in
 
@@ -72,27 +62,5 @@ class NetworkingTests: XCTestCase, Dropbox, ServerBasics {
         }
         
         waitForExpectations(timeout: 10, handler: nil)
-    }
-}
-
-extension NetworkingTests: ServerAPIDelegate {
-    func downloadCompleted(_ api: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
-        assert(false)
-    }
-    
-    func uploadCompleted(_ api: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
-        assert(false)
-    }
-    
-    func hasher(_ api: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing {
-        return hashing
-    }
-    
-    func credentialsForNetworkRequests(_ api: AnyObject) -> GenericCredentials {
-        return credentials
-    }
-    
-    func deviceUUID(_ api: AnyObject) -> UUID {
-        return deviceUUID
     }
 }

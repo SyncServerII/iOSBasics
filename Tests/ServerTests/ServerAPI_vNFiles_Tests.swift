@@ -31,32 +31,28 @@ public struct ExampleComment {
     }
 }
 
-class ServerAPI_vNFiles_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
+class ServerAPI_vNFiles_Tests: NetworkingTestCase, APITests, Dropbox {
     var credentials: GenericCredentials!
     var api:ServerAPI!
-    let deviceUUID = UUID()
-    var database: Connection!
     let hashingManager = HashingManager()
     let dropboxHashing = DropboxHashing()
-    let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: baseURL(), minimumServerVersion: nil, packageTests: true)
-    var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())?
-    var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>) -> ())?
     
     override func setUpWithError() throws {
-        database = try Connection(.inMemory)
+        try super.setUpWithError()
+        try serverCredentials = createDropboxCredentials()
         try hashingManager.add(hashing: dropboxHashing)
-        credentials = try setupDropboxCredentials()
         api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
         uploadCompletedHandler = nil
         try NetworkCache.createTable(db: database)
     }
 
-    func fileUpload() throws {
+    @discardableResult
+    func fileUpload(comment:ExampleComment) throws -> ServerAPI.File? {
         // Get ready for test.
         removeDropboxUser()
         guard addDropboxUser() else {
             XCTFail()
-            return
+            return nil
         }
         
         let fileUUID = UUID()
@@ -69,7 +65,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
             result.sharingGroups.count > 0,
             let sharingGroupUUID = result.sharingGroups[0].sharingGroupUUID else {
             XCTFail()
-            return
+            return nil
         }
         
         let changeResolverName = CommentFile.changeResolverName
@@ -80,7 +76,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         
         guard let uploadResult1 = uploadFile(file: file1, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
-            return
+            return nil
         }
         
         switch uploadResult1 {
@@ -88,18 +84,16 @@ class ServerAPI_vNFiles_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
             break
         default:
             XCTFail("\(uploadResult1)")
-            return
+            return nil
         }
         
-        let comment1 = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
-
         let file2 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version:
-            .vN(change: comment1.updateContents)
+            .vN(change: comment.updateContents)
         )
         
         guard let uploadResult2 = uploadFile(file: file2, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
-            return
+            return nil
         }
         
         var deferredUploadId: Int64!
@@ -108,7 +102,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         case .success(let result):
             guard case .success(creationDate: _, updateDate: _, deferredUploadId: let id) = result, let deferredId = id else {
                 XCTFail()
-                return
+                return nil
             }
             deferredUploadId = deferredId
             
@@ -133,10 +127,54 @@ class ServerAPI_vNFiles_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
             XCTAssert(status == .completed, "\(String(describing: status))")
         }
         
-        XCTAssert(removeDropboxUser())
+        return file1
     }
     
     func testVNFileUploadWorks() throws {
-        try fileUpload()
+        let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
+        try fileUpload(comment: comment)
+    }
+    
+    func testVNFileDownloadWorks() throws {
+        let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
+        guard let file = try fileUpload(comment: comment) else {
+            XCTFail()
+            return
+        }
+        
+        guard let download = downloadFile(fileUUID: file.fileUUID, fileVersion: 1, sharingGroupUUID: file.sharingGroupUUID) else {
+            XCTFail()
+            return
+        }
+        
+        let downloadResult:DownloadFileResult
+        switch download {
+        case .success(let result):
+            downloadResult = result
+        default:
+            XCTFail()
+            return
+        }
+        
+        let downloadedURL: URL
+        switch downloadResult {
+        case .success(url: let url, appMetaData: _, checkSum: _, cloudStorageType: _, contentsChangedOnServer: _):
+            downloadedURL = url
+        default:
+            XCTFail()
+            return
+        }
+        
+        let downloadedData = try Data(contentsOf: downloadedURL)
+        let downloadedCommentFile = try CommentFile(with: downloadedData)
+        
+        guard downloadedCommentFile.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        let downloadedDict = downloadedCommentFile[0]
+        XCTAssert((downloadedDict?[CommentFile.idKey] as? String) == comment.id)
+        XCTAssert((downloadedDict?[ExampleComment.messageKey] as? String) == comment.messageString)
     }
 }

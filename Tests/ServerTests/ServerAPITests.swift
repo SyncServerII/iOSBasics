@@ -13,20 +13,14 @@ import ServerShared
 import iOSShared
 import SQLite
 
-class ServerAPITests: XCTestCase, APITests, ServerBasics, Dropbox {
-    var credentials: GenericCredentials!
+class ServerAPITests: NetworkingTestCase, APITests, Dropbox {
     let dropboxHasher = DropboxHashing()
     let hashingManager = HashingManager()
     var api:ServerAPI!
-    let deviceUUID = UUID()
-    var database: Connection!
-    let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: baseURL(), minimumServerVersion: nil, packageTests: true)
-    var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())?
-    var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>) -> ())?
     
     override func setUpWithError() throws {
-        database = try Connection(.inMemory)
-        credentials = try setupDropboxCredentials()
+        try super.setUpWithError()
+        try serverCredentials = createDropboxCredentials()
         try hashingManager.add(hashing: dropboxHasher)
         api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
         try NetworkCache.createTable(db: database)

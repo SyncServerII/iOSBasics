@@ -13,21 +13,15 @@ import iOSShared
 import iOSDropbox
 import SQLite
 
-class ServerAPI_v0Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
-    var credentials: GenericCredentials!
+class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
     var api:ServerAPI!
-    let deviceUUID = UUID()
-    var database: Connection!
     let hashingManager = HashingManager()
-    let dropboxHashing = DropboxHashing()
-    let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: baseURL(), minimumServerVersion: nil, packageTests: true)
-    var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())?
-    var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>) -> ())?
-    
+    let dropboxHasher = DropboxHashing()
+
     override func setUpWithError() throws {
-        database = try Connection(.inMemory)
-        try hashingManager.add(hashing: dropboxHashing)
-        credentials = try setupDropboxCredentials()
+        try super.setUpWithError()
+        serverCredentials = try createDropboxCredentials()
+        try hashingManager.add(hashing: dropboxHasher)
         api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
         uploadCompletedHandler = nil
         try NetworkCache.createTable(db: database)
@@ -55,7 +49,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         let thisDirectory = TestingFile.directoryOfFile(#file)
         let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
-        let checkSum = try dropboxHashing.hash(forURL: fileURL)
+        let checkSum = try serverCredentials.hashing.hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
@@ -113,7 +107,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         let thisDirectory = TestingFile.directoryOfFile(#file)
         let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
-        let checkSum = try dropboxHashing.hash(forURL: fileURL)
+        let checkSum = try serverCredentials.hashing.hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
@@ -153,9 +147,11 @@ class ServerAPI_v0Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         XCTAssert(removeDropboxUser())
     }
     
-    // The parameters are set only for failure testing.
+    @discardableResult
     func downloadFile(downloadFileVersion:FileVersionInt? = nil,
-        expectedFailure: Bool = false) throws {
+        expectedFailure: Bool = false, appMetaData: String? = nil) throws -> DownloadFileResult? {
+        
+        var returnResult: DownloadFileResult?
         
         // Get ready for test.
         removeDropboxUser()
@@ -166,20 +162,25 @@ class ServerAPI_v0Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         let thisDirectory = TestingFile.directoryOfFile(#file)
         let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
-        let checkSum = try dropboxHashing.hash(forURL: fileURL)
+        let checkSum = try serverCredentials.hashing.hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
             let sharingGroupUUID = result.sharingGroups[0].sharingGroupUUID else {
             XCTFail()
-            return
+            return nil
         }
-                
-        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version: .v0(source: .url(fileURL), mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: nil, appMetaData: nil))
+        
+        var amd: AppMetaData?
+        if let appMetaData = appMetaData {
+            amd = AppMetaData(contents: appMetaData)
+        }
+        
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version: .v0(source: .url(fileURL), mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: nil, appMetaData: amd))
         
         guard case .success = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
-            return
+            return nil
         }
         
         let finalFileVersion = downloadFileVersion ?? 0
@@ -189,19 +190,20 @@ class ServerAPI_v0Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         if expectedFailure {
             guard case .failure = download else {
                 XCTFail()
-                return
+                return nil
             }
         }
         else {
             guard case .success(let downloadResult) = download else {
                 XCTFail()
-                return
+                return nil
             }
             
-            switch downloadResult {
-            case .success(url: let url, appMetaData: let appMetaData, checkSum: let checkSumDownloaded, cloudStorageType: let cloudStorageType, contentsChangedOnServer: let changed):
+            returnResult = downloadResult
             
-                XCTAssert(appMetaData == nil)
+            switch downloadResult {
+            case .success(url: let url, appMetaData: _, checkSum: let checkSumDownloaded, cloudStorageType: let cloudStorageType, contentsChangedOnServer: let changed):
+            
                 XCTAssert(!changed)
                 XCTAssert(cloudStorageType == .Dropbox)
                 XCTAssert(checkSum == checkSumDownloaded)
@@ -216,6 +218,8 @@ class ServerAPI_v0Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
         }
         
         XCTAssert(removeDropboxUser())
+        
+        return returnResult
     }
     
     func testDownloadFile() throws {
@@ -224,5 +228,49 @@ class ServerAPI_v0Files_Tests: XCTestCase, APITests, Dropbox, ServerBasics {
     
     func testDownloadFileFailsWithBadFileVersion() throws {
         try downloadFile(downloadFileVersion: 1, expectedFailure: true)
+    }
+    
+    func testDownloadFileWithAppMetaData() throws {
+        let appMetaData = "foobly"
+        guard let result = try downloadFile(appMetaData: appMetaData) else {
+            XCTFail()
+            return
+        }
+        
+        switch result {
+        case .success(url: _, appMetaData: let amd, checkSum: _, cloudStorageType: _, contentsChangedOnServer: _):
+            XCTAssert(appMetaData == amd?.contents)
+        default:
+            XCTFail()
+        }
+    }
+    
+    func testUploadV0FileWithBadInitialChangeResolverDataFails() throws {
+        // Get ready for test.
+        removeDropboxUser()
+        XCTAssert(addDropboxUser())
+        
+        let fileUUID = UUID()
+
+        let thisDirectory = TestingFile.directoryOfFile(#file)
+        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
+        
+        let checkSum = try serverCredentials.hashing.hash(forURL: fileURL)
+        
+        guard let result = getIndex(sharingGroupUUID: nil),
+            result.sharingGroups.count > 0,
+            let sharingGroupUUID = result.sharingGroups[0].sharingGroupUUID else {
+            XCTFail()
+            return
+        }
+        
+        let badChangeResolverName = "foobly"
+        
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version: .v0(source: .url(fileURL), mimeType: MimeType.text, checkSum: checkSum, changeResolverName: badChangeResolverName, fileGroupUUID: nil, appMetaData: nil))
+        
+        guard case .failure = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
+            XCTFail()
+            return
+        }
     }
 }
