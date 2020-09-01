@@ -194,4 +194,69 @@ extension ServerAPI {
         
         return networking.download(file: file, fromServerURL: serverURL, method: endpoint.method)
     }
+    
+    enum DeletionFile {
+        case fileUUID(String)
+        case fileGroupUUID(String)
+    }
+    
+    enum DeletionFileResult {
+        case fileDeleted(deferredUploadId: Int64)
+        case fileAlreadyDeleted
+    }
+    
+    func uploadDeletion(file: DeletionFile, sharingGroupUUID: String, completion: @escaping (Result<DeletionFileResult, Error>)->()) {
+        
+        let endpoint = ServerEndpoints.uploadDeletion
+                
+        let request = UploadDeletionRequest()
+        request.sharingGroupUUID = sharingGroupUUID
+        
+        switch file {
+        case .fileUUID(let fileUUID):
+            request.fileUUID = fileUUID
+        case .fileGroupUUID(let fileGroupUUID):
+            request.fileGroupUUID = fileGroupUUID
+        }
+        
+        guard request.valid() else {
+            completion(.failure(ServerAPIError.couldNotCreateRequest))
+            return
+        }
+        
+        guard let parameters = request.urlParameters() else {
+            completion(.failure(ServerAPIError.couldNotCreateRequest))
+            return
+        }
+
+        let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: parameters)
+        
+        networking.sendRequestTo(serverURL, method: endpoint.method) { response, httpStatus, error in
+           
+            guard let response = response else {
+                completion(.failure(ServerAPIError.nilResponse))
+                return
+            }
+            
+            if let error = self.checkForError(statusCode: httpStatus, error: error) {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let messageResponse = try? UploadDeletionResponse.decode(response) else {
+                completion(.failure(ServerAPIError.couldNotCreateResponse))
+                return
+            }
+
+            let result:DeletionFileResult
+            if let deferredUploadId = messageResponse.deferredUploadId {
+                result = .fileDeleted(deferredUploadId: deferredUploadId)
+            }
+            else {
+                result = .fileAlreadyDeleted
+            }
+            
+            completion(.success(result))
+        }
+    }
 }
