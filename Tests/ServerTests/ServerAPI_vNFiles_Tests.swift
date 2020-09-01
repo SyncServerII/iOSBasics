@@ -32,16 +32,9 @@ public struct ExampleComment {
 }
 
 class ServerAPI_vNFiles_Tests: NetworkingTestCase, APITests, Dropbox {
-    var credentials: GenericCredentials!
-    var api:ServerAPI!
-    let hashingManager = HashingManager()
-    let dropboxHashing = DropboxHashing()
-    
     override func setUpWithError() throws {
         try super.setUpWithError()
-        try serverCredentials = createDropboxCredentials()
-        try hashingManager.add(hashing: dropboxHashing)
-        api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
+        try credentials = createDropboxCredentials()
         uploadCompletedHandler = nil
         try NetworkCache.createTable(db: database)
     }

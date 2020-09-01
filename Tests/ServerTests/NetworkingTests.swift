@@ -16,7 +16,7 @@ import SQLite
 class NetworkingTests: NetworkingTestCase, Dropbox {
     override func setUpWithError() throws {
         try super.setUpWithError()
-        serverCredentials = try createDropboxCredentials()
+        credentials = try createDropboxCredentials()
     }
 
     override func tearDownWithError() throws {
@@ -46,7 +46,7 @@ class NetworkingTests: NetworkingTestCase, Dropbox {
         
         let exp = expectation(description: "exp")
         
-        let configuration = Networking.RequestConfiguration(credentials: serverCredentials.credentials)
+        let configuration = Networking.RequestConfiguration(credentials: credentials)
 
         networking.sendRequestTo(serverURL, method: endpoint.method, configuration: configuration) { response, httpStatus, error in
 

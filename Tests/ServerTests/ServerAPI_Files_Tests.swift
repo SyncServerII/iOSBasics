@@ -14,15 +14,9 @@ import iOSDropbox
 import SQLite
 
 class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
-    var api:ServerAPI!
-    let hashingManager = HashingManager()
-    let dropboxHasher = DropboxHashing()
-
     override func setUpWithError() throws {
         try super.setUpWithError()
-        serverCredentials = try createDropboxCredentials()
-        try hashingManager.add(hashing: dropboxHasher)
-        api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
+        credentials = try createDropboxCredentials()
         uploadCompletedHandler = nil
         try NetworkCache.createTable(db: database)
     }
@@ -38,6 +32,7 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
     
     func fileUpload(upload: FileUpload = .normal) throws {
         // Get ready for test.
+        let cloudStorageType: CloudStorageType = .Dropbox
         removeDropboxUser()
         guard addDropboxUser() else {
             XCTFail()
@@ -48,8 +43,7 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
 
         let thisDirectory = TestingFile.directoryOfFile(#file)
         let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
-        
-        let checkSum = try serverCredentials.hashing.hash(forURL: fileURL)
+        let checkSum = try hashingManager.hashFor(cloudStorageType: cloudStorageType).hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
@@ -94,6 +88,7 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
     
     func testFileTwoUploadsInBatchWorks() throws {
         // Get ready for test.
+        let cloudStorageType: CloudStorageType = .Dropbox
         removeDropboxUser()
         guard addDropboxUser() else {
             XCTFail()
@@ -107,7 +102,7 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
         let thisDirectory = TestingFile.directoryOfFile(#file)
         let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
-        let checkSum = try serverCredentials.hashing.hash(forURL: fileURL)
+        let checkSum = try hashingManager.hashFor(cloudStorageType: cloudStorageType).hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
@@ -154,6 +149,7 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
         var returnResult: DownloadFileResult?
         
         // Get ready for test.
+        let cloudStorageType: CloudStorageType = .Dropbox
         removeDropboxUser()
         XCTAssert(addDropboxUser())
         
@@ -162,7 +158,7 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
         let thisDirectory = TestingFile.directoryOfFile(#file)
         let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
-        let checkSum = try serverCredentials.hashing.hash(forURL: fileURL)
+        let checkSum = try hashingManager.hashFor(cloudStorageType: cloudStorageType).hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
@@ -247,6 +243,7 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
     
     func testUploadV0FileWithBadInitialChangeResolverDataFails() throws {
         // Get ready for test.
+        let cloudStorageType: CloudStorageType = .Dropbox
         removeDropboxUser()
         XCTAssert(addDropboxUser())
         
@@ -255,7 +252,7 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
         let thisDirectory = TestingFile.directoryOfFile(#file)
         let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
-        let checkSum = try serverCredentials.hashing.hash(forURL: fileURL)
+        let checkSum = try hashingManager.hashFor(cloudStorageType: cloudStorageType).hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,

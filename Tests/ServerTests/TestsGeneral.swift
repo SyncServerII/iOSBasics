@@ -19,10 +19,9 @@ protocol Dropbox {
 }
 
 extension Dropbox {
-    func createDropboxCredentials() throws -> ServerCredentials {
+    func createDropboxCredentials() throws -> DropboxCredentials {
         let savedCredentials = try loadDropboxCredentials()
-        let dropboxCredentials = DropboxCredentials(savedCreds:savedCredentials)
-        return ServerCredentials(credentials: dropboxCredentials, hashing: DropboxHashing())
+        return DropboxCredentials(savedCreds:savedCredentials)
     }
     
     func loadDropboxCredentials() throws -> DropboxSavedCreds {
@@ -92,7 +91,7 @@ extension APITests where Self: XCTestCase {
         let exp = expectation(description: "exp")
         var returnResult: ServerAPI.CheckCredsResult?
         
-        api.checkCreds(serverCredentials.credentials) { result in
+        api.checkCreds(credentials) { result in
             switch result {
             case .success(let result):
                 returnResult = result

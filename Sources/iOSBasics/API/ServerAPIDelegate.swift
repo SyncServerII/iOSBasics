@@ -18,13 +18,7 @@ public enum DownloadFileResult {
     case gone(appMetaData:AppMetaData?, cloudStorageType:CloudStorageType, GoneReason)
 }
     
-public protocol ServerAPIDelegate: AnyObject {
+public protocol ServerAPIDelegate: NetworkingDelegate {
     // Methods for the ServerAPI to get information from its user/caller
-    func credentialsForNetworkRequests(_ api: AnyObject) -> GenericCredentials
-    func deviceUUID(_ api: AnyObject) -> UUID
-    func hasher(_ api: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing
-    
-    // Methods for the ServerAPI to report results
-    func uploadCompleted(_ api: AnyObject, result: Swift.Result<UploadFileResult, Error>)
-    func downloadCompleted(_ api: AnyObject, result: Swift.Result<DownloadFileResult, Error>)
+    func hasher(_ delegated: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing
 }

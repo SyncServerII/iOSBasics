@@ -26,9 +26,17 @@ enum NetworkingError: Error {
     case moreThanOneNetworkCache
 }
 
+public protocol NetworkingDelegate: AnyObject {
+    func credentialsForNetworkRequests(_ delegated: AnyObject) -> GenericCredentials
+    func deviceUUID(_ delegated: AnyObject) -> UUID
+    
+    func uploadCompleted(_ delegated: AnyObject, result: Swift.Result<UploadFileResult, Error>)
+    func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>)
+}
+
 // NSObject inheritance needed for URLSessionDelegate conformance.
 class Networking: NSObject {
-    weak var delegate: ServerAPIDelegate!
+    weak var delegate: NetworkingDelegate!
     weak var transferDelegate: FileTransferDelegate!
     let config: Configuration
     var backgroundSession: URLSession!
@@ -66,7 +74,7 @@ class Networking: NSObject {
         }
     }
     
-    init(database:Connection, delegate: ServerAPIDelegate, transferDelegate:FileTransferDelegate? = nil, config: Configuration) {
+    init(database:Connection, delegate: NetworkingDelegate, transferDelegate:FileTransferDelegate? = nil, config: Configuration) {
         self.delegate = delegate
         self.transferDelegate = transferDelegate
         self.config = config

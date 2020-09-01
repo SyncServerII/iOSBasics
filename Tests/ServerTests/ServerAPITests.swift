@@ -14,15 +14,9 @@ import iOSShared
 import SQLite
 
 class ServerAPITests: NetworkingTestCase, APITests, Dropbox {
-    let dropboxHasher = DropboxHashing()
-    let hashingManager = HashingManager()
-    var api:ServerAPI!
-    
     override func setUpWithError() throws {
         try super.setUpWithError()
-        try serverCredentials = createDropboxCredentials()
-        try hashingManager.add(hashing: dropboxHasher)
-        api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
+        try credentials = createDropboxCredentials()
         try NetworkCache.createTable(db: database)
     }
 
