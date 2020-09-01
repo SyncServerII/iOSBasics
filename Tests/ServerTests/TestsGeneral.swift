@@ -15,28 +15,6 @@ extension ServerBasics {
     }
 }
 
-protocol Dropbox {
-}
-
-extension Dropbox {
-    func createDropboxCredentials() throws -> DropboxCredentials {
-        let savedCredentials = try loadDropboxCredentials()
-        return DropboxCredentials(savedCreds:savedCredentials)
-    }
-    
-    func loadDropboxCredentials() throws -> DropboxSavedCreds {
-        let dropboxCredentialsFile = "Dropbox.credentials"
-        let thisDirectory = TestingFile.directoryOfFile(#file)
-        let dropboxCredentials = thisDirectory.appendingPathComponent(dropboxCredentialsFile)
-        return try DropboxSavedCreds.fromJSON(file: dropboxCredentials)
-    }
-    
-    func setupDropboxCredentials() throws -> DropboxCredentials {
-        let savedCredentials = try loadDropboxCredentials()
-        return DropboxCredentials(savedCreds:savedCredentials)
-    }
-}
-    
 protocol APITests: ServerAPIDelegate, NetworkingProtocol {
     var deviceUUID:UUID { get }
     var api:ServerAPI! { get }
@@ -44,46 +22,6 @@ protocol APITests: ServerAPIDelegate, NetworkingProtocol {
 
 extension APITests where Self: XCTestCase {
     var exampleTextFile:String { return "Example.txt" }
-
-    // Dropbox
-    
-    @discardableResult
-    func addDropboxUser() -> Bool {
-        let exp = expectation(description: "exp")
-        
-        var success = true
-        let uuid = UUID()
-        
-        api.addUser(cloudFolderName: nil, sharingGroupUUID: uuid, sharingGroupName: nil) { result in
-            switch result {
-            case .success:
-                break
-            case .failure:
-                success = false
-            }
-            exp.fulfill()
-        }
-        
-        waitForExpectations(timeout: 10, handler: nil)
-        
-        return success
-    }
-
-    @discardableResult
-    func removeDropboxUser() -> Bool {
-        let exp = expectation(description: "exp")
-        
-        var success = true
-        
-        api.removeUser { error in
-            success = error == nil
-            exp.fulfill()
-        }
-        
-        waitForExpectations(timeout: 10, handler: nil)
-        
-        return success
-    }
     
     // Credentials/users
     
@@ -91,7 +29,7 @@ extension APITests where Self: XCTestCase {
         let exp = expectation(description: "exp")
         var returnResult: ServerAPI.CheckCredsResult?
         
-        api.checkCreds(credentials) { result in
+        api.checkCreds(user.credentials) { result in
             switch result {
             case .success(let result):
                 returnResult = result

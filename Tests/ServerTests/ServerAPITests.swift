@@ -13,11 +13,11 @@ import ServerShared
 import iOSShared
 import SQLite
 
-class ServerAPITests: NetworkingTestCase, APITests, Dropbox {
+class ServerAPITests: APITestCase, APITests {
     override func setUpWithError() throws {
         try super.setUpWithError()
-        try credentials = createDropboxCredentials()
         try NetworkCache.createTable(db: database)
+        user = try dropboxUser()
     }
 
     override func tearDownWithError() throws {
@@ -40,19 +40,13 @@ class ServerAPITests: NetworkingTestCase, APITests, Dropbox {
     }
     
     func testAddUser() {
-        // Get ready for test.
-        removeDropboxUser()
-        
-        XCTAssert(addDropboxUser())
-        
-        // Clean up for next test
-        XCTAssert(removeDropboxUser())
+        _ = user.removeUser()
+        XCTAssert(user.addUser())
     }
     
     func testCheckCredsWithAUser() {
-        // Get ready for test.
-        removeDropboxUser()
-        XCTAssert(addDropboxUser())
+        _ = user.removeUser()
+        XCTAssert(user.addUser())
         
         let result = checkCreds()
         
@@ -62,13 +56,14 @@ class ServerAPITests: NetworkingTestCase, APITests, Dropbox {
         default:
             XCTFail()
         }
-        
-        XCTAssert(removeDropboxUser())
     }
     
     func testCheckCredsWithNoUser() {
         // Get ready for test.
-        removeDropboxUser()
+        guard user.removeUser() else {
+            XCTFail()
+            return
+        }
         
         let result = checkCreds()
         
@@ -81,9 +76,8 @@ class ServerAPITests: NetworkingTestCase, APITests, Dropbox {
     }
     
     func testIndexWithNoContentsExpectation() {
-        // Get ready for test.
-        removeDropboxUser()
-        XCTAssert(addDropboxUser())
+        _ = user.removeUser()
+        XCTAssert(user.addUser())
         
         guard let result = getIndex(sharingGroupUUID: nil) else {
             XCTFail()
@@ -92,13 +86,11 @@ class ServerAPITests: NetworkingTestCase, APITests, Dropbox {
         
         XCTAssert(result.fileIndex == nil)
         XCTAssert(result.sharingGroups.count == 1)
-        XCTAssert(removeDropboxUser())
     }
     
     func testIndexWithFile() throws {
-        // Get ready for test.
-        removeDropboxUser()
-        XCTAssert(addDropboxUser())
+        _ = user.removeUser()
+        XCTAssert(user.addUser())
         
         let fileUUID = UUID()
 
@@ -149,14 +141,11 @@ class ServerAPITests: NetworkingTestCase, APITests, Dropbox {
         XCTAssert(fileInfo.fileVersion == 0)
         XCTAssert(fileInfo.cloudStorageType == "Dropbox")
         XCTAssert(fileInfo.owningUserId != nil)
-                
-        XCTAssert(removeDropboxUser())
     }
     
     func testGetUploadsResultsGivesNilStatusWhenUnknownDeferredIdGiven() throws {
-        // Get ready for test.
-        removeDropboxUser()
-        XCTAssert(addDropboxUser())
+        _ = user.removeUser()
+        XCTAssert(user.addUser())
         
         let result = getUploadsResults(deferredUploadId: 0)
         guard case .success(let status) = result else {
@@ -165,8 +154,6 @@ class ServerAPITests: NetworkingTestCase, APITests, Dropbox {
         }
         
         XCTAssert(status == nil)
-        
-        XCTAssert(removeDropboxUser())
     }
 }
 

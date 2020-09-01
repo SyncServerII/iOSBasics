@@ -31,23 +31,18 @@ public struct ExampleComment {
     }
 }
 
-class ServerAPI_vNFiles_Tests: NetworkingTestCase, APITests, Dropbox {
+class ServerAPI_vNFiles_Tests: APITestCase, APITests {
     override func setUpWithError() throws {
         try super.setUpWithError()
-        try credentials = createDropboxCredentials()
+        try user = dropboxUser()
         uploadCompletedHandler = nil
         try NetworkCache.createTable(db: database)
+        _ = user.removeUser()
+        XCTAssert(user.addUser())
     }
 
     @discardableResult
-    func fileUpload(comment:ExampleComment) throws -> ServerAPI.File? {
-        // Get ready for test.
-        removeDropboxUser()
-        guard addDropboxUser() else {
-            XCTFail()
-            return nil
-        }
-        
+    func fileUpload(comment:ExampleComment) throws -> ServerAPI.File? {        
         let fileUUID = UUID()
         
         let commentFileString = "{\"elements\":[]}"
@@ -106,10 +101,10 @@ class ServerAPI_vNFiles_Tests: NetworkingTestCase, APITests, Dropbox {
         if let deferredUploadId = deferredUploadId {
             // Wait for a bit, before polling server to see if the upload is done.
             let exp = expectation(description: "Deferred Upload")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
                 exp.fulfill()
             }
-            waitForExpectations(timeout: 10, handler: nil)
+            waitForExpectations(timeout: 20, handler: nil)
             
             var status: DeferredUploadStatus?
             let getUploadsResult = self.getUploadsResults(deferredUploadId: deferredUploadId)

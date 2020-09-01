@@ -13,12 +13,14 @@ import iOSShared
 import iOSDropbox
 import SQLite
 
-class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
+class ServerAPI_v0Files_Tests: APITestCase, APITests {
     override func setUpWithError() throws {
         try super.setUpWithError()
-        credentials = try createDropboxCredentials()
+        user = try dropboxUser()
         uploadCompletedHandler = nil
         try NetworkCache.createTable(db: database)
+        _ = user.removeUser()
+        XCTAssert(user.addUser())
     }
 
     override func tearDownWithError() throws {
@@ -32,18 +34,11 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
     
     func fileUpload(upload: FileUpload = .normal) throws {
         // Get ready for test.
-        let cloudStorageType: CloudStorageType = .Dropbox
-        removeDropboxUser()
-        guard addDropboxUser() else {
-            XCTFail()
-            return
-        }
-        
         let fileUUID = UUID()
 
         let thisDirectory = TestingFile.directoryOfFile(#file)
         let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
-        let checkSum = try hashingManager.hashFor(cloudStorageType: cloudStorageType).hash(forURL: fileURL)
+        let checkSum = try hashingManager.hashFor(cloudStorageType: user.cloudStorageType).hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
@@ -73,8 +68,6 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
         default:
             XCTFail()
         }
-        
-        XCTAssert(removeDropboxUser())
     }
     
     func testFileUpload() throws {
@@ -88,13 +81,6 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
     
     func testFileTwoUploadsInBatchWorks() throws {
         // Get ready for test.
-        let cloudStorageType: CloudStorageType = .Dropbox
-        removeDropboxUser()
-        guard addDropboxUser() else {
-            XCTFail()
-            return
-        }
-        
         let fileUUID1 = UUID()
         let fileUUID2 = UUID()
         let fileGroupUUID = UUID()
@@ -102,7 +88,7 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
         let thisDirectory = TestingFile.directoryOfFile(#file)
         let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
-        let checkSum = try hashingManager.hashFor(cloudStorageType: cloudStorageType).hash(forURL: fileURL)
+        let checkSum = try hashingManager.hashFor(cloudStorageType: user.cloudStorageType).hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
@@ -138,8 +124,6 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
         default:
             XCTFail("\(uploadResult2)")
         }
-        
-        XCTAssert(removeDropboxUser())
     }
     
     @discardableResult
@@ -148,17 +132,12 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
         
         var returnResult: DownloadFileResult?
         
-        // Get ready for test.
-        let cloudStorageType: CloudStorageType = .Dropbox
-        removeDropboxUser()
-        XCTAssert(addDropboxUser())
-        
         let fileUUID = UUID()
 
         let thisDirectory = TestingFile.directoryOfFile(#file)
         let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
-        let checkSum = try hashingManager.hashFor(cloudStorageType: cloudStorageType).hash(forURL: fileURL)
+        let checkSum = try hashingManager.hashFor(cloudStorageType: user.cloudStorageType).hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
@@ -213,8 +192,6 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
             }
         }
         
-        XCTAssert(removeDropboxUser())
-        
         return returnResult
     }
     
@@ -242,17 +219,12 @@ class ServerAPI_v0Files_Tests: NetworkingTestCase, APITests, Dropbox {
     }
     
     func testUploadV0FileWithBadInitialChangeResolverDataFails() throws {
-        // Get ready for test.
-        let cloudStorageType: CloudStorageType = .Dropbox
-        removeDropboxUser()
-        XCTAssert(addDropboxUser())
-        
         let fileUUID = UUID()
 
         let thisDirectory = TestingFile.directoryOfFile(#file)
         let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         
-        let checkSum = try hashingManager.hashFor(cloudStorageType: cloudStorageType).hash(forURL: fileURL)
+        let checkSum = try hashingManager.hashFor(cloudStorageType: user.cloudStorageType).hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,

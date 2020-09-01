@@ -15,7 +15,7 @@ import SQLite
 import iOSDropbox
 
 protocol NetworkingProtocol: AnyObject {
-    var credentials: GenericCredentials! {get set}
+    var user: APITestCase.TestUser! {get set}
     var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())? {get set}
     var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>) -> ())? {get set}
 }
@@ -26,8 +26,7 @@ class NetworkingTestCase: XCTestCase, ServerBasics, NetworkingProtocol {
     var database:Connection!
     var networking: Networking!
     var api:ServerAPI!
-    
-    var credentials: GenericCredentials!
+    var user: APITestCase.TestUser!
     var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())?
     var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>) -> ())?
 
@@ -59,7 +58,7 @@ extension NetworkingTestCase: ServerAPIDelegate {
     }
     
     func credentialsForNetworkRequests(_ delegated: AnyObject) -> GenericCredentials {
-        return credentials
+        return user.credentials
     }
     
     func deviceUUID(_ delegated: AnyObject) -> UUID {
