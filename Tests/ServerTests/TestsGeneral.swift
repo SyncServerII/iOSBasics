@@ -124,4 +124,40 @@ extension APITests where Self: XCTestCase {
         waitForExpectations(timeout: 10, handler: nil)
         return theResult
     }
+    
+    func uploadDeletion(file: ServerAPI.DeletionFile, sharingGroupUUID: String) -> ServerAPI.DeletionFileResult? {
+        let exp = expectation(description: "exp")
+        var returnResult:ServerAPI.DeletionFileResult?
+        
+        api.uploadDeletion(file: file, sharingGroupUUID: sharingGroupUUID) { result in
+            switch result {
+            case .success(let result):
+                returnResult = result
+            case .failure:
+                break
+            }
+            exp.fulfill()
+        }
+        
+        waitForExpectations(timeout: 10, handler: nil)
+
+        return returnResult
+    }
+    
+    func delayedGetUploadsResults(delay: TimeInterval = 8, deferredUploadId:Int64) -> DeferredUploadStatus? {
+        // Wait for a bit, before polling server to see if the upload is done.
+        let exp = expectation(description: "Deferred Upload")
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: delay + 2, handler: nil)
+        
+        var status: DeferredUploadStatus?
+        let getUploadsResult = self.getUploadsResults(deferredUploadId: deferredUploadId)
+        if case .success(let s) = getUploadsResult {
+            status = s
+        }
+        
+        return status
+    }
 }

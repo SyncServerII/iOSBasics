@@ -32,7 +32,13 @@ class ServerAPI_v0Files_Tests: APITestCase, APITests {
         case appMetaData(AppMetaData)
     }
     
-    func fileUpload(upload: FileUpload = .normal) throws {
+    enum UploadError: Error {
+        case getIndex
+        case uploadFile
+    }
+    
+    @discardableResult
+    func fileUpload(upload: FileUpload = .normal) throws -> ServerAPI.File {
         // Get ready for test.
         let fileUUID = UUID()
 
@@ -44,7 +50,7 @@ class ServerAPI_v0Files_Tests: APITestCase, APITests {
             result.sharingGroups.count > 0,
             let sharingGroupUUID = result.sharingGroups[0].sharingGroupUUID else {
             XCTFail()
-            return
+            throw UploadError.getIndex
         }
         
         var appMetaData: AppMetaData?
@@ -59,7 +65,7 @@ class ServerAPI_v0Files_Tests: APITestCase, APITests {
         
         guard let uploadResult = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
-            return
+            throw UploadError.uploadFile
         }
         
         switch uploadResult {
@@ -68,6 +74,8 @@ class ServerAPI_v0Files_Tests: APITestCase, APITests {
         default:
             XCTFail()
         }
+        
+        return file
     }
     
     func testFileUpload() throws {
@@ -240,6 +248,24 @@ class ServerAPI_v0Files_Tests: APITestCase, APITests {
         guard case .failure = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
             return
+        }
+    }
+    
+    func testDeleteV0File() throws {
+        let upload = try fileUpload()
+        
+        let file:ServerAPI.DeletionFile = .fileUUID(upload.fileUUID)
+        guard let deletionResult = uploadDeletion(file: file, sharingGroupUUID: upload.sharingGroupUUID) else {
+            XCTFail()
+            return
+        }
+        
+        switch deletionResult {
+        case .fileAlreadyDeleted:
+            XCTFail()
+        case .fileDeleted(deferredUploadId: let deferredUploadId):
+            let status = delayedGetUploadsResults(deferredUploadId: deferredUploadId)
+            XCTAssert(status == .completed, "\(String(describing: status))")
         }
     }
 }

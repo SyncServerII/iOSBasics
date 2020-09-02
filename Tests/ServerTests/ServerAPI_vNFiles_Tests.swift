@@ -98,20 +98,8 @@ class ServerAPI_vNFiles_Tests: APITestCase, APITests {
             XCTFail("\(uploadResult2)")
         }
         
-        if let deferredUploadId = deferredUploadId {
-            // Wait for a bit, before polling server to see if the upload is done.
-            let exp = expectation(description: "Deferred Upload")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
-                exp.fulfill()
-            }
-            waitForExpectations(timeout: 20, handler: nil)
-            
-            var status: DeferredUploadStatus?
-            let getUploadsResult = self.getUploadsResults(deferredUploadId: deferredUploadId)
-            if case .success(let s) = getUploadsResult {
-                status = s
-            }
-            
+        if let deferredUploadId = deferredUploadId {            
+            let status = delayedGetUploadsResults(deferredUploadId: deferredUploadId)
             XCTAssert(status == .completed, "\(String(describing: status))")
         }
         
