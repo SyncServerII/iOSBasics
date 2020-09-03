@@ -123,7 +123,6 @@ class NetworkCache: DatabaseModel {
     static let transferField = Field("transfer", \M.transfer)
     var transfer: NetworkTransfer?
 
-
     init(db: Connection,
         id: Int64! = nil,
         taskIdentifier: Int,

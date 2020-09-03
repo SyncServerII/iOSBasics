@@ -2,7 +2,7 @@ import SQLite
 import Foundation
 import ServerShared
 
-// Represents a file the iOSBasics client knows about in regards to the current signed in user. Used to represent a directory of all files for the current signed in user.
+// Represents a file the iOSBasics client knows about in regards to the current signed in user. Used to represent a directory of all files for the current signed in user. Each file is part of a specific SyncObject.
 
 class DirectoryEntry: DatabaseModel {
     enum DirectoryEntryError: Error {
@@ -21,18 +21,9 @@ class DirectoryEntry: DatabaseModel {
     
     static let fileVersionField = Field("fileVersion", \M.fileVersion)
     var fileVersion: Int64?
-    
-    static let sharingGroupUUIDField = Field("sharingGroupUUID", \M.sharingGroupUUID)
-    var sharingGroupUUID: UUID
 
     static let fileGroupUUIDField = Field("fileGroupUUID", \M.fileGroupUUID)
     var fileGroupUUID: UUID?
-    
-    static let appMetaDataField = Field("appMetaData", \M.appMetaData)
-    var appMetaData: String?
-
-    static let appMetaDataVersionField = Field("appMetaDataVersion", \M.appMetaDataVersion)
-    var appMetaDataVersion: Int64?
 
     static let cloudStorageTypeField = Field("cloudStorageType", \M.cloudStorageType)
     var cloudStorageType: CloudStorageType
@@ -51,12 +42,9 @@ class DirectoryEntry: DatabaseModel {
         fileUUID: UUID,
         mimeType: MimeType,
         fileVersion: Int64?,
-        sharingGroupUUID: UUID,
         cloudStorageType: CloudStorageType,
         deletedLocally: Bool,
         deletedOnServer: Bool,
-        appMetaData: String? = nil,
-        appMetaDataVersion: Int64? = nil,
         fileGroupUUID: UUID? = nil,
         goneReason: String? = nil) throws {
         
@@ -70,10 +58,7 @@ class DirectoryEntry: DatabaseModel {
         self.fileUUID = fileUUID
         self.mimeType = mimeType
         self.fileVersion = fileVersion
-        self.sharingGroupUUID = sharingGroupUUID
         self.cloudStorageType = cloudStorageType
-        self.appMetaData = appMetaData
-        self.appMetaDataVersion = appMetaDataVersion
         self.fileGroupUUID = fileGroupUUID
         self.deletedLocally = deletedLocally
         self.deletedOnServer = deletedOnServer
@@ -88,10 +73,7 @@ class DirectoryEntry: DatabaseModel {
             t.column(fileUUIDField.description)
             t.column(mimeTypeField.description)
             t.column(fileVersionField.description)
-            t.column(sharingGroupUUIDField.description)
             t.column(cloudStorageTypeField.description)
-            t.column(appMetaDataField.description)
-            t.column(appMetaDataVersionField.description)
             t.column(fileGroupUUIDField.description)
             t.column(deletedLocallyField.description)
             t.column(deletedOnServerField.description)
@@ -105,12 +87,9 @@ class DirectoryEntry: DatabaseModel {
             fileUUID: row[Self.fileUUIDField.description],
             mimeType: row[Self.mimeTypeField.description],
             fileVersion: row[Self.fileVersionField.description],
-            sharingGroupUUID: row[Self.sharingGroupUUIDField.description],
             cloudStorageType: row[Self.cloudStorageTypeField.description],
             deletedLocally: row[Self.deletedLocallyField.description],
             deletedOnServer: row[Self.deletedOnServerField.description],
-            appMetaData: row[Self.appMetaDataField.description],
-            appMetaDataVersion: row[Self.appMetaDataVersionField.description],
             fileGroupUUID: row[Self.fileGroupUUIDField.description],
             goneReason: row[Self.goneReasonField.description]
         )
@@ -121,10 +100,7 @@ class DirectoryEntry: DatabaseModel {
             Self.fileUUIDField.description <- fileUUID,
             Self.mimeTypeField.description <- mimeType,
             Self.fileVersionField.description <- fileVersion,
-            Self.sharingGroupUUIDField.description <- sharingGroupUUID,
             Self.cloudStorageTypeField.description <- cloudStorageType,
-            Self.appMetaDataField.description <- appMetaData,
-            Self.appMetaDataVersionField.description <- appMetaDataVersion,
             Self.fileGroupUUIDField.description <- fileGroupUUID,
             Self.deletedLocallyField.description <- deletedLocally,
             Self.deletedOnServerField.description <- deletedOnServer,

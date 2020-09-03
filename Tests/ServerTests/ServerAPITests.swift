@@ -93,9 +93,7 @@ class ServerAPITests: APITestCase, APITests {
         XCTAssert(user.addUser())
         
         let fileUUID = UUID()
-
-        let thisDirectory = TestingFile.directoryOfFile(#file)
-        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
+        let fileURL = exampleTextFileURL
         
         let hashing = try hashingManager.hashFor(cloudStorageType: .Dropbox)
         let checkSum = try hashing.hash(forURL: fileURL)

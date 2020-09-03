@@ -15,6 +15,9 @@ import SQLite
 @testable import iOSDropbox
 
 class APITestCase: NetworkingTestCase {
+    // A bit of a hack
+    let dropboxCredentialsPath = "/Users/chris/Desktop/NewSyncServer/Private/iOSBasics/Dropbox.credentials"
+    
     override func setUpWithError() throws {
         try super.setUpWithError()
     }
@@ -69,9 +72,7 @@ class APITestCase: NetworkingTestCase {
     }
     
     private func loadDropboxCredentials() throws -> DropboxSavedCreds {
-        let dropboxCredentialsFile = "Dropbox.credentials"
-        let thisDirectory = TestingFile.directoryOfFile(#file)
-        let dropboxCredentials = thisDirectory.appendingPathComponent(dropboxCredentialsFile)
+        let dropboxCredentials = URL(fileURLWithPath: dropboxCredentialsPath)
         return try DropboxSavedCreds.fromJSON(file: dropboxCredentials)
     }
     

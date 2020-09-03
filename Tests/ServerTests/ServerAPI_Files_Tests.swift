@@ -42,8 +42,6 @@ class ServerAPI_v0Files_Tests: APITestCase, APITests {
         // Get ready for test.
         let fileUUID = UUID()
 
-        let thisDirectory = TestingFile.directoryOfFile(#file)
-        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
         let checkSum = try hashingManager.hashFor(cloudStorageType: user.cloudStorageType).hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
@@ -93,8 +91,7 @@ class ServerAPI_v0Files_Tests: APITestCase, APITests {
         let fileUUID2 = UUID()
         let fileGroupUUID = UUID()
 
-        let thisDirectory = TestingFile.directoryOfFile(#file)
-        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
+        let fileURL = exampleTextFileURL
         
         let checkSum = try hashingManager.hashFor(cloudStorageType: user.cloudStorageType).hash(forURL: fileURL)
         
@@ -141,9 +138,7 @@ class ServerAPI_v0Files_Tests: APITestCase, APITests {
         var returnResult: DownloadFileResult?
         
         let fileUUID = UUID()
-
-        let thisDirectory = TestingFile.directoryOfFile(#file)
-        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
+        let fileURL = exampleTextFileURL
         
         let checkSum = try hashingManager.hashFor(cloudStorageType: user.cloudStorageType).hash(forURL: fileURL)
         
@@ -228,9 +223,7 @@ class ServerAPI_v0Files_Tests: APITestCase, APITests {
     
     func testUploadV0FileWithBadInitialChangeResolverDataFails() throws {
         let fileUUID = UUID()
-
-        let thisDirectory = TestingFile.directoryOfFile(#file)
-        let fileURL = thisDirectory.appendingPathComponent(exampleTextFile)
+        let fileURL = exampleTextFileURL
         
         let checkSum = try hashingManager.hashFor(cloudStorageType: user.cloudStorageType).hash(forURL: fileURL)
         

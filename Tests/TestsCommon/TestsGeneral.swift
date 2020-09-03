@@ -10,8 +10,8 @@ protocol ServerBasics {
 
 extension ServerBasics {
     // Don't put a trailing slash at end.
-    static func baseURL() -> String {
-        return "http://localhost:8080"
+    static func baseURL() -> URL {
+        return URL(string: "http://localhost:8080")!
     }
 }
 
@@ -22,6 +22,10 @@ protocol APITests: ServerAPIDelegate, NetworkingProtocol {
 
 extension APITests where Self: XCTestCase {
     var exampleTextFile:String { return "Example.txt" }
+    var exampleTextFileURL: URL {
+        let directory = TestingFile.directoryOfFile(#file)
+        return directory.appendingPathComponent(exampleTextFile)
+    }
     
     // Credentials/users
     

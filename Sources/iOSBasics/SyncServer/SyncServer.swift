@@ -1,33 +1,37 @@
 import Foundation
 import SQLite
 import iOSShared
+import ServerShared
+import iOSSignIn
 
 public class SyncServer {
     private let configuration: Configuration
     weak var delegate: SyncServerDelegate?
-    let database: Connection
+    let db: Connection
     var signIns: SignIns!
     let hashingManager: HashingManager
-    var api:ServerAPI!
+    private(set) var api:ServerAPI!
     
     public init(hashingManager: HashingManager,
+        db:Connection,
         configuration: Configuration,
         delegate: SyncServerDelegate) throws {
         self.configuration = configuration
-        self.database = try Connection(configuration.sqliteDatabasePath)
+        self.db = db
         self.hashingManager = hashingManager
-        assert(false)
-        //let networkingConfig = Networking.Configuration(temporaryFileDirectory: <#T##URL#>, temporaryFilePrefix: <#T##String#>, temporaryFileExtension: <#T##String#>, baseURL: <#T##String#>, minimumServerVersion: <#T##Version?#>)
-        //let api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: Networking.Configuration)
+        
+        let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: configuration.serverURL, minimumServerVersion: nil)
+        api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: config)
     }
     
     // MARK: Persistent queuing for upload
     
-    // Get list of pending downloads, and if no conflicting uploads, do these uploads.
-    // If there are conflicting uploads, the downloads will need to be manually started first (see methods below) and then sync retried.
+    // TODO: Get list of pending downloads, and if no conflicting uploads, do these uploads.
+    // TODO: If there are conflicting uploads, the downloads will need to be manually started first (see methods below) and then sync retried.
     // Uploads are done on a background networking URLSession.
     // If you upload an object that has a fileGroupUUID which is already queued or in progress of uploading, your request will be queued.
-    public func queue(object: SyncedObject) throws {
+    // The first time you queue a SyncedObject, this call persistently registers the DeclaredObject portion of the object. Subsequent `queue` calls with the same syncObjectId in the object, must exactly match the DeclaredObject.
+    public func queue<OBJECT: SyncedObject>(object: OBJECT) throws {
         try queueObject(object)
     }
     
@@ -39,8 +43,8 @@ public class SyncServer {
     public func uploadAppMetaData(file: UUID) {
     }
     
-    public func delete(object: SyncedObject) {
-    }
+//    public func delete(object: SyncedObject) {
+//    }
     
     public func createSharingGroup(sharingGroup: UUID, sharingGroupName: String? = nil) {
     }
@@ -55,13 +59,12 @@ public class SyncServer {
     // MARK: Download
     
     // The list of files returned here survive app relaunch.
-    func filesNeedingDownload() -> [UUID] {
+    func filesNeedingDownload() -> [(UUID, FileVersionInt)] {
         return []
     }
     
-    // Conflict resolution methods are applied automatically when files are downloaded, if there are conflicting pending uploads. See the Configuration.
     // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.
-    func startDownload(file: UUID) {
+    func startDownload(file: UUID, version: FileVersionInt) {
     }
     
     // MARK: Sharing
@@ -95,5 +98,28 @@ public class SyncServer {
     // MARK: Migration support.
     
     public func importFiles(files: [UUID]) {
+    }
+}
+
+extension SyncServer: ServerAPIDelegate {
+    func hasher(_ delegated: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing {
+        var hashing: CloudStorageHashing!
+        return hashing
+    }
+    
+    func credentialsForNetworkRequests(_ delegated: AnyObject) -> GenericCredentials {
+        var creds: GenericCredentials!
+        return creds
+    }
+    
+    func deviceUUID(_ delegated: AnyObject) -> UUID {
+        return UUID()
+    }
+    
+    func uploadCompleted(_ delegated: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
+    
+    }
+    func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
+    
     }
 }

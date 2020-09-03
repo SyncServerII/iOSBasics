@@ -26,7 +26,7 @@ enum NetworkingError: Error {
     case moreThanOneNetworkCache
 }
 
-public protocol NetworkingDelegate: AnyObject {
+protocol NetworkingDelegate: AnyObject {
     func credentialsForNetworkRequests(_ delegated: AnyObject) -> GenericCredentials
     func deviceUUID(_ delegated: AnyObject) -> UUID
     
@@ -48,7 +48,7 @@ class Networking: NSObject {
         let temporaryFileExtension:String
         
         // Don't put a trailing slash on the baseURL
-        let baseURL:String
+        let baseURL:URL
         
         let minimumServerVersion: Version?
         
@@ -58,7 +58,7 @@ class Networking: NSObject {
         init(temporaryFileDirectory: URL,
             temporaryFilePrefix:String,
             temporaryFileExtension:String,
-            baseURL:String,
+            baseURL:URL,
             minimumServerVersion: Version?,
             packageTests: Bool = false) {
 

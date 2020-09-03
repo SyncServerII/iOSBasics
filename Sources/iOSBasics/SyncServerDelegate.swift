@@ -7,10 +7,10 @@ public enum UUIDCollisionType {
     case device
 }
 
-public protocol SyncServerDelegate: class {
+public protocol SyncServerDelegate: AnyObject {
     func syncCompleted(_ syncServer: SyncServer)
     
-    func downloadCompleted(_ syncServer: SyncServer, object: SyncedObject)
+    func downloadCompleted(_ syncServer: SyncServer, syncObjectId: UUID)
     
     // A uuid that was initially generated on the client 
     func uuidCollision(_ syncServer: SyncServer, type: UUIDCollisionType, from: UUID, to: UUID)

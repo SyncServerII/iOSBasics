@@ -44,13 +44,13 @@ class ServerAPI {
         case user(accessToken:String)
     }
     
-    static func makeURL(forEndpoint endpoint:ServerEndpoint, baseURL: String, parameters:String? = nil) -> URL {
+    static func makeURL(forEndpoint endpoint:ServerEndpoint, baseURL: URL, parameters:String? = nil) -> URL {
         var path = endpoint.pathWithSuffixSlash
         if let parameters = parameters {
             path += "?" + parameters
         }
         
-        return URL(string: baseURL + path)!
+        return baseURL.appendingPathComponent(path)
     }
     
     func checkForError(statusCode:Int?, error:Error?) -> Error? {

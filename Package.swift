@@ -1,4 +1,4 @@
-// swift-tools-version:5.2
+// swift-tools-version:5.3
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -51,6 +51,16 @@ let package = Package(
                 "iOSShared", "iOSSignIn", "Version", "FileMD5Hash", "ChangeResolvers",
                 .product(name: "SQLite", package: "SQLite.swift")
             ]),
+            
+        .testTarget(
+            name: "TestsCommon",
+            dependencies: [
+                "iOSBasics", "iOSShared", "iOSSignIn", "Version", "iOSDropbox",
+                "ChangeResolvers",
+                .product(name: "SQLite", package: "SQLite.swift")],
+            resources: [
+                .copy("Example.txt")]
+            ),
         .testTarget(
             name: "iOSBasicsTests",
             dependencies: [
@@ -59,11 +69,17 @@ let package = Package(
                 .product(name: "SQLite", package: "SQLite.swift")
             ]),
         .testTarget(
-            name: "ServerTests",
+            name: "SyncServerTests",
             dependencies: [
                 "iOSBasics", "iOSShared", "iOSSignIn", "Version", "iOSDropbox",
                 "ChangeResolvers",
+                "TestsCommon",
                 .product(name: "SQLite", package: "SQLite.swift")
-            ])
+            ]),
+//        .testTarget(
+//            name: "ServerTests",
+//            dependencies: [
+//                "CommonTests"
+//            ])
     ]
 )

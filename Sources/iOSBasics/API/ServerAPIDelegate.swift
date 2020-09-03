@@ -17,8 +17,8 @@ public enum DownloadFileResult {
     // The GoneReason should never be userRemoved-- because when a user is removed, their files are marked as deleted in the FileIndex, and thus the files are generally not downloadable.
     case gone(appMetaData:AppMetaData?, cloudStorageType:CloudStorageType, GoneReason)
 }
-    
-public protocol ServerAPIDelegate: NetworkingDelegate {
+
+protocol ServerAPIDelegate: NetworkingDelegate {
     // Methods for the ServerAPI to get information from its user/caller
     func hasher(_ delegated: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing
 }
