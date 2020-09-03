@@ -9,7 +9,7 @@ import XCTest
 @testable import iOSBasics
 import SQLite
 import ServerShared
-@testable import TestsCommon
+// @testable import TestsCommon
 
 class SharingEntryTests: XCTestCase {
     var database: Connection!

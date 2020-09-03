@@ -2,7 +2,7 @@ import XCTest
 @testable import iOSBasics
 import SQLite
 import ServerShared
-@testable import TestsCommon
+// @testable import TestsCommon
 
 class SyncedObjectModelTests: XCTestCase {
     var database: Connection!

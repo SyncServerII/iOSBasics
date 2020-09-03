@@ -3,8 +3,8 @@ import XCTest
 import SQLite
 import ServerShared
 import iOSShared
-@testable import TestsCommon
-
+// @testable import TestsCommon
+/*
 class UploadQueueTests: APITestCase {
     var db: Connection!
     
@@ -18,3 +18,4 @@ class UploadQueueTests: APITestCase {
     override func tearDownWithError() throws {
     }
 }
+*/

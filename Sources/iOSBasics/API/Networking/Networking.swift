@@ -48,7 +48,7 @@ class Networking: NSObject {
         let temporaryFileExtension:String
         
         // Don't put a trailing slash on the baseURL
-        let baseURL:URL
+        let baseURL:String
         
         let minimumServerVersion: Version?
         
@@ -58,7 +58,7 @@ class Networking: NSObject {
         init(temporaryFileDirectory: URL,
             temporaryFilePrefix:String,
             temporaryFileExtension:String,
-            baseURL:URL,
+            baseURL:String,
             minimumServerVersion: Version?,
             packageTests: Bool = false) {
 

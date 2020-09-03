@@ -10,8 +10,8 @@ protocol ServerBasics {
 
 extension ServerBasics {
     // Don't put a trailing slash at end.
-    static func baseURL() -> URL {
-        return URL(string: "http://localhost:8080")!
+    static func baseURL() -> String {
+        return "http://localhost:8080"
     }
 }
 

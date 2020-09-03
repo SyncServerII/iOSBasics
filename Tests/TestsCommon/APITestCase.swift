@@ -39,7 +39,7 @@ class APITestCase: NetworkingTestCase {
             switch result {
             case .success:
                 break
-            case .failure:
+            case .failure(let error):
                 success = false
             }
             exp.fulfill()

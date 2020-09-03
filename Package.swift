@@ -52,34 +52,42 @@ let package = Package(
                 .product(name: "SQLite", package: "SQLite.swift")
             ]),
             
-        .testTarget(
-            name: "TestsCommon",
-            dependencies: [
-                "iOSBasics", "iOSShared", "iOSSignIn", "Version", "iOSDropbox",
-                "ChangeResolvers",
-                .product(name: "SQLite", package: "SQLite.swift")],
-            resources: [
-                .copy("Example.txt")]
-            ),
+        // This isn't working https://stackoverflow.com/questions/63716793
+        // Instead, I have symbolic links for TestsCommon.
+//        .testTarget(
+//            name: "TestsCommon",
+//            dependencies: [
+//                "iOSBasics", "iOSShared", "iOSSignIn", "Version", "iOSDropbox",
+//                "ChangeResolvers",
+//                .product(name: "SQLite", package: "SQLite.swift")],
+//            resources: [
+//                .copy("Example.txt")]
+//            ),
+
         .testTarget(
             name: "iOSBasicsTests",
             dependencies: [
                 "iOSBasics", "iOSShared", "iOSSignIn", "Version", "iOSDropbox",
                 "ChangeResolvers",
-                .product(name: "SQLite", package: "SQLite.swift")
-            ]),
+                .product(name: "SQLite", package: "SQLite.swift")]
+            ),
         .testTarget(
             name: "SyncServerTests",
             dependencies: [
                 "iOSBasics", "iOSShared", "iOSSignIn", "Version", "iOSDropbox",
                 "ChangeResolvers",
-                "TestsCommon",
-                .product(name: "SQLite", package: "SQLite.swift")
-            ]),
-//        .testTarget(
-//            name: "ServerTests",
-//            dependencies: [
-//                "CommonTests"
-//            ])
+                .product(name: "SQLite", package: "SQLite.swift")],
+            resources: [
+                .copy("TestsCommon/Example.txt")]
+            ),
+        .testTarget(
+            name: "ServerTests",
+            dependencies: [
+                "iOSBasics", "iOSShared", "iOSSignIn", "Version", "iOSDropbox",
+                "ChangeResolvers",
+                .product(name: "SQLite", package: "SQLite.swift")],
+            resources: [
+                .copy("TestsCommon/Example.txt")]
+            )
     ]
 )

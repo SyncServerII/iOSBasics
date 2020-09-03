@@ -42,6 +42,8 @@ class ServerAPI_v0Files_Tests: APITestCase, APITests {
         // Get ready for test.
         let fileUUID = UUID()
 
+        let fileURL = exampleTextFileURL
+        
         let checkSum = try hashingManager.hashFor(cloudStorageType: user.cloudStorageType).hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),

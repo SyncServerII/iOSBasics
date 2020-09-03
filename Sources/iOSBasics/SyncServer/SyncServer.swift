@@ -20,7 +20,7 @@ public class SyncServer {
         self.db = db
         self.hashingManager = hashingManager
         
-        let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: configuration.serverURL, minimumServerVersion: nil)
+        let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: configuration.serverURL.absoluteString, minimumServerVersion: nil)
         api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: config)
     }
     
