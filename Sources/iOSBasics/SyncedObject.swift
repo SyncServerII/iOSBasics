@@ -14,7 +14,7 @@ public protocol File: Hashable {
     var uuid: UUID {get}
 }
 
-public protocol FileDeclaration: File {
+public protocol DeclarableFile: File {
     var mimeType: MimeType {get}
     var appMetaData: String? {get}
 
@@ -22,15 +22,15 @@ public protocol FileDeclaration: File {
     var changeResolverName: String? {get}
 }
 
-public extension FileDeclaration {
-    func compare<FILE: FileDeclaration>(to other: FILE) -> Bool {
+public extension DeclarableFile {
+    func compare<FILE: DeclarableFile>(to other: FILE) -> Bool {
         return self.uuid == other.uuid &&
             self.mimeType == other.mimeType &&
             self.appMetaData == other.appMetaData &&
             self.changeResolverName == other.changeResolverName
     }
     
-    static func compare<FILE1: FileDeclaration, FILE2: FileDeclaration>(
+    static func compare<FILE1: DeclarableFile, FILE2: DeclarableFile>(
         first: Set<FILE1>, second: Set<FILE2>) -> Bool {
         let firstUUIDs = Set<UUID>(first.map { $0.uuid })
         let secondUUIDs = Set<UUID>(second.map { $0.uuid })
@@ -86,7 +86,7 @@ extension UploadableFile {
     }
 }
 
-public protocol DeclaredObjectBasics {
+public protocol DeclarableObjectBasics {
     // An id for this SyncedObject. This is required because we're organizing SyncObject's around these UUID's. AKA, declObjectId
     var fileGroupUUID: UUID { get }
     
@@ -98,8 +98,8 @@ public protocol DeclaredObjectBasics {
     var sharingGroupUUID: UUID { get }
 }
 
-extension DeclaredObjectBasics {
-    func compare<BASICS: DeclaredObjectBasics>(to other: BASICS) -> Bool {
+extension DeclarableObjectBasics {
+    func compare<BASICS: DeclarableObjectBasics>(to other: BASICS) -> Bool {
         return self.fileGroupUUID == other.fileGroupUUID &&
             self.objectType == other.objectType &&
             self.sharingGroupUUID == other.sharingGroupUUID
@@ -113,17 +113,17 @@ extension DeclaredObjectBasics {
 
 Representations in terms of a set of files are selected both in terms of the need for storing information for an application's data object, and in terms of having representations that are basically intelligible to a user when stored in their cloud storage. For example, it wouldn't be suitable to compress data files in a non-obvious encoding. JPEG format is fine as it's widely used, and zip compression could be fine as well. But a proprietary compression algorithm not widely used would not be suitable.
 */
-public protocol DeclaredObject: DeclaredObjectBasics {
-    associatedtype DeclaredFile: FileDeclaration
+public protocol DeclarableObject: DeclarableObjectBasics {
+    associatedtype DeclaredFile: DeclarableFile
     var declaredFiles: Set<DeclaredFile> { get }
 }
 
-extension DeclaredObject {
+extension DeclarableObject {
     var declObjectId: UUID {
         return fileGroupUUID
     }
     
-    func declCompare<OBJ: DeclaredObject>(to other: OBJ) -> Bool {
+    func declCompare<OBJ: DeclarableObject>(to other: OBJ) -> Bool {
         return self.compare(to: other) &&
             DeclaredFile.compare(first: self.declaredFiles, second: other.declaredFiles)
     }

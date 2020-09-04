@@ -4,33 +4,6 @@ import SQLite
 import ServerShared
 import iOSShared
 
-struct TestUploadable: UploadableFile {
-    let uuid: UUID
-    let url: URL
-    let persistence: LocalPersistence
-}
-
-struct TestDeclaration: FileDeclaration {
-    let uuid: UUID
-    let mimeType: MimeType
-    let appMetaData: String?
-    let changeResolverName: String?
-}
-
-struct TestObject: DeclaredObject {
-    // An id for this SyncedObject. This is required because we're organizing SyncObject's around these UUID's. AKA, syncObjectId
-    let fileGroupUUID: UUID
-    
-    // The type of object that this collection of files is representing.
-    // E.g., a Neebla image or Neebla URL as above.
-    let objectType: String
-
-    // An id for the group of users that have access to this SyncedObject
-    let sharingGroupUUID: UUID
-    
-    let declaredFiles: Set<TestDeclaration>
-}
-
 class UploadQueueTests: APITestCase, APITests {
     var db: Connection!
     var syncServer: SyncServer!
@@ -49,12 +22,12 @@ class UploadQueueTests: APITestCase, APITests {
     }
     
     func testSyncObjectNotYetRegisteredWorks() throws {
-        let declaration = TestDeclaration(uuid: UUID(), mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
-        let declarations = Set<TestDeclaration>(arrayLiteral: declaration)
-        let uploadable = TestUploadable(uuid: UUID(), url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
-        let uploadables = Set<TestUploadable>(arrayLiteral: uploadable)
+        let declaration = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declarations = Set<FileDeclaration>(arrayLiteral: declaration)
+        let uploadable = FileUpload(uuid: UUID(), url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
+        let uploadables = Set<FileUpload>(arrayLiteral: uploadable)
         
-        let testObject = TestObject(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
         try syncServer.queue(declaration: testObject, uploads: uploadables)
         
         let obj = try syncServer.lookupDeclObject(declObjectId: testObject.declObjectId)

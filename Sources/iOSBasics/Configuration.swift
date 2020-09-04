@@ -3,13 +3,22 @@ import Version
 
 public struct Configuration {
     // If your app uses an app group identifier to have a shared container between extensions and your app.
-    let appGroupIdentifier: String?
+    public let appGroupIdentifier: String?
     
-    let sqliteDatabasePath: String
+    public let sqliteDatabasePath: String
     
-    let serverURL: URL
-    let minimumServerVersion:Version?
-    let failoverMessageURL:URL?
+    public let serverURL: URL
+    public let minimumServerVersion:Version?
+    public let failoverMessageURL:URL?
 
-    let cloudFolderName:String?
+    public let cloudFolderName:String?
+    
+    public init(appGroupIdentifier: String?, sqliteDatabasePath: String, serverURL: URL, minimumServerVersion:Version?, failoverMessageURL:URL?, cloudFolderName:String?) {
+        self.appGroupIdentifier = appGroupIdentifier
+        self.sqliteDatabasePath = sqliteDatabasePath
+        self.serverURL = serverURL
+        self.minimumServerVersion = minimumServerVersion
+        self.failoverMessageURL = failoverMessageURL
+        self.cloudFolderName = cloudFolderName
+    }
 }

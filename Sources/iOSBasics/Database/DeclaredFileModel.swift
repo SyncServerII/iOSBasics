@@ -11,7 +11,7 @@ import ServerShared
 
 // Declared files for DeclaredObject's.
 
-class DeclaredFileModel: DatabaseModel, Equatable, Hashable, FileDeclaration {
+class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
     let db: Connection
     var id: Int64!
     

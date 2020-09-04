@@ -10,7 +10,7 @@ import SQLite
 
 // DeclaredObject's (see DeclaredObjectModel for the declared files).
 
-class DeclaredObjectModel: DatabaseModel, DeclaredObjectBasics, Equatable {
+class DeclaredObjectModel: DatabaseModel, DeclarableObjectBasics, Equatable {
     let db: Connection
     var id: Int64!
     

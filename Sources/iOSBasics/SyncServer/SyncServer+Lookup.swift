@@ -10,7 +10,7 @@ import SQLite
 
 extension SyncServer {
     // throws SyncServerError.noObject if no object found for declObjectId
-    func lookupDeclObject(declObjectId: UUID) throws -> some DeclaredObject {
+    func lookupDeclObject(declObjectId: UUID) throws -> some DeclarableObject {
         let models:[DeclaredObjectModel] = try DeclaredObjectModel.fetch(db: db, where: declObjectId == DeclaredObjectModel.fileGroupUUIDField.description)
         switch models.count {
         case 0:
@@ -23,11 +23,11 @@ extension SyncServer {
         
         let model = models[0]
                     
-        let declaredFilesInDatabase = try DeclaredFileModel.fetch(db: db, where: declObjectId == DeclaredFileModel.fileGroupUUIDField.description).map { FileDecl(uuid: $0.uuid, mimeType: $0.mimeType, appMetaData: $0.appMetaData, changeResolverName: $0.changeResolverName) }
+        let declaredFilesInDatabase = try DeclaredFileModel.fetch(db: db, where: declObjectId == DeclaredFileModel.fileGroupUUIDField.description).map { FileDeclaration(uuid: $0.uuid, mimeType: $0.mimeType, appMetaData: $0.appMetaData, changeResolverName: $0.changeResolverName) }
         
-        let files = Set<FileDecl>(declaredFilesInDatabase)
+        let files = Set<FileDeclaration>(declaredFilesInDatabase)
         
-        let declObject = DeclObject(fileGroupUUID: model.fileGroupUUID, objectType: model.objectType, sharingGroupUUID: model.sharingGroupUUID, declaredFiles: files)
+        let declObject = ObjectDeclaration(fileGroupUUID: model.fileGroupUUID, objectType: model.objectType, sharingGroupUUID: model.sharingGroupUUID, declaredFiles: files)
         
         return declObject
     }

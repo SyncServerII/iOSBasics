@@ -10,7 +10,7 @@ enum SyncServerError: Error {
 }
 
 extension SyncServer {
-    public func queueObject<DECL: DeclaredObject, UPL:UploadableFile>
+    public func queueObject<DECL: DeclarableObject, UPL:UploadableFile>
         (declaration: DECL, uploads: Set<UPL>) throws {
         // First, see if this DeclaredObject has been registered before.
         let declaredObjects = try DeclaredObjectModel.fetch(db: db,
