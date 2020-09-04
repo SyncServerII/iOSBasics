@@ -22,15 +22,72 @@ public protocol FileDeclaration: File {
     var changeResolverName: String? {get}
 }
 
+public extension FileDeclaration {
+    func compare<FILE: FileDeclaration>(to other: FILE) -> Bool {
+        return self.uuid == other.uuid &&
+            self.mimeType == other.mimeType &&
+            self.appMetaData == other.appMetaData &&
+            self.changeResolverName == other.changeResolverName
+    }
+    
+    static func compare<FILE1: FileDeclaration, FILE2: FileDeclaration>(
+        first: Set<FILE1>, second: Set<FILE2>) -> Bool {
+        let firstUUIDs = Set<UUID>(first.map { $0.uuid })
+        let secondUUIDs = Set<UUID>(second.map { $0.uuid })
+        
+        guard firstUUIDs == secondUUIDs else {
+            return false
+        }
+        
+        for uuid in firstUUIDs {
+            guard let a = first.first(where: {$0.uuid == uuid}),
+                let b = second.first(where: {$0.uuid == uuid}) else {
+                return false
+            }
+            
+            return a.compare(to: b)
+        }
+        
+        return true
+    }
+}
+
 public protocol UploadableFile: File {
     var url: URL {get}
     var persistence: LocalPersistence {get}
 }
 
-public protocol DeclaredObject {
-    associatedtype DeclaredFile: FileDeclaration
+extension UploadableFile {
+    func compare<FILE: UploadableFile>(to other: FILE) -> Bool {
+        return self.uuid == other.uuid &&
+            self.url == other.url &&
+            self.persistence == other.persistence
+    }
+    
+    static func compare<FILE1: UploadableFile, FILE2: UploadableFile>(
+        first: Set<FILE1>, second: Set<FILE2>) -> Bool {
+        let firstUUIDs = Set<UUID>(first.map { $0.uuid })
+        let secondUUIDs = Set<UUID>(second.map { $0.uuid })
+        
+        guard firstUUIDs == secondUUIDs else {
+            return false
+        }
+        
+        for uuid in firstUUIDs {
+            guard let a = first.first(where: {$0.uuid == uuid}),
+                let b = second.first(where: {$0.uuid == uuid}) else {
+                return false
+            }
+            
+            return a.compare(to: b)
+        }
+        
+        return true
+    }
+}
 
-    // An id for this SyncedObject. This is required because we're organizing SyncObject's around these UUID's. AKA, syncObjectId
+public protocol DeclaredObjectBasics {
+    // An id for this SyncedObject. This is required because we're organizing SyncObject's around these UUID's. AKA, declObjectId
     var fileGroupUUID: UUID { get }
     
     // The type of object that this collection of files is representing.
@@ -38,17 +95,17 @@ public protocol DeclaredObject {
     var objectType: String { get }
 
     // An id for the group of users that have access to this SyncedObject
-    var sharingGroup: UUID { get }
-    
-    var declaredFiles: Set<DeclaredFile> { get }
+    var sharingGroupUUID: UUID { get }
 }
 
-extension DeclaredObject {
-    var syncObjectId: UUID {
-        return fileGroupUUID
+extension DeclaredObjectBasics {
+    func compare<BASICS: DeclaredObjectBasics>(to other: BASICS) -> Bool {
+        return self.fileGroupUUID == other.fileGroupUUID &&
+            self.objectType == other.objectType &&
+            self.sharingGroupUUID == other.sharingGroupUUID
     }
 }
-    
+
 /* An abstraction of a data object backed by one or more cloud storage files. Two examples from Neebla:
 
 1) An image: Represented by a (a) jpg image file and (b) a discussion thread file.
@@ -56,8 +113,19 @@ extension DeclaredObject {
 
 Representations in terms of a set of files are selected both in terms of the need for storing information for an application's data object, and in terms of having representations that are basically intelligible to a user when stored in their cloud storage. For example, it wouldn't be suitable to compress data files in a non-obvious encoding. JPEG format is fine as it's widely used, and zip compression could be fine as well. But a proprietary compression algorithm not widely used would not be suitable.
 */
-public protocol SyncedObject: DeclaredObject {
-    associatedtype UploadFile: UploadableFile
-    var uploads: Set<UploadFile> { get }
+public protocol DeclaredObject: DeclaredObjectBasics {
+    associatedtype DeclaredFile: FileDeclaration
+    var declaredFiles: Set<DeclaredFile> { get }
+}
+
+extension DeclaredObject {
+    var declObjectId: UUID {
+        return fileGroupUUID
+    }
+    
+    func declCompare<OBJ: DeclaredObject>(to other: OBJ) -> Bool {
+        return self.compare(to: other) &&
+            DeclaredFile.compare(first: self.declaredFiles, second: other.declaredFiles)
+    }
 }
 

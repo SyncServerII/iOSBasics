@@ -18,7 +18,7 @@ struct Field<FieldType, Model: DatabaseModel> {
     }
 }
 
-protocol DatabaseModel: class {
+protocol DatabaseModel: AnyObject {
     associatedtype M: DatabaseModel
     
     var db: Connection { get }
@@ -100,6 +100,8 @@ extension DatabaseModel {
         
         return result
     }
+    
+    
     
     // There must be 0 or 1 rows in the expected result.
     static func fetchSingleRow(db: Connection, `where`: Expression<Bool>) throws -> M? {

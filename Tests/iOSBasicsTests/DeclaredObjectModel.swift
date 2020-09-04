@@ -3,14 +3,14 @@ import XCTest
 import SQLite
 import ServerShared
 
-class DeclaredObjectModelTests: XCTestCase {
+class DeclaredFileModelTests: XCTestCase {
     var database: Connection!
     let fileGroupUUID = UUID()
-    var entry:DeclaredObjectModel!
+    var entry:DeclaredFileModel!
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try DeclaredObjectModel(db: database, fileGroupUUID: fileGroupUUID, objectType: "someObjectType", sharingGroupUUID: UUID())
+        entry = try DeclaredFileModel(db: database, fileGroupUUID: fileGroupUUID, uuid: UUID(), mimeType: MimeType.text, appMetaData: "Foo", changeResolverName: "Bar")
     }
 
     override func tearDownWithError() throws {
@@ -18,38 +18,38 @@ class DeclaredObjectModelTests: XCTestCase {
     }
 
     func testCreateTable() throws {
-        try DeclaredObjectModel.createTable(db: database)
+        try DeclaredFileModel.createTable(db: database)
     }
     
     func testDoubleCreateTable() throws {
-        try DeclaredObjectModel.createTable(db: database)
-        try DeclaredObjectModel.createTable(db: database)
+        try DeclaredFileModel.createTable(db: database)
+        try DeclaredFileModel.createTable(db: database)
     }
     
     func testInsertIntoTable() throws {
-        try DeclaredObjectModel.createTable(db: database)
+        try DeclaredFileModel.createTable(db: database)
         try entry.insert()
     }
-    
+
     func testFilterWhenRowNotFound() throws {
-        try DeclaredObjectModel.createTable(db: database)
+        try DeclaredFileModel.createTable(db: database)
         
         var count = 0
-        try DeclaredObjectModel.fetch(db: database,
-            where: fileGroupUUID == DeclaredObjectModel.fileGroupUUIDField.description) { row in
+        try DeclaredFileModel.fetch(db: database,
+            where: fileGroupUUID == DeclaredFileModel.fileGroupUUIDField.description) { row in
             count += 1
         }
         
         XCTAssert(count == 0)
     }
-
+    
     func testFilterWhenRowFound() throws {
-        try DeclaredObjectModel.createTable(db: database)
+        try DeclaredFileModel.createTable(db: database)
         try entry.insert()
         
         var count = 0
-        try DeclaredObjectModel.fetch(db: database,
-            where: fileGroupUUID == DeclaredObjectModel.fileGroupUUIDField.description) { row in
+        try DeclaredFileModel.fetch(db: database,
+            where: fileGroupUUID == DeclaredFileModel.fileGroupUUIDField.description) { row in
             XCTAssertEqual(entry, row)
             count += 1
         }
@@ -58,35 +58,35 @@ class DeclaredObjectModelTests: XCTestCase {
     }
     
     func testFilterWhenTwoRowsFound() throws {
-        try DeclaredObjectModel.createTable(db: database)
+        try DeclaredFileModel.createTable(db: database)
         try entry.insert()
         
         // Second entry-- to have a different fileGroupUUID, the primary key.
-        let entry2 = try DeclaredObjectModel(db: database, fileGroupUUID: UUID(), objectType: "someObjectType", sharingGroupUUID: UUID())
+        let entry2 = try DeclaredFileModel(db: database, fileGroupUUID: UUID(), uuid: UUID(), mimeType: MimeType.text, appMetaData: "Foo2", changeResolverName: "Bar2")
 
         try entry2.insert()
 
         var count = 0
-        try DeclaredObjectModel.fetch(db: database) { row in
+        try DeclaredFileModel.fetch(db: database) { row in
             count += 1
         }
         
         XCTAssert(count == 2)
     }
-
+    
     func testUpdate() throws {
-        try DeclaredObjectModel.createTable(db: database)
+        try DeclaredFileModel.createTable(db: database)
         try entry.insert()
                 
         let replacement = UUID()
         
         entry = try entry.update(setters:
-            DeclaredObjectModel.fileGroupUUIDField.description <- replacement
+            DeclaredFileModel.fileGroupUUIDField.description <- replacement
         )
                 
         var count = 0
-        try DeclaredObjectModel.fetch(db: database,
-            where: replacement == DeclaredObjectModel.fileGroupUUIDField.description) { row in
+        try DeclaredFileModel.fetch(db: database,
+            where: replacement == DeclaredFileModel.fileGroupUUIDField.description) { row in
             XCTAssert(row.fileGroupUUID == replacement, "\(row.fileGroupUUID)")
             count += 1
         }
@@ -95,15 +95,15 @@ class DeclaredObjectModelTests: XCTestCase {
         
         XCTAssert(count == 1)
     }
-
+    
     func testDelete() throws {
-        try DeclaredObjectModel.createTable(db: database)
+        try DeclaredFileModel.createTable(db: database)
         try entry.insert()
         
         try entry.delete()
         
         var count = 0
-        try DeclaredObjectModel.fetch(db: database) { row in
+        try DeclaredFileModel.fetch(db: database) { row in
             count += 1
         }
         

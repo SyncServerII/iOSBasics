@@ -1,12 +1,57 @@
 import Foundation
 import SQLite
 import ServerShared
+import iOSShared
+
+enum SyncServerError: Error {
+    case declarationDifferentThanSyncedObject
+    case tooManyObjects
+    case noObject
+}
 
 extension SyncServer {
-    func queueObject<OBJECT: SyncedObject>(_ object: OBJECT) throws {
+    public func queueObject<DECL: DeclaredObject, UPL:UploadableFile>
+        (declaration: DECL, uploads: Set<UPL>) throws {
+        // First, see if this DeclaredObject has been registered before.
+        let declaredObjects = try DeclaredObjectModel.fetch(db: db,
+            where: declaration.fileGroupUUID == DeclaredObjectModel.fileGroupUUIDField.description)
+            
+        switch declaredObjects.count {
+        case 0:
+            // Need to create DeclaredObjectModel
+            let declaredObject = try DeclaredObjectModel(db: db, fileGroupUUID: declaration.fileGroupUUID, objectType: declaration.objectType, sharingGroupUUID: declaration.sharingGroupUUID)
+            try declaredObject.insert()
+                        
+            // Need to add entries for the file declarations.
+            for file in declaration.declaredFiles {
+                let declared = try DeclaredFileModel(db: db, fileGroupUUID: declaration.fileGroupUUID, uuid: file.uuid, mimeType: file.mimeType, appMetaData: file.appMetaData, changeResolverName: file.changeResolverName)
+                try declared.insert()
+            }
+
+        case 1:
+            // Already have registered the SyncedObject
+            // Need to compare this one against the one in the database.
+
+            let declaredObject = declaredObjects[0]
+            guard declaredObject.compare(to: declaration) else {
+                throw SyncServerError.declarationDifferentThanSyncedObject
+            }
+            
+            let declaredFilesInDatabase = try DeclaredFileModel.fetch(db: db, where: declaration.fileGroupUUID == DeclaredFileModel.fileGroupUUIDField.description)
+            
+            let first = Set<DeclaredFileModel>(declaredFilesInDatabase)
+
+            guard DeclaredFileModel.compare(first: first, second: declaration.declaredFiles) else {
+                throw SyncServerError.declarationDifferentThanSyncedObject
+            }
+
+        default:
+            logger.error("Had two registered DeclaredObject's for the same fileGroupUUID: fileGroupUUID: \(declaration.fileGroupUUID)")
+        }
+        
         // See if there are queued object(s) for this file group.
         let queuedFiles = try UploadFileTracker.numberRows(db: db, where:
-            object.fileGroupUUID == UploadFileTracker.fileGroupUUIDField.description
+            declaration.fileGroupUUID == UploadFileTracker.fileGroupUUIDField.description
         )
         
         // Queue tracker(s) for this upload

@@ -8,11 +8,9 @@
 import Foundation
 import SQLite
 
-// Declarations for SyncedObject's
+// DeclaredObject's (see DeclaredObjectModel for the declared files).
 
-class SyncedObjectModel: DatabaseModel, Equatable {
-
-    
+class DeclaredObjectModel: DatabaseModel, DeclaredObjectBasics, Equatable {
     let db: Connection
     var id: Int64!
     
@@ -37,11 +35,8 @@ class SyncedObjectModel: DatabaseModel, Equatable {
         self.sharingGroupUUID = sharingGroupUUID
     }
     
-    static func == (lhs: SyncedObjectModel, rhs: SyncedObjectModel) -> Bool {
-        return lhs.id == rhs.id &&
-            lhs.fileGroupUUID == rhs.fileGroupUUID &&
-            lhs.objectType == rhs.objectType &&
-            lhs.sharingGroupUUID == rhs.sharingGroupUUID
+    static func == (lhs: DeclaredObjectModel, rhs: DeclaredObjectModel) -> Bool {
+        return lhs.id == rhs.id && lhs.compare(to: rhs)
     }
     
     static func createTable(db: Connection) throws {
@@ -53,8 +48,8 @@ class SyncedObjectModel: DatabaseModel, Equatable {
         }
     }
     
-    static func rowToModel(db: Connection, row: Row) throws -> SyncedObjectModel {
-        return try SyncedObjectModel(db: db,
+    static func rowToModel(db: Connection, row: Row) throws -> DeclaredObjectModel {
+        return try DeclaredObjectModel(db: db,
             id: row[Self.idField.description],
             fileGroupUUID: row[Self.fileGroupUUIDField.description],
             objectType: row[Self.objectTypeField.description],
@@ -70,3 +65,4 @@ class SyncedObjectModel: DatabaseModel, Equatable {
         )
     }
 }
+

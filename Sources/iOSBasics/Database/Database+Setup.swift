@@ -13,7 +13,8 @@ extension Database {
         try DirectoryEntry.createTable(db: db)
         try NetworkCache.createTable(db: db)
         try SharingEntry.createTable(db: db)
-        try SyncedObjectModel.createTable(db: db)
+        try DeclaredFileModel.createTable(db: db)
         try UploadFileTracker.createTable(db: db)
+        try DeclaredObjectModel.createTable(db: db)
     }
 }

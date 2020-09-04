@@ -15,6 +15,8 @@ import SQLite
 @testable import iOSDropbox
 
 class APITestCase: NetworkingTestCase {
+    let cloudFolderName = "CloudFolder"
+    
     // A bit of a hack
     let dropboxCredentialsPath = "/Users/chris/Desktop/NewSyncServer/Private/iOSBasics/Dropbox.credentials"
     
