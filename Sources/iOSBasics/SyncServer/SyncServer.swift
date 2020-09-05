@@ -32,6 +32,7 @@ public class SyncServer {
     // Uploads are done on a background networking URLSession.
     // If you upload an object that has a fileGroupUUID which is already queued or in progress of uploading, your request will be queued.
     // The first time you queue a SyncedObject, this call persistently registers the DeclaredObject portion of the object. Subsequent `queue` calls with the same syncObjectId in the object, must exactly match the DeclaredObject.
+    // The `uuid` of files present in the uploads must be in the declaration.
     public func queue<DECL: DeclarableObject, UPL:UploadableFile>
         (declaration: DECL, uploads: Set<UPL>) throws {
         try queueObject(declaration: declaration, uploads: uploads)

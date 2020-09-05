@@ -15,7 +15,7 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
     let db: Connection
     var id: Int64!
     
-    // Key into SyncedObject
+    // Key into DeclaredObject
     static let fileGroupUUIDField = Field("fileGroupUUID", \M.fileGroupUUID)
     var fileGroupUUID: UUID
     

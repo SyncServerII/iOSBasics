@@ -14,6 +14,13 @@ public protocol File: Hashable {
     var uuid: UUID {get}
 }
 
+public extension File {
+    static func hasDistinctUUIDs(in set: Set<Self>) -> Bool {
+        let uuids = Set<UUID>(set.map {$0.uuid})
+        return uuids.count == set.count
+    }
+}
+
 public protocol DeclarableFile: File {
     var mimeType: MimeType {get}
     var appMetaData: String? {get}
@@ -58,13 +65,13 @@ public protocol UploadableFile: File {
 }
 
 extension UploadableFile {
-    func compare<FILE: UploadableFile>(to other: FILE) -> Bool {
+    public func compare<FILE: UploadableFile>(to other: FILE) -> Bool {
         return self.uuid == other.uuid &&
             self.url == other.url &&
             self.persistence == other.persistence
     }
     
-    static func compare<FILE1: UploadableFile, FILE2: UploadableFile>(
+    public static func compare<FILE1: UploadableFile, FILE2: UploadableFile>(
         first: Set<FILE1>, second: Set<FILE2>) -> Bool {
         let firstUUIDs = Set<UUID>(first.map { $0.uuid })
         let secondUUIDs = Set<UUID>(second.map { $0.uuid })

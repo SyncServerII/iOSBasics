@@ -14,7 +14,7 @@ extension SyncServer {
         let models:[DeclaredObjectModel] = try DeclaredObjectModel.fetch(db: db, where: declObjectId == DeclaredObjectModel.fileGroupUUIDField.description)
         switch models.count {
         case 0:
-            throw SyncServerError.tooManyObjects
+            throw SyncServerError.noObject
         case 1:
             break
         default:

@@ -7,7 +7,7 @@
 
 import XCTest
 import ServerShared
-import iOSBasics
+@testable import iOSBasics
 
 class DeclaredObjectTests: XCTestCase {
     override func setUpWithError() throws {
@@ -16,6 +16,26 @@ class DeclaredObjectTests: XCTestCase {
 
     override func tearDownWithError() throws {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
+    }
+    
+    let url1 = URL(fileURLWithPath: "http://cprince.com")
+    let url2 = URL(fileURLWithPath: "http://google.com")
+
+    func testHasDistinctUUIDsWorks() {
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+
+        let upload1 = FileUpload(uuid: fileUUID1, url: url1, persistence: .copy)
+        let upload2 = FileUpload(uuid: fileUUID2, url: url1, persistence: .immutable)
+        let upload3 = FileUpload(uuid: fileUUID2, url: url1, persistence: .copy)
+
+        let uploads1 = Set<FileUpload>([upload1, upload2])
+        XCTAssert(uploads1.count == 2)
+        XCTAssert(FileUpload.hasDistinctUUIDs(in: uploads1))
+        
+        let uploads2 = Set<FileUpload>([upload2, upload3])
+        XCTAssert(uploads2.count == 2)
+        XCTAssert(!FileUpload.hasDistinctUUIDs(in: uploads2))
     }
 
     func testSingleFileDeclarationCompareWorks() throws {
@@ -36,7 +56,33 @@ class DeclaredObjectTests: XCTestCase {
         XCTAssertFalse(FileDeclaration.compare(first: declarations1, second: declarations3))
         XCTAssert(FileDeclaration.compare(first: declarations1, second: declarations1))
     }
- 
+     
     func testSingleFileUploadCompareWorks() throws {
+        let upload1 = FileUpload(uuid: UUID(), url: url1, persistence: .copy)
+        let upload2 = FileUpload(uuid: UUID(), url: url1, persistence: .copy)
+        XCTAssert(upload1.compare(to: upload1))
+        XCTAssertFalse(upload1.compare(to: upload2))
+    }
+    
+    func testFileUploadSetCompareWorks() throws {
+        let upload1 = FileUpload(uuid: UUID(), url: url1, persistence: .copy)
+        let upload2 = FileUpload(uuid: UUID(), url: url1, persistence: .copy)
+        let uploads1 = Set<FileUpload>([upload1, upload2])
+        let uploads2 = Set<FileUpload>([upload1])
+        let uploads3 = Set<FileUpload>()
+        
+        XCTAssertFalse(FileUpload.compare(first: uploads1, second: uploads2))
+        XCTAssert(FileUpload.compare(first: uploads1, second: uploads1))
+        XCTAssertFalse(FileUpload.compare(first: uploads1, second: uploads3))
+    }
+    
+    func testObjectDeclarationCompareWorks() {
+        let declaration1 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let objDecl1 = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: [declaration1, declaration2])
+        let objDecl2 = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: [declaration1])
+        
+        XCTAssertFalse(objDecl1.compare(to: objDecl2))
+        XCTAssert(objDecl1.compare(to: objDecl1))
     }
 }

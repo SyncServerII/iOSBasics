@@ -7,12 +7,42 @@ enum SyncServerError: Error {
     case declarationDifferentThanSyncedObject
     case tooManyObjects
     case noObject
+    case uploadNotInDeclaredFiles
+    case uploadsDoNotHaveDistinctUUIDs
+    case declaredFilesDoNotHaveDistinctUUIDs
+    case noUploads
+    case noDeclaredFiles
 }
 
 extension SyncServer {
-    public func queueObject<DECL: DeclarableObject, UPL:UploadableFile>
+    func queueObject<DECL: DeclarableObject, UPL:UploadableFile>
         (declaration: DECL, uploads: Set<UPL>) throws {
-        // First, see if this DeclaredObject has been registered before.
+        guard uploads.count > 0 else {
+            throw SyncServerError.noUploads
+        }
+        
+        guard declaration.declaredFiles.count > 0 else {
+            throw SyncServerError.noDeclaredFiles
+        }
+        
+        // Make sure all files in the uploads and declarations have distinct uuid's
+        guard UPL.hasDistinctUUIDs(in: uploads) else {
+            throw SyncServerError.uploadsDoNotHaveDistinctUUIDs
+        }
+        
+        guard DECL.DeclaredFile.hasDistinctUUIDs(in: declaration.declaredFiles) else {
+            throw SyncServerError.declaredFilesDoNotHaveDistinctUUIDs
+        }
+            
+        // Make sure all files in the uploads are in the declaration.
+        for upload in uploads {
+            let declaredFiles = declaration.declaredFiles.filter {$0.uuid == upload.uuid}
+            guard declaredFiles.count == 1 else {
+                throw SyncServerError.uploadNotInDeclaredFiles
+            }
+        }
+        
+        // See if this DeclaredObject has been registered before.
         let declaredObjects = try DeclaredObjectModel.fetch(db: db,
             where: declaration.fileGroupUUID == DeclaredObjectModel.fileGroupUUIDField.description)
             
