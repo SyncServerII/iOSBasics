@@ -80,9 +80,9 @@ extension SyncServer {
         }
         
         // See if there are queued object(s) for this file group.
-        let queuedFiles = try UploadFileTracker.numberRows(db: db, where:
-            declaration.fileGroupUUID == UploadFileTracker.fileGroupUUIDField.description
-        )
+//        let queuedFiles = try UploadFileTracker.numberRows(db: db, where:
+//            declaration.fileGroupUUID == UploadFileTracker.fileGroupUUIDField.description
+//        )
         
         // Queue tracker(s) for this upload
         var trackers = [UploadFileTracker]()
@@ -92,13 +92,13 @@ extension SyncServer {
 //            trackers += [tracker]
 //        }
 
-        if queuedFiles == 0 {
-            // We can start these uploads.
-            //api.uploadFile(file: <#T##ServerAPI.File#>, serverMasterVersion: <#T##MasterVersionInt#>)
-        }
-        else {
-            // These uploads need to wait.
-        }
+//        if queuedFiles == 0 {
+//            // We can start these uploads.
+//            //api.uploadFile(file: <#T##ServerAPI.File#>, serverMasterVersion: <#T##MasterVersionInt#>)
+//        }
+//        else {
+//            // These uploads need to wait.
+//        }
     }
     
     private func queueFileUpload<FILE: UploadableFile>(_ file: FILE, syncObjectId: UUID) throws -> UploadFileTracker {

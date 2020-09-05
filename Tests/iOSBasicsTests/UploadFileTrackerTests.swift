@@ -6,12 +6,12 @@ import ServerShared
 
 class UploadFileTrackerTests: XCTestCase {
     var database: Connection!
-    let sharingGroupUUID = UUID()
+    let fileUUID = UUID()
     var entry:UploadFileTracker!
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try UploadFileTracker(db: database, status: .notStarted, sharingGroupUUID: sharingGroupUUID, appMetaData: "Foobly", fileGroupUUID: UUID(), fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), mimeType: .text, goneReason: .userRemoved, uploadCopy: false, uploadUndeletion: true, checkSum: "Meebly")
+        entry = try UploadFileTracker(db: database, status: .notStarted, fileUUID: fileUUID, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly")
     }
 
     override func tearDownWithError() throws {
@@ -20,16 +20,11 @@ class UploadFileTrackerTests: XCTestCase {
     
     func assertContentsCorrect(entry1: UploadFileTracker, entry2: UploadFileTracker) {
         XCTAssert(entry1.status == entry2.status)
-        XCTAssert(entry1.sharingGroupUUID == entry2.sharingGroupUUID)
-        XCTAssert(entry1.appMetaData == entry2.appMetaData)
-        XCTAssert(entry1.fileGroupUUID == entry2.fileGroupUUID)
         XCTAssert(entry1.fileUUID == entry2.fileUUID)
         XCTAssert(entry1.fileVersion == entry2.fileVersion)
         XCTAssert(entry1.localURL?.path == entry2.localURL?.path)
-        XCTAssert(entry1.mimeType == entry2.mimeType)
         XCTAssert(entry1.goneReason == entry2.goneReason)
         XCTAssert(entry1.uploadCopy == entry2.uploadCopy)
-        XCTAssert(entry1.uploadUndeletion == entry2.uploadUndeletion)
         XCTAssert(entry1.checkSum == entry2.checkSum)
     }
 
@@ -52,7 +47,7 @@ class UploadFileTrackerTests: XCTestCase {
         
         var count = 0
         try UploadFileTracker.fetch(db: database,
-            where: sharingGroupUUID == UploadFileTracker.sharingGroupUUIDField.description) { row in
+            where: fileUUID == UploadFileTracker.fileUUIDField.description) { row in
             count += 1
         }
         
@@ -65,7 +60,7 @@ class UploadFileTrackerTests: XCTestCase {
         
         var count = 0
         try UploadFileTracker.fetch(db: database,
-            where: sharingGroupUUID == UploadFileTracker.sharingGroupUUIDField.description) { row in
+            where: fileUUID == UploadFileTracker.fileUUIDField.description) { row in
             assertContentsCorrect(entry1: entry, entry2: row)
             count += 1
         }
@@ -78,7 +73,7 @@ class UploadFileTrackerTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
-        let entry2 = try UploadFileTracker(db: database, status: .notStarted, sharingGroupUUID: sharingGroupUUID, appMetaData: "Foobly", fileGroupUUID: UUID(), fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), mimeType: .text, goneReason: .userRemoved, uploadCopy: false, uploadUndeletion: true, checkSum: "Meebly")
+        let entry2 = try UploadFileTracker(db: database, status: .notStarted, fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly")
 
         try entry2.insert()
 
@@ -97,17 +92,17 @@ class UploadFileTrackerTests: XCTestCase {
         let replacement = UUID()
         
         entry = try entry.update(setters:
-            UploadFileTracker.sharingGroupUUIDField.description <- replacement
+            UploadFileTracker.fileUUIDField.description <- replacement
         )
                 
         var count = 0
         try UploadFileTracker.fetch(db: database,
-            where: replacement == UploadFileTracker.sharingGroupUUIDField.description) { row in
-            XCTAssert(row.sharingGroupUUID == replacement, "\(row.sharingGroupUUID)")
+            where: replacement == UploadFileTracker.fileUUIDField.description) { row in
+            XCTAssert(row.fileUUID == replacement, "\(row.fileUUID)")
             count += 1
         }
         
-        XCTAssert(entry.sharingGroupUUID == replacement)
+        XCTAssert(entry.fileUUID == replacement)
         
         XCTAssert(count == 1)
     }

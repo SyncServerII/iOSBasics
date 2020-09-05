@@ -12,7 +12,7 @@ class DatabaseModelTests: XCTestCase {
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
         try UploadFileTracker.createTable(db: database)
-        entry = try UploadFileTracker(db: database, status: .notStarted, sharingGroupUUID: sharingGroupUUID, appMetaData: "Foobly", fileGroupUUID: UUID(), fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), mimeType: .text, goneReason: .userRemoved, uploadCopy: false, uploadUndeletion: true, checkSum: "Meebly")
+        entry = try UploadFileTracker(db: database, status: .notStarted, fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"),  goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly")
     }
 
     override func tearDownWithError() throws {
@@ -30,14 +30,14 @@ class DatabaseModelTests: XCTestCase {
 
     func testNumberRowsWithTwoRows() throws {
         try entry.insert()
-        let entry2 = try UploadFileTracker(db: database, status: .notStarted, sharingGroupUUID: sharingGroupUUID, appMetaData: "Foobly", fileGroupUUID: UUID(), fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), mimeType: .text, goneReason: .userRemoved, uploadCopy: false, uploadUndeletion: true, checkSum: "Meebly")
+        let entry2 = try UploadFileTracker(db: database, status: .notStarted, fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly")
         try entry2.insert()
         XCTAssert(try UploadFileTracker.numberRows(db: database) == 2)
     }
     
     func testNumberRowsWithWhereClause() throws {
         try entry.insert()
-        let entry2 = try UploadFileTracker(db: database, status: .notStarted, sharingGroupUUID: sharingGroupUUID, appMetaData: "Foobly", fileGroupUUID: UUID(), fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), mimeType: .text, goneReason: .userRemoved, uploadCopy: false, uploadUndeletion: true, checkSum: "Meebly")
+        let entry2 = try UploadFileTracker(db: database, status: .notStarted, fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly")
         try entry2.insert()
         
         let count = try UploadFileTracker.numberRows(db: database, where:
