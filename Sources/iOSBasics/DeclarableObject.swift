@@ -34,6 +34,7 @@ public extension DeclarableFile {
     func compare<FILE: DeclarableFile>(to other: FILE) -> Bool {
         return self.uuid == other.uuid &&
             self.mimeType == other.mimeType &&
+            self.cloudStorageType == other.cloudStorageType &&
             self.appMetaData == other.appMetaData &&
             self.changeResolverName == other.changeResolverName
     }

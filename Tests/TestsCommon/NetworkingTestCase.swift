@@ -45,6 +45,10 @@ class NetworkingTestCase: XCTestCase, ServerBasics, NetworkingProtocol {
 }
 
 extension NetworkingTestCase: ServerAPIDelegate {
+    func error(_ delegated: AnyObject, error: Error?) {
+        XCTFail("\(String(describing: error))")
+    }
+    
     func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
         downloadCompletedHandler?(result)
     }
@@ -57,7 +61,7 @@ extension NetworkingTestCase: ServerAPIDelegate {
         return try hashingManager.hashFor(cloudStorageType: cloudStorageType)
     }
     
-    func credentialsForNetworkRequests(_ delegated: AnyObject) -> GenericCredentials {
+    func credentialsForNetworkRequests(_ delegated: AnyObject) throws -> GenericCredentials {
         return user.credentials
     }
     

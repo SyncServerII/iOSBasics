@@ -3,18 +3,30 @@ import XCTest
 import SQLite
 import ServerShared
 import iOSShared
+import iOSSignIn
 
 class UploadQueueTests: APITestCase, APITests {
     var syncServer: SyncServer!
-    var uploadDeferred: ((SyncServer, _ syncObjectId: UUID) -> ())?
+    var uploadQueued: ((SyncServer, _ syncObjectId: UUID) -> ())?
+    var uploadStarted: ((SyncServer, _ deferredUploadId:Int64) -> ())?
     
     override func setUpWithError() throws {
+        try super.setUpWithError()
+        
+        user = try dropboxUser()
         database = try Connection(.inMemory)
         let hashingManager = HashingManager()
-        let config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: URL(fileURLWithPath: Self.baseURL()), minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName)
+        try hashingManager.add(hashing: user.hashing)
+        let serverURL = URL(string: Self.baseURL())!
+        let config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
-        uploadDeferred = nil
+        api = syncServer.api
+        uploadQueued = nil
         syncServer.delegate = self
+        _ = user.removeUser()
+        guard user.addUser() else {
+            throw SyncServerError.internalError("Could not add user")
+        }
     }
 
     override func tearDownWithError() throws {
@@ -46,7 +58,7 @@ class UploadQueueTests: APITestCase, APITests {
             declarations.insert(declaration1)
         }
         
-        let uploadable1 = FileUpload(uuid: fileUUID1, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
+        let uploadable1 = FileUpload(uuid: fileUUID1, url: exampleTextFileURL, persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable1])
 
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
@@ -62,7 +74,14 @@ class UploadQueueTests: APITestCase, APITests {
         
         if !withDeclaredFiles {
             XCTFail()
+            return
         }
+        
+        let exp = expectation(description: "exp")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
     }
     
     func testTestWithADeclaredFileWorks() {
@@ -373,7 +392,7 @@ class UploadQueueTests: APITestCase, APITests {
     func testQueueWithExistingDeferredUpload() throws {
         var count = 0
         
-        uploadDeferred = { syncServer, objectId in
+        uploadQueued = { syncServer, objectId in
             count += 1
         }
         
@@ -396,6 +415,14 @@ class UploadQueueTests: APITestCase, APITests {
 }
 
 extension UploadQueueTests: SyncServerDelegate {
+    func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials {
+        return user.credentials
+    }
+    
+    func error(_ syncServer: SyncServer, error: Error?) {
+        XCTFail("\(String(describing: error))")
+    }
+
     func syncCompleted(_ syncServer: SyncServer) {
     }
     
@@ -406,7 +433,11 @@ extension UploadQueueTests: SyncServerDelegate {
     func uuidCollision(_ syncServer: SyncServer, type: UUIDCollisionType, from: UUID, to: UUID) {
     }
     
-    func uploadDeferred(_ syncServer: SyncServer, declObjectId: UUID) {
-        self.uploadDeferred?(syncServer, declObjectId)
+    func uploadQueued(_ syncServer: SyncServer, declObjectId: UUID) {
+        self.uploadQueued?(syncServer, declObjectId)
+    }
+    
+    func uploadStarted(_ syncServer: SyncServer, deferredUploadId:Int64) {
+        uploadStarted?(syncServer, deferredUploadId)
     }
 }

@@ -13,12 +13,15 @@ public struct Configuration {
 
     public let cloudFolderName:String?
     
-    public init(appGroupIdentifier: String?, sqliteDatabasePath: String, serverURL: URL, minimumServerVersion:Version?, failoverMessageURL:URL?, cloudFolderName:String?) {
+    public let deviceUUID: UUID
+    
+    public init(appGroupIdentifier: String?, sqliteDatabasePath: String, serverURL: URL, minimumServerVersion:Version?, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID) {
         self.appGroupIdentifier = appGroupIdentifier
         self.sqliteDatabasePath = sqliteDatabasePath
         self.serverURL = serverURL
         self.minimumServerVersion = minimumServerVersion
         self.failoverMessageURL = failoverMessageURL
         self.cloudFolderName = cloudFolderName
+        self.deviceUUID = deviceUUID
     }
 }

@@ -1,4 +1,5 @@
 import Foundation
+import iOSSignIn
 
 public enum UUIDCollisionType {
     case file
@@ -8,6 +9,10 @@ public enum UUIDCollisionType {
 }
 
 public protocol SyncServerDelegate: AnyObject {
+    func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials
+    
+    func error(_ syncServer: SyncServer, error: Error?)
+    
     func syncCompleted(_ syncServer: SyncServer)
     
     func downloadCompleted(_ syncServer: SyncServer, declObjectId: UUID)
@@ -18,5 +23,7 @@ public protocol SyncServerDelegate: AnyObject {
     // Perhaps just for testing.
     
     // The `queue` method was called, but the upload couldn't be done immediately. It was queued for upload later instead.
-    func uploadDeferred(_ syncServer: SyncServer, declObjectId: UUID)
+    func uploadQueued(_ syncServer: SyncServer, declObjectId: UUID)
+    
+    func uploadStarted(_ syncServer: SyncServer, deferredUploadId:Int64)
 }

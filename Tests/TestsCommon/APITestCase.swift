@@ -86,6 +86,7 @@ class APITestCase: NetworkingTestCase {
     struct TestUser {
         let cloudStorageType: CloudStorageType
         let credentials:GenericCredentials
+        let hashing: CloudStorageHashing
         let removeUser:()->(Bool)
         let addUser:()->(Bool)
     }
@@ -95,6 +96,7 @@ class APITestCase: NetworkingTestCase {
         return TestUser(
             cloudStorageType: .Dropbox,
             credentials:creds,
+            hashing: DropboxHashing(),
             removeUser: removeDropboxUser,
             addUser: addDropboxUser
         )

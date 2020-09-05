@@ -27,7 +27,7 @@ enum NetworkingError: Error {
 }
 
 protocol NetworkingDelegate: AnyObject {
-    func credentialsForNetworkRequests(_ delegated: AnyObject) -> GenericCredentials
+    func credentialsForNetworkRequests(_ delegated: AnyObject) throws -> GenericCredentials
     func deviceUUID(_ delegated: AnyObject) -> UUID
     
     func uploadCompleted(_ delegated: AnyObject, result: Swift.Result<UploadFileResult, Error>)
@@ -107,13 +107,17 @@ class Networking: NSObject {
     
     // Pass `credentials` if you need to replace the instance credentials.
     private func headerAuthentication(credentials: GenericCredentials? = nil) -> [String:String] {
-        var result:[String:String]
+        var result = [String:String]()
         
         if let credentials = credentials {
             result = credentials.httpRequestHeaders
         }
         else {
-            result = self.delegate.credentialsForNetworkRequests(self).httpRequestHeaders
+            do {
+                result = try self.delegate.credentialsForNetworkRequests(self).httpRequestHeaders
+            } catch let error {
+                logger.error("\(error)")
+            }
         }
         
         result[ServerConstants.httpRequestDeviceUUID] = self.delegate.deviceUUID(self).uuidString

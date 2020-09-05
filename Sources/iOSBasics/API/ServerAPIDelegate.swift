@@ -19,6 +19,6 @@ public enum DownloadFileResult {
 }
 
 protocol ServerAPIDelegate: NetworkingDelegate {
-    // Methods for the ServerAPI to get information from its user/caller
     func hasher(_ delegated: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing
+    func error(_ delegated: AnyObject, error: Error?)
 }

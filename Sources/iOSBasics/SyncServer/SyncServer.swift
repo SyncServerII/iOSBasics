@@ -5,8 +5,8 @@ import ServerShared
 import iOSSignIn
 
 public class SyncServer {
-    private let configuration: Configuration
-    weak var delegate: SyncServerDelegate?
+    let configuration: Configuration
+    weak var delegate: SyncServerDelegate!
     let db: Connection
     var signIns: SignIns!
     let hashingManager: HashingManager
@@ -104,24 +104,26 @@ public class SyncServer {
 }
 
 extension SyncServer: ServerAPIDelegate {
-    func hasher(_ delegated: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing {
-        var hashing: CloudStorageHashing!
-        return hashing
+    func error(_ delegated: AnyObject, error: Error?) {
+        delegate.error(self, error: error)
     }
     
-    func credentialsForNetworkRequests(_ delegated: AnyObject) -> GenericCredentials {
-        var creds: GenericCredentials!
-        return creds
+    func hasher(_ delegated: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing {
+        return try hashingManager.hashFor(cloudStorageType: cloudStorageType)
+    }
+    
+    func credentialsForNetworkRequests(_ delegated: AnyObject) throws -> GenericCredentials {
+        return try delegate.credentialsForServerRequests(self)
     }
     
     func deviceUUID(_ delegated: AnyObject) -> UUID {
-        return UUID()
+        return configuration.deviceUUID
     }
     
     func uploadCompleted(_ delegated: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
     
     }
-    func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
     
+    func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
     }
 }

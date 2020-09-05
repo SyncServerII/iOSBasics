@@ -4,7 +4,7 @@ import ServerShared
 import iOSShared
 
 enum SyncServerError: Error {
-    case declarationDifferentThanSyncedObject
+    case declarationDifferentThanSyncedObject(String)
     case tooManyObjects
     case noObject
     case uploadNotInDeclaredFiles
@@ -104,9 +104,12 @@ extension SyncServer {
         // See if this DeclaredObject has been registered before.
         let declaredObjects = try DeclaredObjectModel.fetch(db: db,
             where: declaration.fileGroupUUID == DeclaredObjectModel.fileGroupUUIDField.description)
-            
+        let newFiles: Bool
+        
         switch declaredObjects.count {
         case 0:
+            newFiles = true
+            
             // Need to create DeclaredObjectModel
             let declaredObject = try DeclaredObjectModel(db: db, fileGroupUUID: declaration.fileGroupUUID, objectType: declaration.objectType, sharingGroupUUID: declaration.sharingGroupUUID)
             try declaredObject.insert()
@@ -117,18 +120,21 @@ extension SyncServer {
                 try declared.insert()
             }
             
-            // And, a DirectoryEntry per file
+            // And, add a DirectoryEntry per file
             for file in declaration.declaredFiles {
-//                let dirEntry = DirectoryEntry(db: db, fileUUID: file.uuid, fileVersion: 0, cloudStorageType: CloudStorageType, deletedLocally: <#T##Bool#>, deletedOnServer: <#T##Bool#>, goneReason: <#T##String?#>)
+                let dirEntry = try DirectoryEntry(db: db, fileUUID: file.uuid, fileVersion: 0, deletedLocally: false, deletedOnServer: false, goneReason: nil)
+                try dirEntry.insert()
             }
             
         case 1:
+            newFiles = true
+
             // Already have registered the SyncedObject
             // Need to compare this one against the one in the database.
 
             let declaredObject = declaredObjects[0]
             guard declaredObject.compare(to: declaration) else {
-                throw SyncServerError.declarationDifferentThanSyncedObject
+                throw SyncServerError.declarationDifferentThanSyncedObject("Declared object differs from given one.")
             }
             
             let declaredFilesInDatabase = try DeclaredFileModel.fetch(db: db, where: declaration.fileGroupUUID == DeclaredFileModel.fileGroupUUIDField.description)
@@ -136,11 +142,20 @@ extension SyncServer {
             let first = Set<DeclaredFileModel>(declaredFilesInDatabase)
 
             guard DeclaredFileModel.compare(first: first, second: declaration.declaredFiles) else {
-                throw SyncServerError.declarationDifferentThanSyncedObject
+                throw SyncServerError.declarationDifferentThanSyncedObject("Declared file model differs from a given one.")
+            }
+            
+            // Check that there is one DirectoryEntry per file
+            for file in declaredFilesInDatabase {
+                let rows = try DirectoryEntry.fetch(db: db, where: file.uuid == DirectoryEntry.fileUUIDField.description)
+                guard rows.count == 1 else {
+                    throw SyncServerError.declarationDifferentThanSyncedObject(
+                        "DirectoryEntry missing.")
+                }
             }
 
         default:
-            logger.error("Had two registered DeclaredObject's for the same fileGroupUUID: fileGroupUUID: \(declaration.fileGroupUUID)")
+            throw SyncServerError.internalError("Had two registered DeclaredObject's for the same fileGroupUUID: fileGroupUUID: \(declaration.fileGroupUUID)")
         }
         
         // If there is a UploadObjectTracker, this upload will be deferred. If there is not one, we'll trigger the upload now.
@@ -162,11 +177,43 @@ extension SyncServer {
         }
 
         guard !existingObjectTrackers else {
-            delegate?.uploadDeferred(self, declObjectId: declaration.declObjectId)
+            delegate?.uploadQueued(self, declObjectId: declaration.declObjectId)
             return
         }
         
-        // No existing trackers prior to this `queue` call-- need to trigger these uploads.
+        let uploadCount = Int32(uploads.count)
+        
+        for (uploadIndex, file) in uploads.enumerated() {
+            let declaredFiles = declaration.declaredFiles.filter {$0.uuid == file.uuid}
+            guard declaredFiles.count == 1,
+                let declaredFile = declaredFiles.first else {
+                throw SyncServerError.internalError("Not just one declared file: \(declaredFiles.count)")
+            }
+            
+            let checkSum = try hashingManager.hashFor(cloudStorageType: declaredFile.cloudStorageType).hash(forURL: file.url)
+
+            let fileVersion:ServerAPI.File.Version
+            if newFiles {
+                var appMetaData: AppMetaData?
+                if let appMetaDataContents = declaredFile.appMetaData {
+                    appMetaData = AppMetaData(contents: appMetaDataContents)
+                }
+                
+                fileVersion = .v0(source: .url(file.url), mimeType: declaredFile.mimeType, checkSum: checkSum, changeResolverName: declaredFile.changeResolverName, fileGroupUUID: declaration.fileGroupUUID.uuidString, appMetaData: appMetaData)
+            }
+            else {
+                let data = try Data(contentsOf: file.url)
+                fileVersion = .vN(change: data)
+            }
+            
+            let serverAPIFile = ServerAPI.File(fileUUID: file.uuid.uuidString, sharingGroupUUID: declaration.sharingGroupUUID.uuidString, deviceUUID: configuration.deviceUUID.uuidString, version: fileVersion)
+            
+            if let error = api.uploadFile(file: serverAPIFile, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount) {
+                throw SyncServerError.internalError("\(error)")
+            }
+        }
+        
+        // No existing trackers for this object prior to this `queue` call-- need to trigger these uploads.
         
         // See if there are queued object(s) for this file group.
 //        let queuedFiles = try UploadFileTracker.numberRows(db: db, where:

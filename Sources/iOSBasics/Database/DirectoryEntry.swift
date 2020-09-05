@@ -36,11 +36,12 @@ class DirectoryEntry: DatabaseModel {
         deletedOnServer: Bool,
         goneReason: String? = nil) throws {
         
-        guard let goneReasonString = goneReason,
-            let _ = GoneReason(rawValue: goneReasonString) else {
-            throw DirectoryEntryError.badGoneReason(goneReason!)
+        if let goneReason = goneReason {
+            guard let _ = GoneReason(rawValue: goneReason) else {
+                throw DirectoryEntryError.badGoneReason(goneReason)
+            }
         }
-                
+        
         self.db = db
         self.id = id
         self.fileUUID = fileUUID

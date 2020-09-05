@@ -16,6 +16,7 @@ import SQLite
 class ServerAPI_v0Files_Tests: APITestCase, APITests {
     override func setUpWithError() throws {
         try super.setUpWithError()
+        
         user = try dropboxUser()
         uploadCompletedHandler = nil
         try NetworkCache.createTable(db: database)

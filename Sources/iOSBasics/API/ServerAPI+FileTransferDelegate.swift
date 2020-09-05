@@ -88,6 +88,7 @@ extension ServerAPI: FileTransferDelegate {
     }
     
     func uploadError(_ network: Any, file: Filenaming?, statusCode: Int?, error: Error?) {
+        delegate.error(self, error: error)
     }
     
     func uploadCompleted(_ network: Any, file: Filenaming, response: HTTPURLResponse?, responseBody: [String : Any]?, statusCode: Int?) {
