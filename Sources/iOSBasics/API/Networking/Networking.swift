@@ -53,6 +53,7 @@ class Networking: NSObject {
         let minimumServerVersion: Version?
         
         // Do not set this to true for production build.
+        // If you set this to false, and you are testing just within a package, you will see: BackgroundSession <F65F620A-40DF-47D8-8714-90D457380899> an error occurred on the xpc connection to setup the background session: Error Domain=NSCocoaErrorDomain Code=4097
         let packageTests: Bool
         
         init(temporaryFileDirectory: URL,

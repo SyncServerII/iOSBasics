@@ -9,24 +9,32 @@ protocol ServerBasics {
 }
 
 extension ServerBasics {
+    var cloudFolderName: String {
+        return "CloudFolder"
+    }
+    
     // Don't put a trailing slash at end.
     static func baseURL() -> String {
         return "http://localhost:8080"
     }
 }
 
-protocol APITests: ServerAPIDelegate, NetworkingProtocol {
-    var deviceUUID:UUID { get }
-    var api:ServerAPI! { get }
+protocol TestFiles {
 }
 
-extension APITests where Self: XCTestCase {
+extension TestFiles {
     var exampleTextFile:String { return "Example.txt" }
     var exampleTextFileURL: URL {
         let directory = TestingFile.directoryOfFile(#file)
         return directory.appendingPathComponent(exampleTextFile)
     }
-    
+}
+
+protocol APITests: ServerAPIDelegator {
+    var api:ServerAPI! { get }
+}
+
+extension APITests where Self: XCTestCase {
     // Credentials/users
     
     func checkCreds() -> ServerAPI.CheckCredsResult? {

@@ -5,20 +5,28 @@ import ServerShared
 import iOSShared
 import iOSSignIn
 
-class UploadQueueTests: APITestCase, APITests {
+class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
+    var deviceUUID: UUID!
+    var hashingManager: HashingManager!
+    var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
+    var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
+    
+    var api: ServerAPI!
     var syncServer: SyncServer!
     var uploadQueued: ((SyncServer, _ syncObjectId: UUID) -> ())?
     var uploadStarted: ((SyncServer, _ deferredUploadId:Int64) -> ())?
+    var user: TestUser!
+    var database: Connection!
     
     override func setUpWithError() throws {
         try super.setUpWithError()
-        
         user = try dropboxUser()
+        deviceUUID = UUID()
         database = try Connection(.inMemory)
-        let hashingManager = HashingManager()
+        hashingManager = HashingManager()
         try hashingManager.add(hashing: user.hashing)
         let serverURL = URL(string: Self.baseURL())!
-        let config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID)
+        let config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
         api = syncServer.api
         uploadQueued = nil
@@ -48,8 +56,20 @@ class UploadQueueTests: APITestCase, APITests {
         XCTFail()
     }
     
-    func runQueueTest(withDeclaredFiles: Bool) {
+    func getSharingGroupUUID() throws -> UUID {
+        guard let serverIndex = getIndex(sharingGroupUUID: nil),
+            serverIndex.sharingGroups.count > 0,
+            let sharingGroupUUIDString = serverIndex.sharingGroups[0].sharingGroupUUID,
+            let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString) else {
+            throw SyncServerError.internalError("Could not get sharing group UUID")
+        }
+        return sharingGroupUUID
+    }
+    
+    func runQueueTest(withDeclaredFiles: Bool) throws {
         let fileUUID1 = UUID()
+        
+        let sharingGroupUUID = try getSharingGroupUUID()
 
         let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
 
@@ -61,7 +81,7 @@ class UploadQueueTests: APITestCase, APITests {
         let uploadable1 = FileUpload(uuid: fileUUID1, url: exampleTextFileURL, persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable1])
 
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         do {
             try syncServer.queue(declaration: testObject, uploads: uploadables)
@@ -84,34 +104,36 @@ class UploadQueueTests: APITestCase, APITests {
         waitForExpectations(timeout: 10, handler: nil)
     }
     
-    func testTestWithADeclaredFileWorks() {
-        runQueueTest(withDeclaredFiles: true)
+    func testTestWithADeclaredFileWorks() throws {
+        try runQueueTest(withDeclaredFiles: true)
     }
 
-    func testTestWithNoDeclaredFileFails() {
-        runQueueTest(withDeclaredFiles: false)
+    func testTestWithNoDeclaredFileFails() throws {
+        try runQueueTest(withDeclaredFiles: false)
     }
     
-    func runQueueTest(withUploads: Bool) {
+    func runQueueTest(withUploads: Bool) throws {
+        let sharingGroupUUID = try getSharingGroupUUID()
+
         let fileUUID1 = UUID()
 
         let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
 
         let declarations = Set<FileDeclaration>([declaration1])
-        let uploadable1 = FileUpload(uuid: fileUUID1, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
+        let uploadable1 = FileUpload(uuid: fileUUID1, url: exampleTextFileURL, persistence: .copy)
 
         var uploadables = Set<FileUpload>()
         if withUploads {
             uploadables.insert(uploadable1)
         }
         
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         do {
             try syncServer.queue(declaration: testObject, uploads: uploadables)
-        } catch {
+        } catch let error {
             if withUploads {
-                XCTFail()
+                XCTFail("\(error)")
             }
             return
         }
@@ -121,12 +143,12 @@ class UploadQueueTests: APITestCase, APITests {
         }
     }
     
-    func testTestWithAnUploadWorks() {
-        runQueueTest(withUploads: true)
+    func testTestWithAnUploadWorks() throws {
+        try runQueueTest(withUploads: true)
     }
 
-    func testTestWithNoUploadsFails() {
-        runQueueTest(withUploads: false)
+    func testTestWithNoUploadsFails() throws {
+        try runQueueTest(withUploads: false)
     }
     
     func runQueueTest(withDistinctUUIDsInUploads: Bool) {

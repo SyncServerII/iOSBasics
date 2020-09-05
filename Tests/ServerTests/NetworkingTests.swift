@@ -13,9 +13,24 @@ import iOSShared
 import ServerShared
 import SQLite
 
-class NetworkingTests: APITestCase {
+class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
+    var deviceUUID: UUID!
+    var hashingManager: HashingManager!
+    var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
+    var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
+    var api: ServerAPI!
+    var user: TestUser!
+    var networking: Networking!
+
     override func setUpWithError() throws {
         try super.setUpWithError()
+        deviceUUID = UUID()
+        let database = try Connection(.inMemory)
+        let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: Self.baseURL(), minimumServerVersion: nil, packageTests: true)
+        networking = Networking(database: database, delegate: self, config: config)
+        hashingManager = HashingManager()
+        try? hashingManager.add(hashing: DropboxHashing())
+        api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
         user = try dropboxUser()
     }
 

@@ -14,18 +14,21 @@ import ServerShared
 import SQLite
 @testable import iOSDropbox
 
-class APITestCase: NetworkingTestCase {
-    let cloudFolderName = "CloudFolder"
-    
-    // A bit of a hack
-    let dropboxCredentialsPath = "/Users/chris/Desktop/NewSyncServer/Private/iOSBasics/Dropbox.credentials"
-    
-    override func setUpWithError() throws {
-        try super.setUpWithError()
-    }
+struct TestUser {
+    let cloudStorageType: CloudStorageType
+    let credentials:GenericCredentials
+    let hashing: CloudStorageHashing
+    let removeUser:()->(Bool)
+    let addUser:()->(Bool)
+}
 
-    override func tearDownWithError() throws {
-        try super.tearDownWithError()
+protocol UserSetup where Self: XCTestCase {
+    var api:ServerAPI! {get}
+}
+
+extension UserSetup {
+    // A bit of a hack
+    var dropboxCredentialsPath: String { return "/Users/chris/Desktop/NewSyncServer/Private/iOSBasics/Dropbox.credentials"
     }
 
     // Dropbox
@@ -81,14 +84,6 @@ class APITestCase: NetworkingTestCase {
     private func setupDropboxCredentials() throws -> DropboxCredentials {
         let savedCredentials = try loadDropboxCredentials()
         return DropboxCredentials(savedCreds:savedCredentials)
-    }
-    
-    struct TestUser {
-        let cloudStorageType: CloudStorageType
-        let credentials:GenericCredentials
-        let hashing: CloudStorageHashing
-        let removeUser:()->(Bool)
-        let addUser:()->(Bool)
     }
     
     func dropboxUser() throws -> TestUser {

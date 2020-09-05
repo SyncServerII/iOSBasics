@@ -20,7 +20,7 @@ public class SyncServer {
         self.hashingManager = hashingManager
         
         try Database.setup(db: db)
-        let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: configuration.serverURL.absoluteString, minimumServerVersion: nil)
+        let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: configuration.serverURL.absoluteString, minimumServerVersion: nil, packageTests: configuration.packageTests)
         api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: config)
     }
     
@@ -121,9 +121,15 @@ extension SyncServer: ServerAPIDelegate {
     }
     
     func uploadCompleted(_ delegated: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
-    
+        switch result {
+        case .failure(let error):
+            delegate.error(self, error: error)
+        case .success:
+            break
+        }
     }
     
     func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
+        assert(false)
     }
 }

@@ -14,37 +14,15 @@ import ServerShared
 import SQLite
 import iOSDropbox
 
-protocol NetworkingProtocol: AnyObject {
-    var user: APITestCase.TestUser! {get set}
+protocol ServerAPIDelegator: ServerAPIDelegate {
+    var user: TestUser! {get set}
+    var deviceUUID: UUID! {get}
+    var hashingManager: HashingManager! {get}
     var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())? {get set}
     var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>) -> ())? {get set}
 }
 
-class NetworkingTestCase: XCTestCase, ServerBasics, NetworkingProtocol {
-    let hashingManager = HashingManager()
-    var deviceUUID = UUID()
-    var database:Connection!
-    var networking: Networking!
-    var api:ServerAPI!
-    var user: APITestCase.TestUser!
-    var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())?
-    var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>) -> ())?
-
-    let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: baseURL(), minimumServerVersion: nil, packageTests: true)
-
-    override func setUpWithError() throws {
-        try super.setUpWithError()
-        database = try Connection(.inMemory)
-        networking = Networking(database: database, delegate: self, config: config)
-        try? hashingManager.add(hashing: DropboxHashing())
-        api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
-    }
-
-    override func tearDownWithError() throws {
-    }
-}
-
-extension NetworkingTestCase: ServerAPIDelegate {
+extension ServerAPIDelegator {
     func error(_ delegated: AnyObject, error: Error?) {
         XCTFail("\(String(describing: error))")
     }
