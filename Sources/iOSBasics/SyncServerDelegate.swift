@@ -10,8 +10,13 @@ public enum UUIDCollisionType {
 public protocol SyncServerDelegate: AnyObject {
     func syncCompleted(_ syncServer: SyncServer)
     
-    func downloadCompleted(_ syncServer: SyncServer, syncObjectId: UUID)
+    func downloadCompleted(_ syncServer: SyncServer, declObjectId: UUID)
     
     // A uuid that was initially generated on the client 
     func uuidCollision(_ syncServer: SyncServer, type: UUIDCollisionType, from: UUID, to: UUID)
+    
+    // Perhaps just for testing.
+    
+    // The `queue` method was called, but the upload couldn't be done immediately. It was queued for upload later instead.
+    func uploadDeferred(_ syncServer: SyncServer, declObjectId: UUID)
 }

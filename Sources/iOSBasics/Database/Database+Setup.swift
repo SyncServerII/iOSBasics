@@ -16,5 +16,6 @@ extension Database {
         try DeclaredFileModel.createTable(db: db)
         try UploadFileTracker.createTable(db: db)
         try DeclaredObjectModel.createTable(db: db)
+        try UploadObjectTracker.createTable(db: db)
     }
 }

@@ -10,7 +10,7 @@ class UploadObjectTrackerTests: XCTestCase {
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, objectType: "Foo", sharingGroupUUID: UUID())
+        entry = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID)
     }
 
     override func tearDownWithError() throws {
@@ -19,8 +19,6 @@ class UploadObjectTrackerTests: XCTestCase {
     
     func assertContentsCorrect(entry1: UploadObjectTracker, entry2: UploadObjectTracker) {
         XCTAssert(entry1.fileGroupUUID == entry2.fileGroupUUID)
-        XCTAssert(entry1.objectType == entry2.objectType)
-        XCTAssert(entry1.sharingGroupUUID == entry2.sharingGroupUUID)
     }
 
     func testCreateTable() throws {
@@ -68,7 +66,7 @@ class UploadObjectTrackerTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileGroupUUID, the primary key.
-        let entry2 = try UploadObjectTracker(db: database, fileGroupUUID: UUID(), objectType: "Foo", sharingGroupUUID: UUID())
+        let entry2 = try UploadObjectTracker(db: database, fileGroupUUID: UUID())
 
         try entry2.insert()
 

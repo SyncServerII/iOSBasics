@@ -23,7 +23,7 @@ extension SyncServer {
         
         let model = models[0]
                     
-        let declaredFilesInDatabase = try DeclaredFileModel.fetch(db: db, where: declObjectId == DeclaredFileModel.fileGroupUUIDField.description).map { FileDeclaration(uuid: $0.uuid, mimeType: $0.mimeType, appMetaData: $0.appMetaData, changeResolverName: $0.changeResolverName) }
+        let declaredFilesInDatabase = try DeclaredFileModel.fetch(db: db, where: declObjectId == DeclaredFileModel.fileGroupUUIDField.description).map { FileDeclaration(uuid: $0.uuid, mimeType: $0.mimeType, cloudStorageType: $0.cloudStorageType, appMetaData: $0.appMetaData, changeResolverName: $0.changeResolverName) }
         
         let files = Set<FileDeclaration>(declaredFilesInDatabase)
         

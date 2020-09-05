@@ -16,6 +16,9 @@ class UploadFileTracker: DatabaseModel {
         case uploaded
     }
 
+    static let uploadObjectTrackerIdField = Field("uploadObjectTrackerId", \M.uploadObjectTrackerId)
+    var uploadObjectTrackerId: Int64
+    
     static let fileUUIDField = Field("fileUUID", \M.fileUUID)
     var fileUUID: UUID
     
@@ -39,6 +42,7 @@ class UploadFileTracker: DatabaseModel {
     
     init(db: Connection,
         id: Int64! = nil,
+        uploadObjectTrackerId: Int64,
         status: Status,
         fileUUID: UUID,
         fileVersion: FileVersionInt?,
@@ -49,6 +53,7 @@ class UploadFileTracker: DatabaseModel {
 
         self.db = db
         self.id = id
+        self.uploadObjectTrackerId = uploadObjectTrackerId
         self.status = status
         self.fileUUID = fileUUID
         self.fileVersion = fileVersion
@@ -63,6 +68,7 @@ class UploadFileTracker: DatabaseModel {
     static func createTable(db: Connection) throws {
         try startCreateTable(db: db) { t in
             t.column(idField.description, primaryKey: true)
+            t.column(uploadObjectTrackerIdField.description)
             t.column(statusField.description)
             t.column(fileUUIDField.description)
             t.column(fileVersionField.description)
@@ -76,6 +82,7 @@ class UploadFileTracker: DatabaseModel {
     static func rowToModel(db: Connection, row: Row) throws -> UploadFileTracker {
         return try UploadFileTracker(db: db,
             id: row[Self.idField.description],
+            uploadObjectTrackerId: row[Self.uploadObjectTrackerIdField.description],
             status: row[Self.statusField.description],
             fileUUID: row[Self.fileUUIDField.description],
             fileVersion: row[Self.fileVersionField.description],
@@ -88,6 +95,7 @@ class UploadFileTracker: DatabaseModel {
     
     func insert() throws {
         try doInsertRow(db: db, values:
+            Self.uploadObjectTrackerIdField.description <- uploadObjectTrackerId,
             Self.statusField.description <- status,
             Self.fileUUIDField.description <- fileUUID,
             Self.fileVersionField.description <- fileVersion,

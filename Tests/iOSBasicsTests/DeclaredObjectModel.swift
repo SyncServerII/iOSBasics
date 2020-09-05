@@ -10,7 +10,7 @@ class DeclaredFileModelTests: XCTestCase {
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try DeclaredFileModel(db: database, fileGroupUUID: fileGroupUUID, uuid: UUID(), mimeType: MimeType.text, appMetaData: "Foo", changeResolverName: "Bar")
+        entry = try DeclaredFileModel(db: database, fileGroupUUID: fileGroupUUID, uuid: UUID(), mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: "Foo", changeResolverName: "Bar")
     }
 
     override func tearDownWithError() throws {
@@ -62,7 +62,7 @@ class DeclaredFileModelTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileGroupUUID, the primary key.
-        let entry2 = try DeclaredFileModel(db: database, fileGroupUUID: UUID(), uuid: UUID(), mimeType: MimeType.text, appMetaData: "Foo2", changeResolverName: "Bar2")
+        let entry2 = try DeclaredFileModel(db: database, fileGroupUUID: UUID(), uuid: UUID(), mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: "Foo2", changeResolverName: "Bar2")
 
         try entry2.insert()
 

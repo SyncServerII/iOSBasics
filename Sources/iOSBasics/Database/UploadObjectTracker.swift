@@ -9,6 +9,8 @@ import SQLite
 import Foundation
 import ServerShared
 
+// A recorded is added each time the `queue` method is called, a record is added here.
+
 class UploadObjectTracker: DatabaseModel {
     let db: Connection
     var id: Int64!
@@ -16,23 +18,13 @@ class UploadObjectTracker: DatabaseModel {
     static let fileGroupUUIDField = Field("fileGroupUUID", \M.fileGroupUUID)
     var fileGroupUUID: UUID
     
-    static let objectTypeField = Field("objectType", \M.objectType)
-    var objectType: String
-
-    static let sharingGroupUUIDField = Field("sharingGroupUUID", \M.sharingGroupUUID)
-    var sharingGroupUUID: UUID
-    
     init(db: Connection,
         id: Int64! = nil,
-        fileGroupUUID: UUID,
-        objectType: String,
-        sharingGroupUUID:UUID) throws {
+        fileGroupUUID: UUID) throws {
         
         self.db = db
         self.id = id
         self.fileGroupUUID = fileGroupUUID
-        self.objectType = objectType
-        self.sharingGroupUUID = sharingGroupUUID
     }
     
     // MARK: DatabaseModel
@@ -41,25 +33,19 @@ class UploadObjectTracker: DatabaseModel {
         try startCreateTable(db: db) { t in
             t.column(idField.description, primaryKey: true)
             t.column(fileGroupUUIDField.description)
-            t.column(objectTypeField.description)
-            t.column(sharingGroupUUIDField.description)
         }
     }
     
     static func rowToModel(db: Connection, row: Row) throws -> UploadObjectTracker {
         return try UploadObjectTracker(db: db,
             id: row[Self.idField.description],
-            fileGroupUUID: row[Self.fileGroupUUIDField.description],
-            objectType: row[Self.objectTypeField.description],
-            sharingGroupUUID: row[Self.sharingGroupUUIDField.description]
+            fileGroupUUID: row[Self.fileGroupUUIDField.description]
         )
     }
     
     func insert() throws {
         try doInsertRow(db: db, values:
-            Self.fileGroupUUIDField.description <- fileGroupUUID,
-            Self.objectTypeField.description <- objectType,
-            Self.sharingGroupUUIDField.description <- sharingGroupUUID
+            Self.fileGroupUUIDField.description <- fileGroupUUID
         )
     }
 }

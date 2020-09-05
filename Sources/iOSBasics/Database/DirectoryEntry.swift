@@ -2,7 +2,7 @@ import SQLite
 import Foundation
 import ServerShared
 
-// Represents a file the iOSBasics client knows about in regards to the current signed in user. Used to represent a directory of all files for the current signed in user. Each file is part of a specific SyncObject.
+// Represents a file the iOSBasics client knows about in regards to the current signed in user. Used to represent a directory of all files for the current signed in user. Each file is part of a specific DeclaredObject.
 
 class DirectoryEntry: DatabaseModel {
     enum DirectoryEntryError: Error {
@@ -19,9 +19,6 @@ class DirectoryEntry: DatabaseModel {
     static let fileVersionField = Field("fileVersion", \M.fileVersion)
     var fileVersion: Int64?
 
-    static let cloudStorageTypeField = Field("cloudStorageType", \M.cloudStorageType)
-    var cloudStorageType: CloudStorageType
-
     static let deletedLocallyField = Field("deletedLocally", \M.deletedLocally)
     var deletedLocally: Bool
     
@@ -35,7 +32,6 @@ class DirectoryEntry: DatabaseModel {
         id: Int64! = nil,
         fileUUID: UUID,
         fileVersion: Int64?,
-        cloudStorageType: CloudStorageType,
         deletedLocally: Bool,
         deletedOnServer: Bool,
         goneReason: String? = nil) throws {
@@ -49,7 +45,6 @@ class DirectoryEntry: DatabaseModel {
         self.id = id
         self.fileUUID = fileUUID
         self.fileVersion = fileVersion
-        self.cloudStorageType = cloudStorageType
         self.deletedLocally = deletedLocally
         self.deletedOnServer = deletedOnServer
         self.goneReason = goneReason
@@ -62,7 +57,6 @@ class DirectoryEntry: DatabaseModel {
             t.column(idField.description, primaryKey: true)
             t.column(fileUUIDField.description)
             t.column(fileVersionField.description)
-            t.column(cloudStorageTypeField.description)
             t.column(deletedLocallyField.description)
             t.column(deletedOnServerField.description)
             t.column(goneReasonField.description)
@@ -74,7 +68,6 @@ class DirectoryEntry: DatabaseModel {
             id: row[Self.idField.description],
             fileUUID: row[Self.fileUUIDField.description],
             fileVersion: row[Self.fileVersionField.description],
-            cloudStorageType: row[Self.cloudStorageTypeField.description],
             deletedLocally: row[Self.deletedLocallyField.description],
             deletedOnServer: row[Self.deletedOnServerField.description],
             goneReason: row[Self.goneReasonField.description]
@@ -85,7 +78,6 @@ class DirectoryEntry: DatabaseModel {
         try doInsertRow(db: db, values:
             Self.fileUUIDField.description <- fileUUID,
             Self.fileVersionField.description <- fileVersion,
-            Self.cloudStorageTypeField.description <- cloudStorageType,
             Self.deletedLocallyField.description <- deletedLocally,
             Self.deletedOnServerField.description <- deletedOnServer,
             Self.goneReasonField.description <- goneReason

@@ -12,6 +12,65 @@ enum SyncServerError: Error {
     case declaredFilesDoNotHaveDistinctUUIDs
     case noUploads
     case noDeclaredFiles
+    case internalError(String)
+    
+    static func ==(lhs: Self, rhs: Self) -> Bool {
+        switch lhs {
+        case declarationDifferentThanSyncedObject:
+            guard case .declarationDifferentThanSyncedObject = rhs else {
+                return false
+            }
+            return true
+            
+        case tooManyObjects:
+            guard case .tooManyObjects = rhs else {
+                return false
+            }
+            return true
+            
+        case noObject:
+            guard case .noObject = rhs else {
+                return false
+            }
+            return true
+            
+        case uploadNotInDeclaredFiles:
+            guard case .uploadNotInDeclaredFiles = rhs else {
+                return false
+            }
+            return true
+            
+        case uploadsDoNotHaveDistinctUUIDs:
+            guard case .uploadsDoNotHaveDistinctUUIDs = rhs else {
+                return false
+            }
+            return true
+            
+        case declaredFilesDoNotHaveDistinctUUIDs:
+            guard case .declaredFilesDoNotHaveDistinctUUIDs = rhs else {
+                return false
+            }
+            return true
+            
+        case noUploads:
+            guard case .noUploads = rhs else {
+                return false
+            }
+            return true
+            
+        case noDeclaredFiles:
+            guard case .noDeclaredFiles = rhs else {
+                return false
+            }
+            return true
+            
+        case internalError(let str1):
+            guard case .internalError(let str2) = rhs, str1 == str2 else {
+                return false
+            }
+            return true
+        }
+    }
 }
 
 extension SyncServer {
@@ -54,10 +113,15 @@ extension SyncServer {
                         
             // Need to add entries for the file declarations.
             for file in declaration.declaredFiles {
-                let declared = try DeclaredFileModel(db: db, fileGroupUUID: declaration.fileGroupUUID, uuid: file.uuid, mimeType: file.mimeType, appMetaData: file.appMetaData, changeResolverName: file.changeResolverName)
+                let declared = try DeclaredFileModel(db: db, fileGroupUUID: declaration.fileGroupUUID, uuid: file.uuid, mimeType: file.mimeType, cloudStorageType: file.cloudStorageType, appMetaData: file.appMetaData, changeResolverName: file.changeResolverName)
                 try declared.insert()
             }
-
+            
+            // And, a DirectoryEntry per file
+            for file in declaration.declaredFiles {
+//                let dirEntry = DirectoryEntry(db: db, fileUUID: file.uuid, fileVersion: 0, cloudStorageType: CloudStorageType, deletedLocally: <#T##Bool#>, deletedOnServer: <#T##Bool#>, goneReason: <#T##String?#>)
+            }
+            
         case 1:
             // Already have registered the SyncedObject
             // Need to compare this one against the one in the database.
@@ -78,6 +142,31 @@ extension SyncServer {
         default:
             logger.error("Had two registered DeclaredObject's for the same fileGroupUUID: fileGroupUUID: \(declaration.fileGroupUUID)")
         }
+        
+        // If there is a UploadObjectTracker, this upload will be deferred. If there is not one, we'll trigger the upload now.
+        let objectTrackers = try UploadObjectTracker.fetch(db: db, where: declaration.fileGroupUUID == UploadObjectTracker.fileGroupUUIDField.description)
+        
+        let existingObjectTrackers = objectTrackers.count > 0
+        
+        // Add a new tracker into UploadObjectTracker, and one for each new upload.
+        let newObjectTracker = try UploadObjectTracker(db: db, fileGroupUUID: declaration.fileGroupUUID)
+        try newObjectTracker.insert()
+        
+        guard let newObjectTrackerId = newObjectTracker.id else {
+            throw SyncServerError.internalError("No object tracker id")
+        }
+        
+        for file in uploads {
+            let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: newObjectTrackerId, status: .notStarted, fileUUID: file.uuid, fileVersion: nil, localURL: file.url, goneReason: nil, uploadCopy: file.persistence.isCopy, checkSum: nil)
+            try fileTracker.insert()
+        }
+
+        guard !existingObjectTrackers else {
+            delegate?.uploadDeferred(self, declObjectId: declaration.declObjectId)
+            return
+        }
+        
+        // No existing trackers prior to this `queue` call-- need to trigger these uploads.
         
         // See if there are queued object(s) for this file group.
 //        let queuedFiles = try UploadFileTracker.numberRows(db: db, where:
@@ -114,7 +203,7 @@ extension SyncServer {
         }
         else {
             // Existing file.
-            cloudStorageType = entry.cloudStorageType
+//            cloudStorageType = entry.cloudStorageType
         }
         
         let hasher = try hashingManager.hashFor(cloudStorageType: cloudStorageType)

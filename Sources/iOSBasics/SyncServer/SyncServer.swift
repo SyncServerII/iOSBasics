@@ -14,8 +14,7 @@ public class SyncServer {
     
     public init(hashingManager: HashingManager,
         db:Connection,
-        configuration: Configuration,
-        delegate: SyncServerDelegate) throws {
+        configuration: Configuration) throws {
         self.configuration = configuration
         self.db = db
         self.hashingManager = hashingManager

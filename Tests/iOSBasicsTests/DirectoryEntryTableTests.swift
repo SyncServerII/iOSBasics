@@ -13,7 +13,7 @@ final class DirectoryEntryTableTests: XCTestCase {
         super.setUp()
         do {
             database = try Connection(.inMemory)
-            entry = try DirectoryEntry(db: database, fileUUID: uuid, fileVersion: 1, cloudStorageType: .Dropbox, deletedLocally: false, deletedOnServer: true, goneReason: GoneReason.userRemoved.rawValue)
+            entry = try DirectoryEntry(db: database, fileUUID: uuid, fileVersion: 1, deletedLocally: false, deletedOnServer: true, goneReason: GoneReason.userRemoved.rawValue)
         } catch {
             XCTFail()
             return
@@ -23,7 +23,6 @@ final class DirectoryEntryTableTests: XCTestCase {
     func assertContentsCorrect(entry1: DirectoryEntry, entry2: DirectoryEntry) {
         XCTAssert(entry1.fileUUID == entry2.fileUUID)
         XCTAssert(entry1.fileVersion == entry2.fileVersion)
-        XCTAssert(entry1.cloudStorageType == entry2.cloudStorageType)
         XCTAssert(entry1.deletedLocally == entry2.deletedLocally)
         XCTAssert(entry1.deletedOnServer == entry2.deletedOnServer)
         XCTAssert(entry1.goneReason == entry2.goneReason)
@@ -76,7 +75,7 @@ final class DirectoryEntryTableTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
-        let entry2 = try DirectoryEntry(db: database, fileUUID: UUID(), fileVersion: 1, cloudStorageType: .Dropbox, deletedLocally: false, deletedOnServer: true, goneReason: GoneReason.userRemoved.rawValue)
+        let entry2 = try DirectoryEntry(db: database, fileUUID: UUID(), fileVersion: 1, deletedLocally: false, deletedOnServer: true, goneReason: GoneReason.userRemoved.rawValue)
 
         try entry2.insert()
 

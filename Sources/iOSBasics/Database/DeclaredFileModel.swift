@@ -24,6 +24,9 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
     
     static let mimeTypeField = Field("mimeType", \M.mimeType)
     var mimeType: MimeType
+    
+    static let cloudStorageTypeField = Field("cloudStorageType", \M.cloudStorageType)
+    var cloudStorageType: CloudStorageType
 
     static let appMetaDataField = Field("appMetaData", \M.appMetaData)
     var appMetaData: String?
@@ -36,6 +39,7 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
         fileGroupUUID: UUID,
         uuid: UUID,
         mimeType: MimeType,
+        cloudStorageType: CloudStorageType,
         appMetaData: String?,
         changeResolverName: String?) throws {
         self.db = db
@@ -43,6 +47,7 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
         self.fileGroupUUID = fileGroupUUID
         self.uuid = uuid
         self.mimeType = mimeType
+        self.cloudStorageType = cloudStorageType
         self.appMetaData = appMetaData
         self.changeResolverName = changeResolverName
     }
@@ -52,6 +57,7 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
             lhs.fileGroupUUID == rhs.fileGroupUUID &&
             lhs.uuid == rhs.uuid &&
             lhs.mimeType == rhs.mimeType &&
+            lhs.cloudStorageType == rhs.cloudStorageType &&
             lhs.appMetaData == rhs.appMetaData &&
             lhs.changeResolverName == rhs.changeResolverName
     }
@@ -66,6 +72,7 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
             t.column(fileGroupUUIDField.description)
             t.column(uuidField.description)
             t.column(mimeTypeField.description)
+            t.column(cloudStorageTypeField.description)
             t.column(appMetaDataField.description)
             t.column(changeResolverNameField.description)
         }
@@ -77,6 +84,7 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
             fileGroupUUID: row[Self.fileGroupUUIDField.description],
             uuid: row[Self.uuidField.description],
             mimeType: row[Self.mimeTypeField.description],
+            cloudStorageType: row[Self.cloudStorageTypeField.description],
             appMetaData: row[Self.appMetaDataField.description],
             changeResolverName: row[Self.changeResolverNameField.description]
         )
@@ -86,6 +94,7 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
         try doInsertRow(db: db, values:
             Self.fileGroupUUIDField.description <- fileGroupUUID,
             Self.uuidField.description <- uuid,
+            Self.cloudStorageTypeField.description <- cloudStorageType,
             Self.mimeTypeField.description <- mimeType,
             Self.appMetaDataField.description <- appMetaData,
             Self.changeResolverNameField.description <- changeResolverName

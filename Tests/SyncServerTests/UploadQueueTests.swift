@@ -6,12 +6,15 @@ import iOSShared
 
 class UploadQueueTests: APITestCase, APITests {
     var syncServer: SyncServer!
+    var uploadDeferred: ((SyncServer, _ syncObjectId: UUID) -> ())?
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
         let hashingManager = HashingManager()
         let config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: URL(fileURLWithPath: Self.baseURL()), minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName)
-        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, delegate: self)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
+        uploadDeferred = nil
+        syncServer.delegate = self
     }
 
     override func tearDownWithError() throws {
@@ -36,7 +39,7 @@ class UploadQueueTests: APITestCase, APITests {
     func runQueueTest(withDeclaredFiles: Bool) {
         let fileUUID1 = UUID()
 
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
 
         var declarations = Set<FileDeclaration>()
         if withDeclaredFiles {
@@ -50,9 +53,9 @@ class UploadQueueTests: APITestCase, APITests {
         
         do {
             try syncServer.queue(declaration: testObject, uploads: uploadables)
-        } catch {
+        } catch let error {
             if withDeclaredFiles {
-                XCTFail()
+                XCTFail("\(error)")
             }
             return
         }
@@ -73,7 +76,7 @@ class UploadQueueTests: APITestCase, APITests {
     func runQueueTest(withUploads: Bool) {
         let fileUUID1 = UUID()
 
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
 
         let declarations = Set<FileDeclaration>([declaration1])
         let uploadable1 = FileUpload(uuid: fileUUID1, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
@@ -119,8 +122,8 @@ class UploadQueueTests: APITestCase, APITests {
             uploadFileUUID2 = fileUUID1
         }
 
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
-        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
 
         let declarations = Set<FileDeclaration>([declaration1, declaration2])
         let uploadable1 = FileUpload(uuid: fileUUID1, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
@@ -164,8 +167,8 @@ class UploadQueueTests: APITestCase, APITests {
             declarationFileUUID2 = fileUUID1
         }
 
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
-        let declaration2 = FileDeclaration(uuid: declarationFileUUID2, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: declarationFileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
 
         let declarations = Set<FileDeclaration>([declaration1, declaration2])
         let uploadable1 = FileUpload(uuid: fileUUID1, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
@@ -198,7 +201,7 @@ class UploadQueueTests: APITestCase, APITests {
     
     func testQueueObjectNotYetRegisteredWorks() throws {
         let fileUUID = UUID()
-        let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
         let uploadable = FileUpload(uuid: fileUUID, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable])
@@ -220,7 +223,7 @@ class UploadQueueTests: APITestCase, APITests {
     // Other declared object(s) present, but give the wrong id
     func testLookupWithWrongObjectId() throws {
         let fileUUID = UUID()
-        let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
         let uploadable = FileUpload(uuid: fileUUID, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable])
@@ -244,7 +247,7 @@ class UploadQueueTests: APITestCase, APITests {
     
     func testQueueObjectAlreadyRegisteredWorks() throws {
         let fileUUID = UUID()
-        let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
         let uploadable = FileUpload(uuid: fileUUID, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable])
@@ -266,7 +269,7 @@ class UploadQueueTests: APITestCase, APITests {
     func testUploadFileDifferentFromDeclaredFileFails() throws {
         let fileUUID1 = UUID()
         let fileUUID2 = UUID()
-        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
         let uploadable = FileUpload(uuid: fileUUID2, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable])
@@ -293,7 +296,7 @@ class UploadQueueTests: APITestCase, APITests {
             fileUUID2 = fileUUID1
         }
         
-        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
         let uploadable = FileUpload(uuid: fileUUID2, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable])
@@ -333,7 +336,7 @@ class UploadQueueTests: APITestCase, APITests {
             fileUUID2 = fileUUID1
         }
         
-        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
         let uploadable1 = FileUpload(uuid: fileUUID1, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
         let uploadables1 = Set<FileUpload>([uploadable1])
@@ -366,16 +369,44 @@ class UploadQueueTests: APITestCase, APITests {
     func testUploadFileSameAsDeclaredFileWithExistingRegistrationWorks() throws {
         try runUploadFileAfterInitialQueue(differentFromDeclaredFile:true)
     }
+    
+    func testQueueWithExistingDeferredUpload() throws {
+        var count = 0
+        
+        uploadDeferred = { syncServer, objectId in
+            count += 1
+        }
+        
+        let fileUUID = UUID()
+        
+        let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declarations = Set<FileDeclaration>([declaration])
+        
+        let uploadable = FileUpload(uuid: fileUUID, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
+        let uploadables = Set<FileUpload>([uploadable])
+        
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
+
+        try syncServer.queue(declaration: testObject, uploads: uploadables)
+        XCTAssert(count == 0, "\(count)")
+        
+        try syncServer.queue(declaration: testObject, uploads: uploadables)
+        XCTAssert(count == 1, "\(count)")
+    }
 }
 
 extension UploadQueueTests: SyncServerDelegate {
     func syncCompleted(_ syncServer: SyncServer) {
     }
     
-    func downloadCompleted(_ syncServer: SyncServer, syncObjectId: UUID) {
+    func downloadCompleted(_ syncServer: SyncServer, declObjectId: UUID) {
     }
     
     // A uuid that was initially generated on the client
     func uuidCollision(_ syncServer: SyncServer, type: UUIDCollisionType, from: UUID, to: UUID) {
+    }
+    
+    func uploadDeferred(_ syncServer: SyncServer, declObjectId: UUID) {
+        self.uploadDeferred?(syncServer, declObjectId)
     }
 }
