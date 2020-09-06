@@ -19,6 +19,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
     var error:((SyncServer, Error?) -> ())?
     var user: TestUser!
     var database: Connection!
+    var config:Configuration!
     
     override func setUpWithError() throws {
         try super.setUpWithError()
@@ -28,7 +29,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         hashingManager = HashingManager()
         try hashingManager.add(hashing: user.hashing)
         let serverURL = URL(string: Self.baseURL())!
-        let config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
+        config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
         api = syncServer.api
         uploadQueued = nil
@@ -37,9 +38,21 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         guard user.addUser() else {
             throw SyncServerError.internalError("Could not add user")
         }
+        
+        // So as to not throw an error in `contentsOfDirectory`
+        try Files.createDirectoryIfNeeded(config.temporaryFiles.directory)
+        
+        let filePaths = try FileManager.default.contentsOfDirectory(atPath: config.temporaryFiles.directory.path)
+        for filePath in filePaths {
+            let url = config.temporaryFiles.directory.appendingPathComponent(filePath)
+            try FileManager.default.removeItem(at: url)
+        }
     }
 
     override func tearDownWithError() throws {
+        // All temporary files should have been removed prior to end of test.
+        let filePaths = try FileManager.default.contentsOfDirectory(atPath: config.temporaryFiles.directory.path)
+        XCTAssert(filePaths.count == 0)
     }
     
     func waitForUploadsToComplete(numberUploads: Int) {
@@ -363,6 +376,15 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         
         waitForUploadsToComplete(numberUploads: 1)
         XCTAssert(queuedCount == 1)
+        
+        // Until I get the second tier queued uploads working, need to remove the remaining non-uploaded file to not get a test failure.
+        guard let tracker = try UploadFileTracker.fetchSingleRow(db: database, where: fileUUID == UploadFileTracker.fileUUIDField.description),
+            let url = tracker.localURL else {
+            XCTFail()
+            return
+        }
+        
+        try FileManager.default.removeItem(at: url)
     }
     
     func testUploadFileDifferentFromDeclaredFileFails() throws {
@@ -510,6 +532,15 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         XCTAssert(count == 1, "\(count)")
         
         waitForUploadsToComplete(numberUploads: 1)
+        
+        // Until I get the second tier queued uploads working, need to remove the remaining non-uploaded file to not get a test failure.
+        guard let tracker = try UploadFileTracker.fetchSingleRow(db: database, where: fileUUID == UploadFileTracker.fileUUIDField.description),
+            let url = tracker.localURL else {
+            XCTFail()
+            return
+        }
+        
+        try FileManager.default.removeItem(at: url)
     }
 }
 
