@@ -4,8 +4,18 @@ import iOSShared
 import ServerShared
 
 public enum UploadFileResult {
-    // Creation date is only returned when you upload a new file.
-    case success(creationDate: Date?, updateDate: Date, uploadsFinished:UploadFileResponse.UploadsFinished, deferredUploadId: Int64?)
+    public struct Upload {
+        let fileUUID: UUID
+        
+        // Creation date is only returned when you upload a new file.
+        let creationDate: Date?
+        
+        let updateDate: Date
+        let uploadsFinished:UploadFileResponse.UploadsFinished
+        let deferredUploadId: Int64?
+    }
+    
+    case success(Upload)
         
     // The GoneReason should never be fileRemovedOrRenamed-- because a new upload would upload the next version, not accessing the current version.
     case gone(GoneReason)

@@ -28,7 +28,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         hashingManager = HashingManager()
         try hashingManager.add(hashing: user.hashing)
         let serverURL = URL(string: Self.baseURL())!
-        let config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
+        let config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, temporaryDirectory: "Temporary", packageTests: true)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
         api = syncServer.api
         uploadQueued = nil
@@ -51,12 +51,12 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
             switch result {
             case .gone:
                 XCTFail()
-            case .success(creationDate: let creationDate, updateDate: _, uploadsFinished: let allUploadsFinished, deferredUploadId: let deferredUploadId):
+            case .success(let uploadResult):
                 if count == numberUploads {
-                    XCTAssert(allUploadsFinished == .v0UploadsFinished, "\(allUploadsFinished)")
+                    XCTAssert(uploadResult.uploadsFinished == .v0UploadsFinished, "\(uploadResult.uploadsFinished)")
                 }
-                XCTAssertNotNil(creationDate)
-                XCTAssertNil(deferredUploadId)
+                XCTAssertNotNil(uploadResult.creationDate)
+                XCTAssertNil(uploadResult.deferredUploadId)
             }
             
             if count == numberUploads {

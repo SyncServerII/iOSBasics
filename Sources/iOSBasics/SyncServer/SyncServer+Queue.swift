@@ -172,7 +172,18 @@ extension SyncServer {
         }
         
         for file in uploads {
-            let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: newObjectTrackerId, status: .notStarted, fileUUID: file.uuid, fileVersion: nil, localURL: file.url, goneReason: nil, uploadCopy: file.persistence.isCopy, checkSum: nil)
+            let url: URL
+            if file.persistence.isCopy {
+                url = try FileUtils.copyFileToNewTemporary(original: file.url, config: networkConfig)
+            }
+            else {
+                url = file.url
+            }
+            
+            let declaredFile = try fileDeclaration(for: file.uuid, declaration: declaration)
+            let checkSum = try hashingManager.hashFor(cloudStorageType: declaredFile.cloudStorageType).hash(forURL: url)
+            
+            let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: newObjectTrackerId, status: .notStarted, fileUUID: file.uuid, fileVersion: nil, localURL: url, goneReason: nil, uploadCopy: file.persistence.isCopy, checkSum: checkSum)
             try fileTracker.insert()
         }
 
@@ -184,13 +195,12 @@ extension SyncServer {
         let uploadCount = Int32(uploads.count)
         
         for (uploadIndex, file) in uploads.enumerated() {
-            let declaredFiles = declaration.declaredFiles.filter {$0.uuid == file.uuid}
-            guard declaredFiles.count == 1,
-                let declaredFile = declaredFiles.first else {
-                throw SyncServerError.internalError("Not just one declared file: \(declaredFiles.count)")
+            let declaredFile = try fileDeclaration(for: file.uuid, declaration: declaration)
+            guard let uploadFileTracker = try UploadFileTracker.fetchSingleRow(db: db, where: file.uuid == UploadFileTracker.fileUUIDField.description),
+                let checkSum = uploadFileTracker.checkSum,
+                let localURL = uploadFileTracker.localURL else {
+                throw SyncServerError.internalError("Could not get upload file tracker: \(file.uuid)")
             }
-            
-            let checkSum = try hashingManager.hashFor(cloudStorageType: declaredFile.cloudStorageType).hash(forURL: file.url)
 
             let fileVersion:ServerAPI.File.Version
             if newFiles {
@@ -199,10 +209,10 @@ extension SyncServer {
                     appMetaData = AppMetaData(contents: appMetaDataContents)
                 }
                 
-                fileVersion = .v0(source: .url(file.url), mimeType: declaredFile.mimeType, checkSum: checkSum, changeResolverName: declaredFile.changeResolverName, fileGroupUUID: declaration.fileGroupUUID.uuidString, appMetaData: appMetaData)
+                fileVersion = .v0(source: .url(localURL), mimeType: declaredFile.mimeType, checkSum: checkSum, changeResolverName: declaredFile.changeResolverName, fileGroupUUID: declaration.fileGroupUUID.uuidString, appMetaData: appMetaData)
             }
             else {
-                let data = try Data(contentsOf: file.url)
+                let data = try Data(contentsOf: localURL)
                 fileVersion = .vN(change: data)
             }
             
@@ -211,6 +221,9 @@ extension SyncServer {
             if let error = api.uploadFile(file: serverAPIFile, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount) {
                 throw SyncServerError.internalError("\(error)")
             }
+
+            try uploadFileTracker.update(setters:
+                UploadFileTracker.statusField.description <- .uploading)
         }
         
         // No existing trackers for this object prior to this `queue` call-- need to trigger these uploads.
@@ -237,30 +250,13 @@ extension SyncServer {
 //        }
     }
     
-    private func queueFileUpload<FILE: UploadableFile>(_ file: FILE, syncObjectId: UUID) throws -> UploadFileTracker {
-        var entry:DirectoryEntry! = try DirectoryEntry.fetchSingleRow(db: db, where:
-            file.uuid == UploadFileTracker.fileUUIDField.description)
-        var cloudStorageType: CloudStorageType!
-        
-        if entry == nil {
-            // This is a new file.
-//            cloudStorageType = try signIns.cloudStorageTypeForNewFile(db: database, sharingGroupUUID: object.sharingGroup)
-//            entry = try DirectoryEntry(db: database, fileUUID: file.uuid, mimeType: file.mimeType, fileVersion: 0, sharingGroupUUID: object.sharingGroup, cloudStorageType: cloudStorageType, deletedLocally: false, deletedOnServer: false, appMetaData: file.appMetaData, appMetaDataVersion: 0, fileGroupUUID: object.fileGroupUUID, goneReason: nil)
-//            try entry?.insert()
-        }
-        else {
-            // Existing file.
-//            cloudStorageType = entry.cloudStorageType
+    private func fileDeclaration<DECL: DeclarableObject>(for uuid: UUID, declaration: DECL) throws -> some DeclarableFile {
+        let declaredFiles = declaration.declaredFiles.filter {$0.uuid == uuid}
+        guard declaredFiles.count == 1,
+            let declaredFile = declaredFiles.first else {
+            throw SyncServerError.internalError("Not just one declared file: \(declaredFiles.count)")
         }
         
-        let hasher = try hashingManager.hashFor(cloudStorageType: cloudStorageType)
-        let checkSum = try hasher.hash(forURL: file.url)
-        var uploadTracker:UploadFileTracker!
-//        let uploadTracker = try UploadFileTracker(db: database, status: .notStarted, sharingGroupUUID: object.sharingGroup, appMetaData: file.appMetaData, fileGroupUUID: object.fileGroupUUID, fileUUID: file.uuid, fileVersion: nil, localURL: file.url, mimeType: file.mimeType, goneReason: nil, uploadCopy: file.persistence.isCopy, uploadUndeletion: false, checkSum: checkSum)
-//        try uploadTracker.insert()
-//
-//        return uploadTracker
-        assert(false)
-        return uploadTracker
+        return declaredFile
     }
 }

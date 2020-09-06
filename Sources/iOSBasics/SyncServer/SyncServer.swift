@@ -6,6 +6,7 @@ import iOSSignIn
 
 public class SyncServer {
     let configuration: Configuration
+    let networkConfig: Networking.Configuration
     weak var delegate: SyncServerDelegate!
     let db: Connection
     var signIns: SignIns!
@@ -22,8 +23,9 @@ public class SyncServer {
         set(logLevel: .trace)
         
         try Database.setup(db: db)
-        let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: configuration.serverURL.absoluteString, minimumServerVersion: nil, packageTests: configuration.packageTests)
-        api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: config)
+        let tempDir = Files.getDocumentsDirectory().appendingPathComponent(configuration.temporaryDirectory)
+        networkConfig = Networking.Configuration(temporaryFileDirectory: tempDir, temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: configuration.serverURL.absoluteString, minimumServerVersion: nil, packageTests: configuration.packageTests)
+        api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: networkConfig)
     }
     
     // MARK: Persistent queuing for upload
@@ -105,33 +107,3 @@ public class SyncServer {
     }
 }
 
-extension SyncServer: ServerAPIDelegate {
-    func error(_ delegated: AnyObject, error: Error?) {
-        delegate.error(self, error: error)
-    }
-    
-    func hasher(_ delegated: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing {
-        return try hashingManager.hashFor(cloudStorageType: cloudStorageType)
-    }
-    
-    func credentialsForNetworkRequests(_ delegated: AnyObject) throws -> GenericCredentials {
-        return try delegate.credentialsForServerRequests(self)
-    }
-    
-    func deviceUUID(_ delegated: AnyObject) -> UUID {
-        return configuration.deviceUUID
-    }
-    
-    func uploadCompleted(_ delegated: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
-        switch result {
-        case .failure(let error):
-            delegate.error(self, error: error)
-        case .success(let uploadFileResult):
-            delegate.uploadCompleted(self, result: uploadFileResult)
-        }
-    }
-    
-    func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
-        assert(false)
-    }
-}

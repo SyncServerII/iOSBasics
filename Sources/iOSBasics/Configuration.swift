@@ -15,11 +15,14 @@ public struct Configuration {
     
     public let deviceUUID: UUID
     
+    // Within the Documents directory-- single level subdirectory.
+    public let temporaryDirectory:String
+    
     // Only for debugging
     // If you set this to false, and you are testing just within a package, you will see: BackgroundSession <F65F620A-40DF-47D8-8714-90D457380899> an error occurred on the xpc connection to setup the background session: Error Domain=NSCocoaErrorDomain Code=4097
     public let packageTests: Bool
     
-    public init(appGroupIdentifier: String?, sqliteDatabasePath: String, serverURL: URL, minimumServerVersion:Version?, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, packageTests: Bool) {
+    public init(appGroupIdentifier: String?, sqliteDatabasePath: String, serverURL: URL, minimumServerVersion:Version?, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryDirectory:String, packageTests: Bool = false) {
         self.appGroupIdentifier = appGroupIdentifier
         self.sqliteDatabasePath = sqliteDatabasePath
         self.serverURL = serverURL
@@ -27,6 +30,7 @@ public struct Configuration {
         self.failoverMessageURL = failoverMessageURL
         self.cloudFolderName = cloudFolderName
         self.deviceUUID = deviceUUID
+        self.temporaryDirectory = temporaryDirectory
         
 #if !DEBUG
         assert(!packageTests)

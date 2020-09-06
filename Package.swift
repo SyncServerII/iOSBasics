@@ -69,7 +69,9 @@ let package = Package(
             dependencies: [
                 "iOSBasics", "iOSShared", "iOSSignIn", "Version", "iOSDropbox",
                 "ChangeResolvers",
-                .product(name: "SQLite", package: "SQLite.swift")]
+                .product(name: "SQLite", package: "SQLite.swift")],
+            resources: [
+                .copy("Example.txt")]
             ),
         .testTarget(
             name: "SyncServerTests",
