@@ -234,6 +234,8 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         let fileUUID1 = UUID()
         let fileUUID2 = UUID()
         
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
         let declarationFileUUID2: UUID
         if withDistinctUUIDsInDeclarations {
             declarationFileUUID2 = fileUUID2
@@ -241,16 +243,15 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         else {
             declarationFileUUID2 = fileUUID1
         }
-
+        
         let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
-        let declaration2 = FileDeclaration(uuid: declarationFileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
-
+        let declaration2 = FileDeclaration(uuid: declarationFileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: "Some stuff", changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration1, declaration2])
-        let uploadable1 = FileUpload(uuid: fileUUID1, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
-
+        
+        let uploadable1 = FileUpload(uuid: fileUUID1, url: exampleTextFileURL, persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable1])
         
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         do {
             try syncServer.queue(declaration: testObject, uploads: uploadables)
@@ -263,7 +264,10 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         
         if !withDistinctUUIDsInDeclarations {
             XCTFail()
+            return
         }
+        
+        waitForUploadsToComplete(numberUploads: 1)
     }
     
     func testQueueWithDistinctUUIDsInDeclarationsWorks() throws {
@@ -276,12 +280,14 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
     
     func testQueueObjectNotYetRegisteredWorks() throws {
         let fileUUID = UUID()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
         let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
-        let uploadable = FileUpload(uuid: fileUUID, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
+        let uploadable = FileUpload(uuid: fileUUID, url: exampleTextFileURL, persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable])
         
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         try syncServer.queue(declaration: testObject, uploads: uploadables)
         
         let obj = try syncServer.lookupDeclObject(declObjectId: testObject.declObjectId)
@@ -293,19 +299,24 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         
         let count2 = try DeclaredFileModel.numberRows(db: database, where: testObject.declObjectId == DeclaredFileModel.fileGroupUUIDField.description)
         XCTAssert(count2 == 1)
+        
+        waitForUploadsToComplete(numberUploads: 1)
     }
     
     // Other declared object(s) present, but give the wrong id
     func testLookupWithWrongObjectId() throws {
+        let sharingGroupUUID = try getSharingGroupUUID()
         let fileUUID = UUID()
         let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
-        let uploadable = FileUpload(uuid: fileUUID, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
+        let uploadable = FileUpload(uuid: fileUUID, url: exampleTextFileURL, persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable])
         
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         try syncServer.queue(declaration: testObject, uploads: uploadables)
         
+        waitForUploadsToComplete(numberUploads: 1)
+
         do {
             let _ = try syncServer.lookupDeclObject(declObjectId: UUID())
         } catch let error {
@@ -322,16 +333,25 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
     
     func testQueueObjectAlreadyRegisteredWorks() throws {
         let fileUUID = UUID()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        var queuedCount = 0
+        uploadQueued = { _, syncObjectId in
+            queuedCount += 1
+        }
+
         let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
-        let uploadable = FileUpload(uuid: fileUUID, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
+        let uploadable = FileUpload(uuid: fileUUID, url: exampleTextFileURL, persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable])
         
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         try syncServer.queue(declaration: testObject, uploads: uploadables)
-        
+        XCTAssert(queuedCount == 0)
+
         // This second one should work also
         try syncServer.queue(declaration: testObject, uploads: uploadables)
+        XCTAssert(queuedCount == 1)
 
         let count = try DeclaredObjectModel.numberRows(db: database,
             where: testObject.declObjectId == DeclaredObjectModel.fileGroupUUIDField.description)
@@ -339,17 +359,23 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         
         let count2 = try DeclaredFileModel.numberRows(db: database, where: testObject.declObjectId == DeclaredFileModel.fileGroupUUIDField.description)
         XCTAssert(count2 == 1)
+        
+        waitForUploadsToComplete(numberUploads: 1)
+        XCTAssert(queuedCount == 1)
     }
     
     func testUploadFileDifferentFromDeclaredFileFails() throws {
         let fileUUID1 = UUID()
         let fileUUID2 = UUID()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
         let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
-        let uploadable = FileUpload(uuid: fileUUID2, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
+        
+        let uploadable = FileUpload(uuid: fileUUID2, url: exampleTextFileURL, persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable])
         
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         do {
             try syncServer.queue(declaration: testObject, uploads: uploadables)
@@ -360,10 +386,11 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         XCTFail()
     }
     
-    func runUploadFile(differentFromDeclaredFile:Bool) {
+    func runUploadFile(differentFromDeclaredFile:Bool) throws {
         let fileUUID1 = UUID()
-        let fileUUID2:UUID
-        
+        let fileUUID2: UUID
+        let sharingGroupUUID = try getSharingGroupUUID()
+
         if differentFromDeclaredFile {
             fileUUID2 = UUID()
         }
@@ -373,10 +400,11 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         
         let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
-        let uploadable = FileUpload(uuid: fileUUID2, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
+        
+        let uploadable = FileUpload(uuid: fileUUID2, url: exampleTextFileURL, persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable])
         
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         do {
             try syncServer.queue(declaration: testObject, uploads: uploadables)
@@ -389,21 +417,26 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         
         if differentFromDeclaredFile {
             XCTFail()
+            return
         }
+        
+        waitForUploadsToComplete(numberUploads: 1)
     }
     
-    func testUploadFileWithIdDifferentFromDeclaredFileFails() {
-        runUploadFile(differentFromDeclaredFile:true)
+    func testUploadFileWithIdDifferentFromDeclaredFileFails() throws {
+        try runUploadFile(differentFromDeclaredFile:true)
     }
     
-    func testUploadFileWithIdSameAsDeclaredFileWorks() {
-        runUploadFile(differentFromDeclaredFile:false)
+    func testUploadFileWithIdSameAsDeclaredFileWorks() throws {
+        try runUploadFile(differentFromDeclaredFile:false)
     }
 
     func runUploadFileAfterInitialQueue(differentFromDeclaredFile:Bool) throws {
         let fileUUID1 = UUID()
         let fileUUID2:UUID
-        
+
+        let sharingGroupUUID = try getSharingGroupUUID()
+
         if differentFromDeclaredFile {
             fileUUID2 = UUID()
         }
@@ -413,14 +446,15 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         
         let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
-        let uploadable1 = FileUpload(uuid: fileUUID1, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
+        
+        let uploadable1 = FileUpload(uuid: fileUUID1, url: exampleTextFileURL, persistence: .copy)
         let uploadables1 = Set<FileUpload>([uploadable1])
         
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
 
         try syncServer.queue(declaration: testObject, uploads: uploadables1)
 
-        let uploadable2 = FileUpload(uuid: fileUUID2, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
+        let uploadable2 = FileUpload(uuid: fileUUID2, url: exampleTextFileURL, persistence: .copy)
         let uploadables2 = Set<FileUpload>([uploadable2])
         
         do {
@@ -429,12 +463,17 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
             if !differentFromDeclaredFile {
                 XCTFail()
             }
+            
+            waitForUploadsToComplete(numberUploads: 1)
             return
         }
         
         if differentFromDeclaredFile {
             XCTFail()
+            return
         }
+        
+        waitForUploadsToComplete(numberUploads: 1)
     }
     
     func testUploadFileDifferentFromDeclaredFileWithExistingRegistrationFails() throws {
@@ -452,21 +491,24 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
             count += 1
         }
         
+        let sharingGroupUUID = try getSharingGroupUUID()
         let fileUUID = UUID()
         
         let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
         
-        let uploadable = FileUpload(uuid: fileUUID, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
+        let uploadable = FileUpload(uuid: fileUUID, url: exampleTextFileURL, persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable])
         
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
 
         try syncServer.queue(declaration: testObject, uploads: uploadables)
         XCTAssert(count == 0, "\(count)")
         
         try syncServer.queue(declaration: testObject, uploads: uploadables)
         XCTAssert(count == 1, "\(count)")
+        
+        waitForUploadsToComplete(numberUploads: 1)
     }
 }
 
