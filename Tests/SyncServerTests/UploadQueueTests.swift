@@ -15,6 +15,8 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
     var syncServer: SyncServer!
     var uploadQueued: ((SyncServer, _ syncObjectId: UUID) -> ())?
     var uploadStarted: ((SyncServer, _ deferredUploadId:Int64) -> ())?
+    var uploadCompleted: ((SyncServer, UploadFileResult) -> ())?
+    var error:((SyncServer, Error?) -> ())?
     var user: TestUser!
     var database: Connection!
     
@@ -38,6 +40,34 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
     }
 
     override func tearDownWithError() throws {
+    }
+    
+    func waitForUploadsToComplete(numberUploads: Int) {
+        var count = 0
+        let exp = expectation(description: "exp")
+        uploadCompleted = { _, result in
+            count += 1
+
+            switch result {
+            case .gone:
+                XCTFail()
+            case .success(creationDate: let creationDate, updateDate: _, uploadsFinished: let allUploadsFinished, deferredUploadId: let deferredUploadId):
+                if count == numberUploads {
+                    XCTAssert(allUploadsFinished == .v0UploadsFinished, "\(allUploadsFinished)")
+                }
+                XCTAssertNotNil(creationDate)
+                XCTAssertNil(deferredUploadId)
+            }
+            
+            if count == numberUploads {
+                exp.fulfill()
+            }
+        }
+        error = { _, result in
+            XCTFail()
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
     }
     
     // No declared objects present
@@ -97,11 +127,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
             return
         }
         
-        let exp = expectation(description: "exp")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            exp.fulfill()
-        }
-        waitForExpectations(timeout: 10, handler: nil)
+        waitForUploadsToComplete(numberUploads: 1)
     }
     
     func testTestWithADeclaredFileWorks() throws {
@@ -140,7 +166,10 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         
         if !withUploads {
             XCTFail()
+            return
         }
+
+        waitForUploadsToComplete(numberUploads: 1)
     }
     
     func testTestWithAnUploadWorks() throws {
@@ -151,9 +180,11 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         try runQueueTest(withUploads: false)
     }
     
-    func runQueueTest(withDistinctUUIDsInUploads: Bool) {
+    func runQueueTest(withDistinctUUIDsInUploads: Bool) throws {
         let fileUUID1 = UUID()
         let fileUUID2 = UUID()
+        
+        let sharingGroupUUID = try getSharingGroupUUID()
         
         let uploadFileUUID2: UUID
         if withDistinctUUIDsInUploads {
@@ -165,14 +196,13 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
 
         let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
-
         let declarations = Set<FileDeclaration>([declaration1, declaration2])
-        let uploadable1 = FileUpload(uuid: fileUUID1, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .copy)
-        let uploadable2 = FileUpload(uuid: uploadFileUUID2, url: URL(fileURLWithPath: "http://cprince.com"), persistence: .immutable)
-
+        
+        let uploadable1 = FileUpload(uuid: fileUUID1, url: exampleTextFileURL, persistence: .copy)
+        let uploadable2 = FileUpload(uuid: uploadFileUUID2, url: exampleTextFileURL, persistence: .immutable)
         let uploadables = Set<FileUpload>([uploadable1, uploadable2])
         
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: declarations)
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         do {
             try syncServer.queue(declaration: testObject, uploads: uploadables)
@@ -185,18 +215,22 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         
         if !withDistinctUUIDsInUploads {
             XCTFail()
+            return
         }
+        
+        waitForUploadsToComplete(numberUploads: 2)
     }
     
-    func testQueueWithDistinctUUIDsInUploadsWorks() {
-        runQueueTest(withDistinctUUIDsInUploads: true)
+    // 9/5/20; Getting https://github.com/SyncServerII/ServerMain/issues/5 with parallel uploads.
+    func testQueueWithDistinctUUIDsInUploadsWorks() throws {
+        try runQueueTest(withDistinctUUIDsInUploads: true)
     }
     
-    func testQueueWithNonDistinctUUIDsInUploadsFails() {
-        runQueueTest(withDistinctUUIDsInUploads: false)
+    func testQueueWithNonDistinctUUIDsInUploadsFails() throws {
+        try runQueueTest(withDistinctUUIDsInUploads: false)
     }
     
-    func runQueueTest(withDistinctUUIDsInDeclarations: Bool) {
+    func runQueueTest(withDistinctUUIDsInDeclarations: Bool) throws {
         let fileUUID1 = UUID()
         let fileUUID2 = UUID()
         
@@ -232,12 +266,12 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         }
     }
     
-    func testQueueWithDistinctUUIDsInDeclarationsWorks() {
-        runQueueTest(withDistinctUUIDsInUploads: true)
+    func testQueueWithDistinctUUIDsInDeclarationsWorks() throws {
+        try runQueueTest(withDistinctUUIDsInDeclarations: true)
     }
     
-    func testQueueWithNonDistinctUUIDsInDeclarationsFails() {
-        runQueueTest(withDistinctUUIDsInUploads: false)
+    func testQueueWithNonDistinctUUIDsInDeclarationsFails() throws {
+        try runQueueTest(withDistinctUUIDsInDeclarations: false)
     }
     
     func testQueueObjectNotYetRegisteredWorks() throws {
@@ -443,6 +477,7 @@ extension UploadQueueTests: SyncServerDelegate {
     
     func error(_ syncServer: SyncServer, error: Error?) {
         XCTFail("\(String(describing: error))")
+        self.error?(syncServer, error)
     }
 
     func syncCompleted(_ syncServer: SyncServer) {
@@ -461,5 +496,9 @@ extension UploadQueueTests: SyncServerDelegate {
     
     func uploadStarted(_ syncServer: SyncServer, deferredUploadId:Int64) {
         uploadStarted?(syncServer, deferredUploadId)
+    }
+    
+    func uploadCompleted(_ syncServer: SyncServer, result: UploadFileResult) {
+        uploadCompleted?(syncServer, result)
     }
 }

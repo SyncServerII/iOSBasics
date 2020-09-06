@@ -102,7 +102,8 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         
         switch uploadResult2 {
         case .success(let result):
-            guard case .success(creationDate: _, updateDate: _, deferredUploadId: let id) = result, let deferredId = id else {
+            guard case .success(creationDate: _, updateDate: _, let uploadsFinished, deferredUploadId: let id) = result,
+                let deferredId = id else {
                 XCTFail()
                 return nil
             }

@@ -115,10 +115,10 @@ extension DeclarableObjectBasics {
     }
 }
 
-/* An abstraction of a data object backed by one or more cloud storage files. Two examples from Neebla:
+/* An abstraction of a declaration of a data object backed by one or more cloud storage files. Two examples from Neebla:
 
-1) An image: Represented by a (a) jpg image file and (b) a discussion thread file.
-2) A website: Represented by (a) an optional jpg file for an image depicting the URL website contents, (b) a file containing the URL for the website, and (c) a discussion thread file.
+1) An image object: Represented by a (a) jpg image file and (b) a discussion thread file.
+2) A website object: Represented by (a) an optional jpg file for an image depicting the URL website contents, (b) a file containing the URL for the website, and (c) a discussion thread file.
 
 Representations in terms of a set of files are selected both in terms of the need for storing information for an application's data object, and in terms of having representations that are basically intelligible to a user when stored in their cloud storage. For example, it wouldn't be suitable to compress data files in a non-obvious encoding. JPEG format is fine as it's widely used, and zip compression could be fine as well. But a proprietary compression algorithm not widely used would not be suitable.
 */

@@ -116,15 +116,17 @@ extension ServerAPI: FileTransferDelegate {
             
             logger.debug("uploadFileResponse.creationDate: \(String(describing: uploadFileResponse.creationDate))")
             logger.debug("uploadFileResponse.updateDate: \(String(describing: uploadFileResponse.updateDate))")
+            logger.debug("uploadFileResponse.allUploadsFinished: \(String(describing: uploadFileResponse.allUploadsFinished))")
            
             let creationDate = uploadFileResponse.creationDate
             
-            guard let updateDate = uploadFileResponse.updateDate else {
+            guard let updateDate = uploadFileResponse.updateDate,
+                let allUploadsFinished = uploadFileResponse.allUploadsFinished else {
                 delegate.uploadCompleted(self, result: .failure(ServerAPIError.noExpectedResultKey))
                 return
             }
 
-            delegate.uploadCompleted(self, result: .success(UploadFileResult.success(creationDate: creationDate, updateDate: updateDate, deferredUploadId: uploadFileResponse.deferredUploadId)))
+            delegate.uploadCompleted(self, result: .success(UploadFileResult.success(creationDate: creationDate, updateDate: updateDate, uploadsFinished: allUploadsFinished, deferredUploadId: uploadFileResponse.deferredUploadId)))
         }
         else {
             delegate.uploadCompleted(self, result: .failure(ServerAPIError.couldNotObtainHeaderParameters))

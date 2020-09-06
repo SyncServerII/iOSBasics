@@ -19,6 +19,8 @@ public class SyncServer {
         self.db = db
         self.hashingManager = hashingManager
         
+        set(logLevel: .trace)
+        
         try Database.setup(db: db)
         let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: configuration.serverURL.absoluteString, minimumServerVersion: nil, packageTests: configuration.packageTests)
         api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: config)
@@ -124,8 +126,8 @@ extension SyncServer: ServerAPIDelegate {
         switch result {
         case .failure(let error):
             delegate.error(self, error: error)
-        case .success:
-            break
+        case .success(let uploadFileResult):
+            delegate.uploadCompleted(self, result: uploadFileResult)
         }
     }
     

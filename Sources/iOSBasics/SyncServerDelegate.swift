@@ -24,6 +24,10 @@ public protocol SyncServerDelegate: AnyObject {
     
     // The `queue` method was called, but the upload couldn't be done immediately. It was queued for upload later instead.
     func uploadQueued(_ syncServer: SyncServer, declObjectId: UUID)
-    
+
+    // Upload started successfully. Request was sent to server.
     func uploadStarted(_ syncServer: SyncServer, deferredUploadId:Int64)
+    
+    // Request to server for upload completed successfully.
+    func uploadCompleted(_ syncServer: SyncServer, result: UploadFileResult)
 }
