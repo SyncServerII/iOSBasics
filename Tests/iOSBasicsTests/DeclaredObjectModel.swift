@@ -109,4 +109,20 @@ class DeclaredFileModelTests: XCTestCase {
         
         XCTAssert(count == 0)
     }
+    
+    func testDeleteById() throws {
+        try DeclaredFileModel.createTable(db: database)
+        try entry.insert()
+        
+        XCTAssert(try DeclaredFileModel.numberRows(db: database) == 1)
+
+        guard let id = entry.id else {
+            XCTFail()
+            return
+        }
+        
+        try DeclaredFileModel.delete(rowId: id, db: database)
+        
+        XCTAssert(try DeclaredFileModel.numberRows(db: database) == 0)
+    }
 }

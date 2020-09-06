@@ -24,9 +24,16 @@ protocol TestFiles {
 
 extension TestFiles {
     var exampleTextFile:String { return "Example.txt" }
+    var exampleImageFile:String { return "Cat.jpg" }
+
     var exampleTextFileURL: URL {
         let directory = TestingFile.directoryOfFile(#file)
         return directory.appendingPathComponent(exampleTextFile)
+    }
+    
+    var exampleImageFileURL: URL {
+        let directory = TestingFile.directoryOfFile(#file)
+        return directory.appendingPathComponent(exampleImageFile)
     }
 }
 

@@ -181,12 +181,17 @@ extension DatabaseModel {
             throw DatabaseModelError.noId
         }
         
-        let query = Self.table.filter(id == rowid)
-
+        try Self.delete(rowId: id, db: db)
+    }
+    
+    // Delete the database row with the given id.
+    static func delete(rowId: Int64, db: Connection) throws {
+        let query = Self.table.filter(rowId == rowid)
+        
         guard try db.scalar(query.count) == 1 else {
             throw DatabaseModelError.notExactlyOneRowWithId
         }
-
+        
         try db.run(query.delete())
     }
 }

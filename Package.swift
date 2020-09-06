@@ -80,7 +80,8 @@ let package = Package(
                 "ChangeResolvers",
                 .product(name: "SQLite", package: "SQLite.swift")],
             resources: [
-                .copy("TestsCommon/Example.txt")]
+                .copy("TestsCommon/Example.txt"),
+                .copy("TestsCommon/Cat.jpg")]
             ),
         .testTarget(
             name: "ServerTests",
@@ -89,7 +90,8 @@ let package = Package(
                 "ChangeResolvers",
                 .product(name: "SQLite", package: "SQLite.swift")],
             resources: [
-                .copy("TestsCommon/Example.txt")]
+                .copy("TestsCommon/Example.txt"),
+                .copy("TestsCommon/Cat.jpg")]
             )
     ]
 )

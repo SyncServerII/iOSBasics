@@ -141,6 +141,9 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         }
         
         waitForUploadsToComplete(numberUploads: 1)
+        
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == 0)
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == 0)
     }
     
     func testTestWithADeclaredFileWorks() throws {
@@ -183,6 +186,9 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         }
 
         waitForUploadsToComplete(numberUploads: 1)
+        
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == 0)
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == 0)
     }
     
     func testTestWithAnUploadWorks() throws {
@@ -232,6 +238,9 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         }
         
         waitForUploadsToComplete(numberUploads: 2)
+        
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == 0)
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == 0)
     }
     
     // 9/5/20; Getting https://github.com/SyncServerII/ServerMain/issues/5 with parallel uploads.
@@ -281,6 +290,9 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         }
         
         waitForUploadsToComplete(numberUploads: 1)
+        
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == 0)
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == 0)
     }
     
     func testQueueWithDistinctUUIDsInDeclarationsWorks() throws {
@@ -541,6 +553,24 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         }
         
         try FileManager.default.removeItem(at: url)
+    }
+    
+    func testQueueSingleImageFile() throws {
+        let fileUUID1 = UUID()
+        
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.jpeg, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declarations = Set<FileDeclaration>([declaration1])
+        
+        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleImageFileURL))
+        let uploadables = Set<FileUpload>([uploadable1])
+
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
+        
+        try syncServer.queue(declaration: testObject, uploads: uploadables)
+        
+        waitForUploadsToComplete(numberUploads: 1)
     }
 }
 
