@@ -24,9 +24,8 @@ class UtilityTests: XCTestCase {
     }
 
     func testCopyFileToNewTemporary() throws {
-        let tempDir = Files.getDocumentsDirectory().appendingPathComponent("Temporary")
-        let networkConfig = Networking.Configuration(temporaryFileDirectory: tempDir, temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: "http://cprince.com", minimumServerVersion: nil, packageTests: false)
-        let copy = try FileUtils.copyFileToNewTemporary(original: exampleTextFileURL, config: networkConfig)
+        let config = Configuration.defaultTemporaryFiles
+        let copy = try FileUtils.copyFileToNewTemporary(original: exampleTextFileURL, config: config)
         
         let originalData = try Data(contentsOf: exampleTextFileURL)
         let newData = try Data(contentsOf: copy)

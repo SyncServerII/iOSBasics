@@ -120,6 +120,10 @@ class NetworkCache: DatabaseModel {
     static let fileVersionField = Field("fileVersion", \M.fileVersion)
     var fileVersion: FileVersionInt?
     
+    // A local database tracker id, e.g., an UploadObjectTracker id.
+    static let trackerIdField = Field("trackerId", \M.trackerId)
+    var trackerId: Int64
+    
     static let transferField = Field("transfer", \M.transfer)
     var transfer: NetworkTransfer?
 
@@ -127,6 +131,7 @@ class NetworkCache: DatabaseModel {
         id: Int64! = nil,
         taskIdentifier: Int,
         fileUUID: UUID,
+        trackerId: Int64,
         fileVersion: FileVersionInt?,
         transfer: NetworkTransfer?) throws {
                 
@@ -134,6 +139,7 @@ class NetworkCache: DatabaseModel {
         self.id = id
         self.taskIdentifier = taskIdentifier
         self.fileUUID = fileUUID
+        self.trackerId = trackerId
         self.fileVersion = fileVersion
         self.transfer = transfer
     }
@@ -145,6 +151,7 @@ class NetworkCache: DatabaseModel {
             t.column(idField.description, primaryKey: true)
             t.column(taskIdentifierField.description)
             t.column(fileUUIDField.description)
+            t.column(trackerIdField.description)
             t.column(fileVersionField.description)
             t.column(transferField.description)
         }
@@ -155,6 +162,7 @@ class NetworkCache: DatabaseModel {
             id: row[Self.idField.description],
             taskIdentifier: row[Self.taskIdentifierField.description],
             fileUUID: row[Self.fileUUIDField.description],
+            trackerId: row[Self.trackerIdField.description],
             fileVersion: row[Self.fileVersionField.description],
             transfer: row[Self.transferField.description]
         )
@@ -164,6 +172,7 @@ class NetworkCache: DatabaseModel {
         try doInsertRow(db: db, values:
             Self.taskIdentifierField.description <- taskIdentifier,
             Self.fileUUIDField.description <- fileUUID,
+            Self.trackerIdField.description <- trackerId,
             Self.fileVersionField.description <- fileVersion,
             Self.transferField.description <- transfer
         )

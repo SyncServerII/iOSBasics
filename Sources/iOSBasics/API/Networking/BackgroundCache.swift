@@ -18,18 +18,18 @@ class BackgroundCache {
         self.database = database
     }
     
-    func initializeUploadCache(fileUUID:String, taskIdentifer: Int) throws {
+    func initializeUploadCache(fileUUID:String, uploadObjectTrackerId: Int64, taskIdentifer: Int) throws {
         guard let uuid = UUID(uuidString: fileUUID) else {
             throw BackgroundCacheError.badUUID
         }
         
-        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: uuid, fileVersion: nil, transfer: .upload(nil))
+        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: uuid, trackerId: uploadObjectTrackerId, fileVersion: nil, transfer: .upload(nil))
         try cache.insert()
     }
     
     func initializeDownloadCache(file:Filenaming,
         taskIdentifer: Int) throws {
-        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: UUID(uuidString: file.fileUUID)!, fileVersion: file.fileVersion, transfer: .download(nil))
+        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: UUID(uuidString: file.fileUUID)!, trackerId: file.trackerId, fileVersion: file.fileVersion, transfer: .download(nil))
         try cache.insert()
     }
     

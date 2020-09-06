@@ -9,7 +9,7 @@ import SQLite
 import Foundation
 import ServerShared
 
-// A recorded is added each time the `queue` method is called, a record is added here.
+// A record is added each time the SyncServer `queue` method is called.
 
 class UploadObjectTracker: DatabaseModel {
     let db: Connection

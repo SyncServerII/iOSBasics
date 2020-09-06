@@ -27,11 +27,11 @@ class ServerAPI {
     }
     
     let networking: Networking
-    let config: Networking.Configuration
+    let config: Configuration
     weak var delegate: ServerAPIDelegate!
     let hashingManager: HashingManager
     
-    init(database: Connection, hashingManager: HashingManager, delegate: ServerAPIDelegate, config: Networking.Configuration) {
+    init(database: Connection, hashingManager: HashingManager, delegate: ServerAPIDelegate, config: Configuration) {
         self.networking = Networking(database: database, delegate: delegate, config: config)
         self.config = config
         self.delegate = delegate

@@ -10,9 +10,9 @@ import iOSShared
 
 struct FileUtils {
     // Returns the URL to the copy
-    static func copyFileToNewTemporary(original: URL, config: Networking.Configuration) throws -> URL {
-        try Files.createDirectoryIfNeeded(config.temporaryFileDirectory)
-        let tempFile = try Files.createTemporary(withPrefix: config.temporaryFilePrefix, andExtension: config.temporaryFileExtension, inDirectory: config.temporaryFileDirectory)
+    static func copyFileToNewTemporary(original: URL, config: Configuration.TemporaryFiles) throws -> URL {
+        try Files.createDirectoryIfNeeded(config.directory)
+        let tempFile = try Files.createTemporary(withPrefix: config.filePrefix, andExtension: config.fileExtension, inDirectory: config.directory)
         try? FileManager.default.removeItem(at: tempFile)
         try FileManager.default.copyItem(at: original, to: tempFile)
         return tempFile

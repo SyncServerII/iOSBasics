@@ -28,7 +28,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         hashingManager = HashingManager()
         try hashingManager.add(hashing: user.hashing)
         let serverURL = URL(string: Self.baseURL())!
-        let config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, temporaryDirectory: "Temporary", packageTests: true)
+        let config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
         api = syncServer.api
         uploadQueued = nil
@@ -51,7 +51,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
             switch result {
             case .gone:
                 XCTFail()
-            case .success(let uploadResult):
+            case .success(_, let uploadResult):
                 if count == numberUploads {
                     XCTAssert(uploadResult.uploadsFinished == .v0UploadsFinished, "\(uploadResult.uploadsFinished)")
                 }
@@ -342,6 +342,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
 
         let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
+        
         let uploadable = FileUpload(uuid: fileUUID, url: exampleTextFileURL, persistence: .copy)
         let uploadables = Set<FileUpload>([uploadable])
         

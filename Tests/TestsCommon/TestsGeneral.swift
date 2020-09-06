@@ -99,7 +99,7 @@ extension APITests where Self: XCTestCase {
         return returnResult
     }
     
-    func downloadFile(fileUUID: String, fileVersion: Int32, sharingGroupUUID: String) -> Swift.Result<DownloadFileResult, Error>? {
+    func downloadFile(fileUUID: String, fileVersion: Int32, downloadObjectTrackerId: Int64, sharingGroupUUID: String) -> Swift.Result<DownloadFileResult, Error>? {
         
         var returnResult:Swift.Result<DownloadFileResult, Error>?
         let exp = expectation(description: "exp")
@@ -112,9 +112,9 @@ extension APITests where Self: XCTestCase {
         
         self.downloadCompletedHandler = downloadCompletedHandler
 
-        let file = FileObject(fileUUID: fileUUID, fileVersion: fileVersion)
+        let file = FileObject(fileUUID: fileUUID, fileVersion: fileVersion, trackerId: downloadObjectTrackerId)
         
-        let result = api.downloadFile(file: file, sharingGroupUUID: sharingGroupUUID)
+        let result = api.downloadFile(file: file, downloadObjectTrackerId: downloadObjectTrackerId, sharingGroupUUID: sharingGroupUUID)
         XCTAssert(result == nil)
         
         waitForExpectations(timeout: 10, handler: nil)

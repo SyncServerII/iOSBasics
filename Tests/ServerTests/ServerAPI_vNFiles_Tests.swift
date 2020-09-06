@@ -47,7 +47,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         deviceUUID = UUID()
         let database = try Connection(.inMemory)
         try NetworkCache.createTable(db: database)
-        let config = Networking.Configuration(temporaryFileDirectory: Files.getDocumentsDirectory(), temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: Self.baseURL(), minimumServerVersion: nil, packageTests: true)
+        let config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: URL(string: Self.baseURL())!, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
         hashingManager = HashingManager()
         try? hashingManager.add(hashing: DropboxHashing())
         api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
@@ -72,7 +72,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         
         let changeResolverName = CommentFile.changeResolverName
 
-        let file1 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version:
+        let file1 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, version:
             .v0(source: .data(commentFileData), mimeType: MimeType.text, checkSum: dropboxCheckSum, changeResolverName: changeResolverName, fileGroupUUID: nil, appMetaData: nil)
         )
         
@@ -89,7 +89,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
             return nil
         }
         
-        let file2 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, version:
+        let file2 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, version:
             .vN(change: comment.updateContents)
         )
         
@@ -102,7 +102,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         
         switch uploadResult2 {
         case .success(let result):
-            guard case .success(let uploadResult) = result,
+            guard case .success(_, let uploadResult) = result,
                 let deferredId = uploadResult.deferredUploadId else {
                 XCTFail()
                 return nil
@@ -133,7 +133,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
             return
         }
         
-        guard let download = downloadFile(fileUUID: file.fileUUID, fileVersion: 1, sharingGroupUUID: file.sharingGroupUUID) else {
+        guard let download = downloadFile(fileUUID: file.fileUUID, fileVersion: 1, downloadObjectTrackerId: -1, sharingGroupUUID: file.sharingGroupUUID) else {
             XCTFail()
             return
         }

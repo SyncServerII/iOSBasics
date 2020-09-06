@@ -6,7 +6,6 @@ import iOSSignIn
 
 public class SyncServer {
     let configuration: Configuration
-    let networkConfig: Networking.Configuration
     weak var delegate: SyncServerDelegate!
     let db: Connection
     var signIns: SignIns!
@@ -23,9 +22,8 @@ public class SyncServer {
         set(logLevel: .trace)
         
         try Database.setup(db: db)
-        let tempDir = Files.getDocumentsDirectory().appendingPathComponent(configuration.temporaryDirectory)
-        networkConfig = Networking.Configuration(temporaryFileDirectory: tempDir, temporaryFilePrefix: "SyncServer", temporaryFileExtension: "dat", baseURL: configuration.serverURL.absoluteString, minimumServerVersion: nil, packageTests: configuration.packageTests)
-        api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: networkConfig)
+
+        api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: configuration)
     }
     
     // MARK: Persistent queuing for upload

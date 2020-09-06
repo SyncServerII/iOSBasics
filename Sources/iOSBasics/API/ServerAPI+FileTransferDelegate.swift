@@ -128,7 +128,7 @@ extension ServerAPI: FileTransferDelegate {
 
             let result = UploadFileResult.Upload(fileUUID: fileUUID, creationDate: uploadFileResponse.creationDate, updateDate: updateDate, uploadsFinished: allUploadsFinished, deferredUploadId: uploadFileResponse.deferredUploadId)
             
-            delegate.uploadCompleted(self, result: .success(.success(result)))
+            delegate.uploadCompleted(self, result: .success(.success(uploadObjectTrackerId: file.trackerId, result)))
         }
         else {
             delegate.uploadCompleted(self, result: .failure(ServerAPIError.couldNotObtainHeaderParameters))

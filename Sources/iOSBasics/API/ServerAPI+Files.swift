@@ -65,6 +65,7 @@ extension ServerAPI {
         let fileUUID:String
         let sharingGroupUUID: String
         let deviceUUID:String
+        let uploadObjectTrackerId: Int64
         let version: Version
     }
 
@@ -121,9 +122,9 @@ extension ServerAPI {
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: parameters)
         
         if let data = data {
-            return networking.upload(fileUUID: file.fileUUID, from: .data(data), toServerURL: serverURL, method: endpoint.method)
+            return networking.upload(fileUUID: file.fileUUID, uploadObjectTrackerId: file.uploadObjectTrackerId, from: .data(data), toServerURL: serverURL, method: endpoint.method)
         } else if let url = url {
-            return networking.upload(fileUUID: file.fileUUID, from: .localFile(url), toServerURL: serverURL, method: endpoint.method)
+            return networking.upload(fileUUID: file.fileUUID, uploadObjectTrackerId: file.uploadObjectTrackerId, from: .localFile(url), toServerURL: serverURL, method: endpoint.method)
         }
         
         return ServerAPIError.noExpectedResultKey
@@ -175,7 +176,7 @@ extension ServerAPI {
     }
     
     // Download results, if nil is returned, are reported via the ServerAPIDelegate.
-    func downloadFile(file: Filenaming, sharingGroupUUID: String) -> Error? {
+    func downloadFile(file: Filenaming, downloadObjectTrackerId: Int64, sharingGroupUUID: String) -> Error? {
         let endpoint = ServerEndpoints.downloadFile
         
         let downloadFileRequest = DownloadFileRequest()
@@ -192,7 +193,7 @@ extension ServerAPI {
         let parameters = downloadFileRequest.urlParameters()!
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: parameters)
         
-        return networking.download(file: file, fromServerURL: serverURL, method: endpoint.method)
+        return networking.download(file: file, downloadObjectTrackerId: downloadObjectTrackerId, fromServerURL: serverURL, method: endpoint.method)
     }
     
     enum DeletionFile {

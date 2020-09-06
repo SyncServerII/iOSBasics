@@ -22,7 +22,7 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
             return
         }
         
-        let downloadFile = FileObject(fileUUID: cache.fileUUID.uuidString, fileVersion: cache.fileVersion)
+        let downloadFile = FileObject(fileUUID: cache.fileUUID.uuidString, fileVersion: cache.fileVersion, trackerId: cache.trackerId)
 
         if response == nil {
             try? cache.delete()
@@ -32,7 +32,7 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
 
         // Transfer the temporary file to a more permanent location. Have to do it right now. https://developer.apple.com/reference/foundation/urlsessiondownloaddelegate/1411575-urlsession
         do {
-            movedDownloadedFile = try Files.createTemporary(withPrefix: self.config.temporaryFilePrefix, andExtension: self.config.temporaryFileExtension, inDirectory: self.config.temporaryFileDirectory)
+            movedDownloadedFile = try Files.createTemporary(withPrefix: self.config.temporaryFiles.filePrefix, andExtension: self.config.temporaryFiles.fileExtension, inDirectory: self.config.temporaryFiles.directory)
             _ = try FileManager.default.replaceItemAt(movedDownloadedFile, withItemAt: originalDownloadLocation)
         }
         catch (let error) {
@@ -73,7 +73,7 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
             return
         }
         
-        let file = FileObject(fileUUID: cache.fileUUID.uuidString, fileVersion: cache.fileVersion)
+        let file = FileObject(fileUUID: cache.fileUUID.uuidString, fileVersion: cache.fileVersion, trackerId: cache.trackerId)
 
         if response == nil {
             try? cache.delete()

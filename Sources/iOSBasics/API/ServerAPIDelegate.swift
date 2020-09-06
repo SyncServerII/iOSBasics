@@ -15,7 +15,7 @@ public enum UploadFileResult {
         let deferredUploadId: Int64?
     }
     
-    case success(Upload)
+    case success(uploadObjectTrackerId: Int64, Upload)
         
     // The GoneReason should never be fileRemovedOrRenamed-- because a new upload would upload the next version, not accessing the current version.
     case gone(GoneReason)

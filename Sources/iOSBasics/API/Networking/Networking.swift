@@ -42,39 +42,6 @@ class Networking: NSObject {
     var backgroundSession: URLSession!
     let backgroundCache: BackgroundCache
     
-    struct Configuration {
-        let temporaryFileDirectory: URL
-        let temporaryFilePrefix:String
-        let temporaryFileExtension:String
-        
-        // Don't put a trailing slash on the baseURL
-        let baseURL:String
-        
-        let minimumServerVersion: Version?
-        
-        // Do not set this to true for production build.
-        // If you set this to false, and you are testing just within a package, you will see: BackgroundSession <F65F620A-40DF-47D8-8714-90D457380899> an error occurred on the xpc connection to setup the background session: Error Domain=NSCocoaErrorDomain Code=4097
-        let packageTests: Bool
-        
-        init(temporaryFileDirectory: URL,
-            temporaryFilePrefix:String,
-            temporaryFileExtension:String,
-            baseURL:String,
-            minimumServerVersion: Version?,
-            packageTests: Bool = false) {
-
-            self.temporaryFileDirectory = temporaryFileDirectory
-            self.temporaryFilePrefix = temporaryFilePrefix
-            self.temporaryFileExtension = temporaryFileExtension
-            self.baseURL = baseURL
-            self.minimumServerVersion = minimumServerVersion
-            self.packageTests = packageTests
-#if !DEBUG
-            assert(!self.packageTests)
-#endif
-        }
-    }
-    
     init(database:Connection, delegate: NetworkingDelegate, transferDelegate:FileTransferDelegate? = nil, config: Configuration) {
         self.delegate = delegate
         self.transferDelegate = transferDelegate
@@ -273,12 +240,12 @@ class Networking: NSObject {
     }
     
     // The return value just indicates if the upload could be started, not whether the upload completed. The transferDelegate is used for further indications if the return result is nil.
-    func upload(fileUUID:String, from uploadDataSource:UploadFileDataSource, toServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
+    func upload(fileUUID:String, uploadObjectTrackerId: Int64, from uploadDataSource:UploadFileDataSource, toServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
     
         let task = uploadFile(fileDataSource: uploadDataSource, to: serverURL, method: method)
 
         do {
-            try backgroundCache.initializeUploadCache(fileUUID: fileUUID, taskIdentifer: task.taskIdentifier)
+            try backgroundCache.initializeUploadCache(fileUUID: fileUUID, uploadObjectTrackerId: uploadObjectTrackerId, taskIdentifer: task.taskIdentifier)
         } catch let error {
             task.cancel()
             delegate.uploadCompleted(self, result: .failure(error))
@@ -298,7 +265,7 @@ class Networking: NSObject {
         return backgroundSession.downloadTask(with: request)
     }
     
-    func download(file:Filenaming, fromServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
+    func download(file:Filenaming, downloadObjectTrackerId: Int64, fromServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
     
         let task = downloadFrom(serverURL, method: method)
         

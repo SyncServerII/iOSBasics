@@ -11,7 +11,7 @@ class NetworkCacheTests: XCTestCase {
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID(), fileVersion: 1, transfer: nil)
+        entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID(), trackerId: -1, fileVersion: 1, transfer: nil)
     }
 
     override func tearDownWithError() throws {
@@ -163,7 +163,7 @@ class NetworkCacheTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different primary key.
-        let entry2 = try NetworkCache(db: database, taskIdentifier: taskIdentifier + 1, fileUUID: UUID(), fileVersion: 1, transfer: nil)
+        let entry2 = try NetworkCache(db: database, taskIdentifier: taskIdentifier + 1, fileUUID: UUID(), trackerId: -1, fileVersion: 1, transfer: nil)
 
         try entry2.insert()
 
@@ -208,7 +208,7 @@ class NetworkCacheTests: XCTestCase {
     func testSavingNilURL() throws {
         try NetworkCache.createTable(db: database)
 
-        let entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID(), fileVersion: 1,transfer: nil)
+        let entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID(), trackerId: -1, fileVersion: 1, transfer: nil)
         try entry.insert()
 
         var count = 0

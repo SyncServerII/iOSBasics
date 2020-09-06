@@ -174,7 +174,7 @@ extension SyncServer {
         for file in uploads {
             let url: URL
             if file.persistence.isCopy {
-                url = try FileUtils.copyFileToNewTemporary(original: file.url, config: networkConfig)
+                url = try FileUtils.copyFileToNewTemporary(original: file.url, config: configuration.temporaryFiles)
             }
             else {
                 url = file.url
@@ -201,6 +201,8 @@ extension SyncServer {
                 let localURL = uploadFileTracker.localURL else {
                 throw SyncServerError.internalError("Could not get upload file tracker: \(file.uuid)")
             }
+            
+            let uploadObjectTrackerId = uploadFileTracker.uploadObjectTrackerId
 
             let fileVersion:ServerAPI.File.Version
             if newFiles {
@@ -216,7 +218,7 @@ extension SyncServer {
                 fileVersion = .vN(change: data)
             }
             
-            let serverAPIFile = ServerAPI.File(fileUUID: file.uuid.uuidString, sharingGroupUUID: declaration.sharingGroupUUID.uuidString, deviceUUID: configuration.deviceUUID.uuidString, version: fileVersion)
+            let serverAPIFile = ServerAPI.File(fileUUID: file.uuid.uuidString, sharingGroupUUID: declaration.sharingGroupUUID.uuidString, deviceUUID: configuration.deviceUUID.uuidString, uploadObjectTrackerId: uploadObjectTrackerId, version: fileVersion)
             
             if let error = api.uploadFile(file: serverAPIFile, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount) {
                 throw SyncServerError.internalError("\(error)")
