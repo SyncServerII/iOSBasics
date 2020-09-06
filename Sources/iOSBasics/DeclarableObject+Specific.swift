@@ -10,13 +10,15 @@ import ServerShared
 
 public struct FileUpload: UploadableFile {
     public let uuid: UUID
-    public let url: URL
-    public let persistence: LocalPersistence
+    public let dataSource: UploadDataSource
     
-    public init(uuid: UUID, url: URL, persistence: LocalPersistence) {
+    public init(uuid: UUID, dataSource: UploadDataSource) {
         self.uuid = uuid
-        self.url = url
-        self.persistence = persistence
+        self.dataSource = dataSource
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(uuid)
     }
 }
 

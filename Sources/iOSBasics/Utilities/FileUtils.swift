@@ -17,4 +17,12 @@ struct FileUtils {
         try FileManager.default.copyItem(at: original, to: tempFile)
         return tempFile
     }
+    
+    static func copyDataToNewTemporary(data: Data, config: Configuration.TemporaryFiles) throws -> URL {
+        try Files.createDirectoryIfNeeded(config.directory)
+        let tempFile = try Files.createTemporary(withPrefix: config.filePrefix, andExtension: config.fileExtension, inDirectory: config.directory)
+        try? FileManager.default.removeItem(at: tempFile)
+        try data.write(to: tempFile)
+        return tempFile
+    }
 }

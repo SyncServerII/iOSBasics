@@ -21,7 +21,8 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
     var deviceUUID: UUID!
     var user: TestUser!
     var database: Connection!
-    
+    let config = Configuration.defaultTemporaryFiles
+
     override func setUpWithError() throws {
         try super.setUpWithError()
         uploadCompletedHandler = nil
@@ -121,8 +122,8 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
             XCTFail()
             return
         }
-        
-        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, version: .v0(source: .url(fileURL), mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: nil, appMetaData: nil))
+                                
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroupUUID: nil, appMetaData: nil))
         
         guard case .success = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()

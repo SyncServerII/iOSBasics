@@ -39,7 +39,8 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
     var deviceUUID: UUID!
     var user: TestUser!
     var database: Connection!
-    
+    let config = Configuration.defaultTemporaryFiles
+
     override func setUpWithError() throws {
         try super.setUpWithError()
         uploadCompletedHandler = nil
@@ -71,9 +72,11 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         }
         
         let changeResolverName = CommentFile.changeResolverName
+        
+        let commentDataURL1 = try FileUtils.copyDataToNewTemporary(data: commentFileData, config: config)
 
         let file1 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, version:
-            .v0(source: .data(commentFileData), mimeType: MimeType.text, checkSum: dropboxCheckSum, changeResolverName: changeResolverName, fileGroupUUID: nil, appMetaData: nil)
+            .v0(url: commentDataURL1, mimeType: MimeType.text, checkSum: dropboxCheckSum, changeResolverName: changeResolverName, fileGroupUUID: nil, appMetaData: nil)
         )
         
         guard let uploadResult1 = uploadFile(file: file1, uploadIndex: 1, uploadCount: 1) else {
@@ -89,8 +92,10 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
             return nil
         }
         
+        let commentDataURL2 = try FileUtils.copyDataToNewTemporary(data: comment.updateContents, config: config)
+        
         let file2 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, version:
-            .vN(change: comment.updateContents)
+            .vN(url: commentDataURL2)
         )
         
         guard let uploadResult2 = uploadFile(file: file2, uploadIndex: 1, uploadCount: 1) else {

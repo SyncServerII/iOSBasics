@@ -31,4 +31,12 @@ class UtilityTests: XCTestCase {
         let newData = try Data(contentsOf: copy)
         XCTAssert(originalData == newData)
     }
+    
+    func testCopyDataToNewTemporary() throws {
+        let config = Configuration.defaultTemporaryFiles
+        let originalData = "Hello, There!".data(using: .utf8)!
+        let url = try FileUtils.copyDataToNewTemporary(data: originalData, config: config)
+        let newData = try Data(contentsOf: url)
+        XCTAssert(originalData == newData)
+    }
 }

@@ -43,12 +43,8 @@ extension ServerAPI {
     
     struct File {
         enum Version {
-            enum Source {
-                case url(URL)
-                case data(Data)
-            }
             case v0(
-                source:Source,
+                url:URL,
                 mimeType:MimeType,
                 checkSum:String,
                 changeResolverName: String?,
@@ -58,7 +54,7 @@ extension ServerAPI {
             
             // Must have given a non-nil changeResolverName with v0
             case vN(
-                change: Data
+                url:URL
             )
         }
         
@@ -85,26 +81,19 @@ extension ServerAPI {
         uploadRequest.uploadIndex = uploadIndex
         uploadRequest.uploadCount = uploadCount
         
-        var url:URL!
-        var data: Data?
+        let url:URL
         
         switch file.version {
-        case .v0(source: let source, mimeType: let mimeType, checkSum: let checkSum, changeResolverName: let changeResolver, fileGroupUUID: let fileGroupUUID, appMetaData: let appMetaData):
+        case .v0(url: let v0URL, mimeType: let mimeType, checkSum: let checkSum, changeResolverName: let changeResolver, fileGroupUUID: let fileGroupUUID, appMetaData: let appMetaData):
         
-            switch source {
-            case .data(let d):
-                data = d
-            case .url(let u):
-                url = u
-            }
-            
+            url = v0URL
             uploadRequest.checkSum = checkSum
             uploadRequest.fileGroupUUID = fileGroupUUID
             uploadRequest.mimeType = mimeType.rawValue
             uploadRequest.changeResolverName = changeResolver
             uploadRequest.appMetaData = appMetaData
-        case .vN(let d):
-            data = d
+        case .vN(let vNURL):
+            url = vNURL
         }
 
         guard uploadRequest.valid() else {
@@ -121,13 +110,7 @@ extension ServerAPI {
         
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: parameters)
         
-        if let data = data {
-            return networking.upload(fileUUID: file.fileUUID, uploadObjectTrackerId: file.uploadObjectTrackerId, from: .data(data), toServerURL: serverURL, method: endpoint.method)
-        } else if let url = url {
-            return networking.upload(fileUUID: file.fileUUID, uploadObjectTrackerId: file.uploadObjectTrackerId, from: .localFile(url), toServerURL: serverURL, method: endpoint.method)
-        }
-        
-        return ServerAPIError.noExpectedResultKey
+        return networking.upload(fileUUID: file.fileUUID, uploadObjectTrackerId: file.uploadObjectTrackerId, from: url, toServerURL: serverURL, method: endpoint.method)
     }
     
     func getUploadsResults(deferredUploadId: Int64, completion: @escaping (Result<DeferredUploadStatus?, Error>)->()) {

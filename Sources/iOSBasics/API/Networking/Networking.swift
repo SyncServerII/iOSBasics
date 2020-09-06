@@ -216,33 +216,21 @@ class Networking: NSObject {
         return true
     }
     
-    enum UploadFileDataSource {
-        case localFile(URL)
-        case data(Data)
-    }
-    
-    private func uploadFile(fileDataSource: UploadFileDataSource, to serverURL: URL, method: ServerHTTPMethod) -> URLSessionUploadTask {
+    private func uploadFile(localURL: URL, to serverURL: URL, method: ServerHTTPMethod) -> URLSessionUploadTask {
 
         var request = URLRequest(url: serverURL)
         request.httpMethod = method.rawValue.uppercased()
         request.allHTTPHeaderFields = headerAuthentication()
         
-        switch fileDataSource {
-        case .data(let data):
-            return backgroundSession.uploadTask(with: request, from: data)
-        
-        case .localFile(let url):
-            // It appears that `session.uploadTask` has a problem with relative URL's. I get "NSURLErrorDomain Code=-1 "unknown error" if I pass one of these. Make sure the URL is not relative.
-            let uploadFilePath = url.path
-            let nonRelativeUploadURL = URL(fileURLWithPath: uploadFilePath)
-            return backgroundSession.uploadTask(with: request, fromFile: nonRelativeUploadURL)
-        }
+        // It appears that `session.uploadTask` has a problem with relative URL's. I get "NSURLErrorDomain Code=-1 "unknown error" if I pass one of these. Make sure the URL is not relative.
+        let uploadFilePath = localURL.path
+        let nonRelativeUploadURL = URL(fileURLWithPath: uploadFilePath)
+        return backgroundSession.uploadTask(with: request, fromFile: nonRelativeUploadURL)
     }
     
     // The return value just indicates if the upload could be started, not whether the upload completed. The transferDelegate is used for further indications if the return result is nil.
-    func upload(fileUUID:String, uploadObjectTrackerId: Int64, from uploadDataSource:UploadFileDataSource, toServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
-    
-        let task = uploadFile(fileDataSource: uploadDataSource, to: serverURL, method: method)
+    func upload(fileUUID:String, uploadObjectTrackerId: Int64, from localURL: URL, toServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
+        let task = uploadFile(localURL: localURL, to: serverURL, method: method)
 
         do {
             try backgroundCache.initializeUploadCache(fileUUID: fileUUID, uploadObjectTrackerId: uploadObjectTrackerId, taskIdentifer: task.taskIdentifier)

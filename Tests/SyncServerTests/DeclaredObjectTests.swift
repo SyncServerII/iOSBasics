@@ -25,9 +25,10 @@ class DeclaredObjectTests: XCTestCase {
         let fileUUID1 = UUID()
         let fileUUID2 = UUID()
 
-        let upload1 = FileUpload(uuid: fileUUID1, url: url1, persistence: .copy)
-        let upload2 = FileUpload(uuid: fileUUID2, url: url1, persistence: .immutable)
-        let upload3 = FileUpload(uuid: fileUUID2, url: url1, persistence: .copy)
+        
+        let upload1 = FileUpload(uuid: fileUUID1, dataSource: .copy(url1))
+        let upload2 = FileUpload(uuid: fileUUID2, dataSource: .immutable(url1))
+        let upload3 = FileUpload(uuid: fileUUID2, dataSource: .copy(url1))
 
         let uploads1 = Set<FileUpload>([upload1, upload2])
         XCTAssert(uploads1.count == 2)
@@ -58,15 +59,15 @@ class DeclaredObjectTests: XCTestCase {
     }
      
     func testSingleFileUploadCompareWorks() throws {
-        let upload1 = FileUpload(uuid: UUID(), url: url1, persistence: .copy)
-        let upload2 = FileUpload(uuid: UUID(), url: url1, persistence: .copy)
+        let upload1 = FileUpload(uuid: UUID(), dataSource: .copy(url1))
+        let upload2 = FileUpload(uuid: UUID(), dataSource: .copy(url1))
         XCTAssert(upload1.compare(to: upload1))
         XCTAssertFalse(upload1.compare(to: upload2))
     }
     
     func testFileUploadSetCompareWorks() throws {
-        let upload1 = FileUpload(uuid: UUID(), url: url1, persistence: .copy)
-        let upload2 = FileUpload(uuid: UUID(), url: url1, persistence: .copy)
+        let upload1 = FileUpload(uuid: UUID(), dataSource: .copy(url1))
+        let upload2 = FileUpload(uuid: UUID(), dataSource: .copy(url1))
         let uploads1 = Set<FileUpload>([upload1, upload2])
         let uploads2 = Set<FileUpload>([upload1])
         let uploads3 = Set<FileUpload>()

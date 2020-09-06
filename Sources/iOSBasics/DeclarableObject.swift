@@ -61,16 +61,33 @@ public extension DeclarableFile {
     }
 }
 
+public enum UploadDataSource: Equatable {
+    case data(Data)
+    
+    // SyncServer interface will make a copy of this file. The underlying file might change while the SyncServer method is doing its work.
+    case copy(URL)
+    
+    // SyncServer interface does *not* make a copy of this file. The underlying file is assumed to *not* change while the SyncServer method is doing its work.
+    case immutable(URL)
+    
+    var isCopy: Bool {
+        switch self {
+        case .copy, .data:
+            return true
+        case .immutable:
+            return false
+        }
+    }
+}
+
 public protocol UploadableFile: File {
-    var url: URL {get}
-    var persistence: LocalPersistence {get}
+    var dataSource: UploadDataSource {get}
 }
 
 extension UploadableFile {
     public func compare<FILE: UploadableFile>(to other: FILE) -> Bool {
         return self.uuid == other.uuid &&
-            self.url == other.url &&
-            self.persistence == other.persistence
+            self.dataSource == other.dataSource
     }
     
     public static func compare<FILE1: UploadableFile, FILE2: UploadableFile>(

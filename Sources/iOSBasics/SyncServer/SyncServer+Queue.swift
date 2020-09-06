@@ -127,7 +127,7 @@ extension SyncServer {
             }
             
         case 1:
-            newFiles = true
+            newFiles = false
 
             // Already have registered the SyncedObject
             // Need to compare this one against the one in the database.
@@ -173,17 +173,19 @@ extension SyncServer {
         
         for file in uploads {
             let url: URL
-            if file.persistence.isCopy {
-                url = try FileUtils.copyFileToNewTemporary(original: file.url, config: configuration.temporaryFiles)
-            }
-            else {
-                url = file.url
+            switch file.dataSource {
+            case .data(let data):
+                url = try FileUtils.copyDataToNewTemporary(data: data, config: configuration.temporaryFiles)
+            case .copy(let copyURL):
+                url = try FileUtils.copyFileToNewTemporary(original: copyURL, config: configuration.temporaryFiles)
+            case .immutable(let immutableURL):
+                url = immutableURL
             }
             
             let declaredFile = try fileDeclaration(for: file.uuid, declaration: declaration)
             let checkSum = try hashingManager.hashFor(cloudStorageType: declaredFile.cloudStorageType).hash(forURL: url)
             
-            let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: newObjectTrackerId, status: .notStarted, fileUUID: file.uuid, fileVersion: nil, localURL: url, goneReason: nil, uploadCopy: file.persistence.isCopy, checkSum: checkSum)
+            let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: newObjectTrackerId, status: .notStarted, fileUUID: file.uuid, fileVersion: nil, localURL: url, goneReason: nil, uploadCopy: file.dataSource.isCopy, checkSum: checkSum)
             try fileTracker.insert()
         }
 
@@ -211,11 +213,10 @@ extension SyncServer {
                     appMetaData = AppMetaData(contents: appMetaDataContents)
                 }
                 
-                fileVersion = .v0(source: .url(localURL), mimeType: declaredFile.mimeType, checkSum: checkSum, changeResolverName: declaredFile.changeResolverName, fileGroupUUID: declaration.fileGroupUUID.uuidString, appMetaData: appMetaData)
+                fileVersion = .v0(url: localURL, mimeType: declaredFile.mimeType, checkSum: checkSum, changeResolverName: declaredFile.changeResolverName, fileGroupUUID: declaration.fileGroupUUID.uuidString, appMetaData: appMetaData)
             }
             else {
-                let data = try Data(contentsOf: localURL)
-                fileVersion = .vN(change: data)
+                fileVersion = .vN(url: localURL)
             }
             
             let serverAPIFile = ServerAPI.File(fileUUID: file.uuid.uuidString, sharingGroupUUID: declaration.sharingGroupUUID.uuidString, deviceUUID: configuration.deviceUUID.uuidString, uploadObjectTrackerId: uploadObjectTrackerId, version: fileVersion)

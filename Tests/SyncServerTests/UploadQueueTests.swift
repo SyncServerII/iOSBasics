@@ -121,7 +121,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
             declarations.insert(declaration1)
         }
         
-        let uploadable1 = FileUpload(uuid: fileUUID1, url: exampleTextFileURL, persistence: .copy)
+        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
         let uploadables = Set<FileUpload>([uploadable1])
 
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
@@ -159,7 +159,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
 
         let declarations = Set<FileDeclaration>([declaration1])
-        let uploadable1 = FileUpload(uuid: fileUUID1, url: exampleTextFileURL, persistence: .copy)
+        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
 
         var uploadables = Set<FileUpload>()
         if withUploads {
@@ -211,8 +211,8 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration1, declaration2])
         
-        let uploadable1 = FileUpload(uuid: fileUUID1, url: exampleTextFileURL, persistence: .copy)
-        let uploadable2 = FileUpload(uuid: uploadFileUUID2, url: exampleTextFileURL, persistence: .immutable)
+        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
+        let uploadable2 = FileUpload(uuid: uploadFileUUID2, dataSource: .immutable(exampleTextFileURL))
         let uploadables = Set<FileUpload>([uploadable1, uploadable2])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
@@ -261,7 +261,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         let declaration2 = FileDeclaration(uuid: declarationFileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: "Some stuff", changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration1, declaration2])
         
-        let uploadable1 = FileUpload(uuid: fileUUID1, url: exampleTextFileURL, persistence: .copy)
+        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
         let uploadables = Set<FileUpload>([uploadable1])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
@@ -297,7 +297,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
 
         let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
-        let uploadable = FileUpload(uuid: fileUUID, url: exampleTextFileURL, persistence: .copy)
+        let uploadable = FileUpload(uuid: fileUUID, dataSource: .copy(exampleTextFileURL))
         let uploadables = Set<FileUpload>([uploadable])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
@@ -322,7 +322,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         let fileUUID = UUID()
         let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
-        let uploadable = FileUpload(uuid: fileUUID, url: exampleTextFileURL, persistence: .copy)
+        let uploadable = FileUpload(uuid: fileUUID, dataSource: .copy(exampleTextFileURL))
         let uploadables = Set<FileUpload>([uploadable])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
@@ -356,7 +356,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
         
-        let uploadable = FileUpload(uuid: fileUUID, url: exampleTextFileURL, persistence: .copy)
+        let uploadable = FileUpload(uuid: fileUUID, dataSource: .copy(exampleTextFileURL))
         let uploadables = Set<FileUpload>([uploadable])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
@@ -395,7 +395,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
         
-        let uploadable = FileUpload(uuid: fileUUID2, url: exampleTextFileURL, persistence: .copy)
+        let uploadable = FileUpload(uuid: fileUUID2, dataSource: .copy(exampleTextFileURL))
         let uploadables = Set<FileUpload>([uploadable])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
@@ -424,7 +424,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
         
-        let uploadable = FileUpload(uuid: fileUUID2, url: exampleTextFileURL, persistence: .copy)
+        let uploadable = FileUpload(uuid: fileUUID2, dataSource: .copy(exampleTextFileURL))
         let uploadables = Set<FileUpload>([uploadable])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
@@ -470,14 +470,14 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
         
-        let uploadable1 = FileUpload(uuid: fileUUID1, url: exampleTextFileURL, persistence: .copy)
+        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
         let uploadables1 = Set<FileUpload>([uploadable1])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
 
         try syncServer.queue(declaration: testObject, uploads: uploadables1)
 
-        let uploadable2 = FileUpload(uuid: fileUUID2, url: exampleTextFileURL, persistence: .copy)
+        let uploadable2 = FileUpload(uuid: fileUUID2, dataSource: .copy(exampleTextFileURL))
         let uploadables2 = Set<FileUpload>([uploadable2])
         
         do {
@@ -520,7 +520,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
         
-        let uploadable = FileUpload(uuid: fileUUID, url: exampleTextFileURL, persistence: .copy)
+        let uploadable = FileUpload(uuid: fileUUID, dataSource: .copy(exampleTextFileURL))
         let uploadables = Set<FileUpload>([uploadable])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
