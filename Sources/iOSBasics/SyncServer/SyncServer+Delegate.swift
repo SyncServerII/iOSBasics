@@ -1,10 +1,3 @@
-//
-//  File.swift
-//  
-//
-//  Created by Christopher G Prince on 9/6/20.
-//
-
 import Foundation
 import ServerShared
 import iOSShared
@@ -13,7 +6,10 @@ import SQLite
 
 extension SyncServer: ServerAPIDelegate {
     func error(_ delegated: AnyObject, error: Error?) {
-        delegate.error(self, error: error)
+        delegator { [weak self] delegate in
+            guard let self = self else { return }
+            delegate.error(self, error: error)
+        }
     }
     
     func hasher(_ delegated: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing {
@@ -21,7 +17,7 @@ extension SyncServer: ServerAPIDelegate {
     }
     
     func credentialsForNetworkRequests(_ delegated: AnyObject) throws -> GenericCredentials {
-        return try delegate.credentialsForServerRequests(self)
+        return try credentialsDelegate.credentialsForServerRequests(self)
     }
     
     func deviceUUID(_ delegated: AnyObject) -> UUID {
@@ -33,7 +29,10 @@ extension SyncServer: ServerAPIDelegate {
 
         switch result {
         case .failure(let error):
-            delegate.error(self, error: error)
+            delegator { [weak self] delegate in
+                guard let self = self else { return }
+                delegate.error(self, error: error)
+            }
             
         case .success(let uploadFileResult):
             switch uploadFileResult {
@@ -45,10 +44,16 @@ extension SyncServer: ServerAPIDelegate {
                 do {
                     try cleanupAfterUploadCompleted(uploadObjectTrackerId: trackerId, fileUUID: uploadResult.fileUUID, result: uploadResult)
                 } catch let error {
-                    delegate.error(self, error: error)
+                    delegator { [weak self] delegate in
+                        guard let self = self else { return }
+                        delegate.error(self, error: error)
+                    }
                 }
                 
-                delegate.uploadCompleted(self, result: uploadFileResult)
+                delegator { [weak self] delegate in
+                    guard let self = self else { return }
+                    delegate.uploadCompleted(self, result: uploadFileResult)
+                }
             }
         }
     }

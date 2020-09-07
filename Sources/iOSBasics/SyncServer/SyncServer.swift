@@ -4,9 +4,60 @@ import iOSShared
 import ServerShared
 import iOSSignIn
 
+// Calls SyncServerDelegate methods on the `delegateDispatchQueue` either synchronously or asynchronously.
+class Delegator {
+    private weak var delegate: SyncServerDelegate!
+    private let delegateDispatchQueue: DispatchQueue
+    
+    init(delegate: SyncServerDelegate, delegateDispatchQueue: DispatchQueue) {
+        self.delegate = delegate
+        self.delegateDispatchQueue = delegateDispatchQueue
+    }
+    
+    // All delegate methods must be called using this, to have them called on the client requested DispatchQueue. Delegate methods are called asynchronously on the `delegateDispatchQueue`.
+    // (Not doing sync here becuase need to resolve issue: https://stackoverflow.com/questions/63784355)
+    func call(callback: @escaping (SyncServerDelegate)->()) {
+        /*
+        if sync {
+            // This is crashing with: Thread 1: EXC_BAD_INSTRUCTION (code=EXC_I386_INVOP, subcode=0x0)
+            // seemingly because I am doing a sync dispatch on the main thread when I'm already on the main thread. The problem is, I can't compare threads/queues. https://stackoverflow.com/questions/17489098
+            let isMainThread = Thread.isMainThread
+            logger.debug("isMainThread: \(isMainThread)")
+            delegateDispatchQueue.sync { [weak self] in
+                guard let self = self else { return }
+                callback(self.delegate)
+            }
+        }
+        */
+        delegateDispatchQueue.async { [weak self] in
+            guard let self = self else { return }
+            callback(self.delegate)
+        }
+    }
+}
+
 public class SyncServer {
     // This *must* be set by the caller/user of this class before use of methods of this class.
-    public weak var delegate: SyncServerDelegate!
+    public weak var delegate: SyncServerDelegate! {
+        set {
+            _delegator = Delegator(delegate: newValue, delegateDispatchQueue: delegateDispatchQueue)
+        }
+        
+        // Don't use this getter internally. Use `delegator` to call delegate methods.
+        get {
+            assert(false)
+            return nil
+        }
+    }
+    
+    // This *must* also be set by the caller/user of this class before use of methods of this class.
+    public weak var credentialsDelegate: SyncServerCredentials!
+    
+    // Use these to call delegate methods.
+    private(set) var _delegator: Delegator!
+    func delegator(callDelegate: @escaping (SyncServerDelegate)->()) {
+        _delegator.call(callback: callDelegate)
+    }
 
     let configuration: Configuration
     let db: Connection
@@ -15,6 +66,7 @@ public class SyncServer {
     private(set) var api:ServerAPI!
     let delegateDispatchQueue: DispatchQueue
     
+    // `delegateDispatchQueue` is used to call `SyncServerDelegate` methods. (`SyncServerCredentials` methods may be called on any queue.)
     public init(hashingManager: HashingManager,
         db:Connection,
         configuration: Configuration,
@@ -28,13 +80,6 @@ public class SyncServer {
         try Database.setup(db: db)
 
         api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: configuration)
-    }
-    
-    // All delegate methods are called using this, to have them called on the client requested DispatchQueue.
-    func callDelegate(callback: @escaping ()->()) {
-        delegateDispatchQueue.async {
-            callback()
-        }
     }
     
     // MARK: Persistent queuing for upload
@@ -60,12 +105,15 @@ public class SyncServer {
             do {
                 let count = try self.checkOnDeferredUploads()
                 if count > 0 {
-                    self.delegate.deferredUploadsCompleted(self, numberCompleted: count)
+                    self.delegator { [weak self] delegate in
+                        guard let self = self else { return }
+                        delegate.deferredUploadsCompleted(self, numberCompleted: count)
+                    }
                 }
             } catch let error {
-                self.callDelegate { [weak self] in
+                self.delegator { [weak self] delegate in
                     guard let self = self else { return }
-                    self.delegate.error(self, error: error)
+                    delegate.error(self, error: error)
                 }
             }
         }

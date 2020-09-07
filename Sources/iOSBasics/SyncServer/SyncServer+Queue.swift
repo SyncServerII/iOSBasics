@@ -197,7 +197,10 @@ extension SyncServer {
         }
 
         guard !existingObjectTrackers else {
-            delegate?.uploadQueued(self, declObjectId: declaration.declObjectId)
+            delegator { [weak self] delegate in
+                guard let self = self else { return }
+                delegate.uploadQueued(self, declObjectId: declaration.declObjectId)
+            }
             return
         }
         

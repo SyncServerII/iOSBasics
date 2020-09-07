@@ -8,9 +8,13 @@ public enum UUIDCollisionType {
     case device
 }
 
-public protocol SyncServerDelegate: AnyObject {
+public protocol SyncServerCredentials: AnyObject {
+    // This method may be called using *any* queue.
     func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials
-    
+}
+
+// These methods are all called on the `delegateDispatchQueue` passed to the SyncServer constructor.
+public protocol SyncServerDelegate: AnyObject {
     func error(_ syncServer: SyncServer, error: Error?)
     
     // TODO: Not sure this is needed. Not using it yet.
