@@ -13,6 +13,24 @@ import iOSShared
 import ServerShared
 import SQLite
 @testable import iOSDropbox
+import ChangeResolvers
+
+public struct ExampleComment {
+    static let messageKey = "messageString"
+    public let messageString:String
+    public let id: String
+    
+    public var record:CommentFile.FixedObject {
+        var result = CommentFile.FixedObject()
+        result[CommentFile.idKey] = id
+        result[Self.messageKey] = messageString
+        return result
+    }
+    
+    public var updateContents: Data {
+        return try! JSONSerialization.data(withJSONObject: record)
+    }
+}
 
 struct TestUser {
     let cloudStorageType: CloudStorageType

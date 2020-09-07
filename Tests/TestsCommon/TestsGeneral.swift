@@ -39,6 +39,8 @@ extension TestFiles {
 
 protocol APITests: ServerAPIDelegator {
     var api:ServerAPI! { get }
+    var error:((SyncServer, Error?) -> ())? { get set }
+    var uploadCompleted: ((SyncServer, UploadFileResult) -> ())? { get set }
 }
 
 extension APITests where Self: XCTestCase {
@@ -178,5 +180,52 @@ extension APITests where Self: XCTestCase {
         }
         
         return status
+    }
+    
+    func getSharingGroupUUID() throws -> UUID {
+        guard let serverIndex = getIndex(sharingGroupUUID: nil),
+            serverIndex.sharingGroups.count > 0,
+            let sharingGroupUUIDString = serverIndex.sharingGroups[0].sharingGroupUUID,
+            let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString) else {
+            throw SyncServerError.internalError("Could not get sharing group UUID")
+        }
+        return sharingGroupUUID
+    }
+    
+    func waitForUploadsToComplete(numberUploads: Int, v0Upload: Bool = true) {
+        var count = 0
+        let exp = expectation(description: "exp")
+        uploadCompleted = { _, result in
+            count += 1
+
+            switch result {
+            case .gone:
+                XCTFail()
+            case .success(_, let uploadResult):
+                if count == numberUploads {
+                    if v0Upload {
+                        XCTAssert(uploadResult.uploadsFinished == .v0UploadsFinished, "\(uploadResult.uploadsFinished)")
+                    }
+                    else {
+                        XCTAssert(uploadResult.uploadsFinished == .vNUploadsTransferPending, "\(uploadResult.uploadsFinished)")
+                        XCTAssertNotNil(uploadResult.deferredUploadId)
+                    }
+                }
+
+                if v0Upload {
+                    XCTAssertNotNil(uploadResult.creationDate)
+                    XCTAssertNil(uploadResult.deferredUploadId)
+                }
+            }
+            
+            if count == numberUploads {
+                exp.fulfill()
+            }
+        }
+        error = { _, result in
+            XCTFail()
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
     }
 }

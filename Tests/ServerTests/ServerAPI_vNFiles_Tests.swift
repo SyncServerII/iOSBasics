@@ -14,28 +14,13 @@ import iOSDropbox
 import SQLite
 import ChangeResolvers
 
-public struct ExampleComment {
-    static let messageKey = "messageString"
-    public let messageString:String
-    public let id: String
-    
-    public var record:CommentFile.FixedObject {
-        var result = CommentFile.FixedObject()
-        result[CommentFile.idKey] = id
-        result[Self.messageKey] = messageString
-        return result
-    }
-    
-    public var updateContents: Data {
-        return try! JSONSerialization.data(withJSONObject: record)
-    }
-}
-
 class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, ServerBasics {
     var hashingManager: HashingManager!
     var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
     var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
     var api: ServerAPI!
+    var error:((SyncServer, Error?) -> ())?
+    var uploadCompleted: ((SyncServer, UploadFileResult) -> ())?
     var deviceUUID: UUID!
     var user: TestUser!
     var database: Connection!

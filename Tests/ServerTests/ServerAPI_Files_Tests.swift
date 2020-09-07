@@ -21,6 +21,8 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
     var deviceUUID: UUID!
     var user: TestUser!
     var database: Connection!
+    var error:((SyncServer, Error?) -> ())?
+    var uploadCompleted: ((SyncServer, UploadFileResult) -> ())?
     
     override func setUpWithError() throws {
         try super.setUpWithError()

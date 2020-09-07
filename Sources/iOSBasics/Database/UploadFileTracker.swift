@@ -12,7 +12,7 @@ class UploadFileTracker: DatabaseModel {
         case notStarted
         case uploading
         
-        // This is for both successfully uploaded files and files that cannot be uploaded due to a gone response.
+        // This is for both successfully uploaded files and files that cannot be uploaded due to a gone response. For vN files this just means the first stage of the upload has completed. The full deferred upload hasn't necessarily completed yet.
         case uploaded
     }
 

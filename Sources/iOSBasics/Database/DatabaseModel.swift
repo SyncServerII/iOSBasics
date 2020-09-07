@@ -3,8 +3,11 @@ import Foundation
 
 enum DatabaseModelError: Error {
     case noId
+    case noObject
     case notExactlyOneRowWithId
     case moreThanOneRowInResult
+    case tooManyObjects
+    case notExactlyOneRowUpdated
 }
 
 // I'd like to be able to automatically extract the property name from the KeyPath. That would make it so that I can omit one parameter from this field structure. But it looks like that's not supported yet. See https://forums.swift.org/t/pitch-improving-keypath/6541
@@ -170,7 +173,19 @@ extension DatabaseModel {
             throw DatabaseModelError.noId
         }
         
-        try db.run(Self.table.update(setters))
+        let query = Self.table.filter(
+            id == rowid
+        )
+        
+        guard try db.scalar(query.count) == 1 else {
+            throw DatabaseModelError.notExactlyOneRowWithId
+        }
+        
+        let count = try db.run(query.update(setters))
+        guard count == 1 else {
+            throw DatabaseModelError.notExactlyOneRowUpdated
+        }
+        
         let row = try Self.fetch(db: db, withId: id)
         return try Self.rowToModel(db: db, row: row)
     }

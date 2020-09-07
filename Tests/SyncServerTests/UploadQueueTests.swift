@@ -55,58 +55,20 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         XCTAssert(filePaths.count == 0)
     }
     
-    func waitForUploadsToComplete(numberUploads: Int) {
-        var count = 0
-        let exp = expectation(description: "exp")
-        uploadCompleted = { _, result in
-            count += 1
-
-            switch result {
-            case .gone:
-                XCTFail()
-            case .success(_, let uploadResult):
-                if count == numberUploads {
-                    XCTAssert(uploadResult.uploadsFinished == .v0UploadsFinished, "\(uploadResult.uploadsFinished)")
-                }
-                XCTAssertNotNil(uploadResult.creationDate)
-                XCTAssertNil(uploadResult.deferredUploadId)
-            }
-            
-            if count == numberUploads {
-                exp.fulfill()
-            }
-        }
-        error = { _, result in
-            XCTFail()
-            exp.fulfill()
-        }
-        waitForExpectations(timeout: 10, handler: nil)
-    }
-    
     // No declared objects present
     func testLookupWithNoObject() {
         do {
-            let _ = try syncServer.lookupDeclObject(declObjectId: UUID())
+            let _ = try DeclaredObjectModel.lookupDeclarableObject(declObjectId: UUID(), db: database)
         } catch let error {
-            guard let error = error as? SyncServerError else {
+            guard let error = error as? DatabaseModelError else {
                 XCTFail()
                 return
             }
-            XCTAssert(error == SyncServerError.noObject)
+            XCTAssert(error == DatabaseModelError.noObject)
             return
         }
         
         XCTFail()
-    }
-    
-    func getSharingGroupUUID() throws -> UUID {
-        guard let serverIndex = getIndex(sharingGroupUUID: nil),
-            serverIndex.sharingGroups.count > 0,
-            let sharingGroupUUIDString = serverIndex.sharingGroups[0].sharingGroupUUID,
-            let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString) else {
-            throw SyncServerError.internalError("Could not get sharing group UUID")
-        }
-        return sharingGroupUUID
     }
     
     func runQueueTest(withDeclaredFiles: Bool) throws {
@@ -309,13 +271,14 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
 
         let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration])
+        
         let uploadable = FileUpload(uuid: fileUUID, dataSource: .copy(exampleTextFileURL))
         let uploadables = Set<FileUpload>([uploadable])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         try syncServer.queue(declaration: testObject, uploads: uploadables)
         
-        let obj = try syncServer.lookupDeclObject(declObjectId: testObject.declObjectId)
+        let obj = try DeclaredObjectModel.lookupDeclarableObject(declObjectId: testObject.declObjectId, db: database)
         XCTAssert(obj.declCompare(to: testObject))
         
         let count1 = try DeclaredObjectModel.numberRows(db: database,
@@ -343,13 +306,13 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         waitForUploadsToComplete(numberUploads: 1)
 
         do {
-            let _ = try syncServer.lookupDeclObject(declObjectId: UUID())
+            let _ = try DeclaredObjectModel.lookupDeclarableObject(declObjectId: UUID(), db: database)
         } catch let error {
-            guard let error = error as? SyncServerError else {
+            guard let error = error as? DatabaseModelError else {
                 XCTFail()
                 return
             }
-            XCTAssert(error == SyncServerError.noObject)
+            XCTAssert(error == DatabaseModelError.noObject)
             return
         }
         
@@ -375,7 +338,7 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         try syncServer.queue(declaration: testObject, uploads: uploadables)
         XCTAssert(queuedCount == 0)
 
-        // This second one should work also
+        // This second one should work also-- but not trigger an upload-- because its for the same file group as the immediately prior `queue`. i.e., the active upload.
         try syncServer.queue(declaration: testObject, uploads: uploadables)
         XCTAssert(queuedCount == 1)
 
@@ -604,5 +567,8 @@ extension UploadQueueTests: SyncServerDelegate {
     
     func uploadCompleted(_ syncServer: SyncServer, result: UploadFileResult) {
         uploadCompleted?(syncServer, result)
+    }
+    
+    func deferredUploadCompleted(_ syncServer: SyncServer) {
     }
 }

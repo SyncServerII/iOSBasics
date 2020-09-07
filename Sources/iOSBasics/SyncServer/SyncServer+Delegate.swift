@@ -61,28 +61,67 @@ extension SyncServer: ServerAPIDelegate {
 extension SyncServer {
     func cleanupAfterUploadCompleted(uploadObjectTrackerId: Int64, fileUUID: UUID, result: UploadFileResult.Upload) throws {
     
+        // For v0 uploads: Only mark the upload as done for the file tracker. Wait until *all* object files have been uploaded until cleanup.
+        
+        // For vN uploads: Wait until the deferred upload completion to cleanup.
+    
         // There can be more than one row in UploadFileTracker with the same fileUUID here because we can queue the same upload multiple times. Therefore, need to also search by uploadObjectTrackerId.
-        guard let uploadFileTracker = try UploadFileTracker.fetchSingleRow(db: db, where: fileUUID == UploadFileTracker.fileUUIDField.description &&
-            uploadObjectTrackerId == UploadFileTracker.uploadObjectTrackerIdField.description),
-            let url = uploadFileTracker.localURL else {
+        guard let fileTracker = try UploadFileTracker.fetchSingleRow(db: db, where: fileUUID == UploadFileTracker.fileUUIDField.description &&
+            uploadObjectTrackerId == UploadFileTracker.uploadObjectTrackerIdField.description) else {
             throw SyncServerError.internalError("Problem in fetchSingleRow for UploadFileTracker")
         }
-        
-        if uploadFileTracker.uploadCopy {
-            try FileManager.default.removeItem(at: url)
+
+        guard let objectTracker = try UploadObjectTracker.fetchSingleRow(db: db, where: uploadObjectTrackerId == UploadObjectTracker.idField.description) else {
+            throw SyncServerError.internalError("Problem in fetchSingleRow for UploadObjectTracker")
         }
-        try uploadFileTracker.delete()
+
+        try fileTracker.update(setters:
+            UploadFileTracker.statusField.description <- .uploaded)
         
-        // Are there other UploadFileTracker's for this uploadObjectTrackerId?
-        // If not, should remove the UploadObjectTracker.
-        let remainingTrackers = try UploadFileTracker.fetch(db: db, where: uploadObjectTrackerId == UploadFileTracker.uploadObjectTrackerIdField.description)
-        if remainingTrackers.count == 0 {
-            try UploadObjectTracker.delete(rowId: uploadObjectTrackerId, db: db)
+        if objectTracker.v0Upload {
+            // Have all uploads successfully completed? If so, can delete all trackers, including those for files and the overall object.
+            let fileTrackers = try objectTracker.dependentFileTrackers()
+            let remainingUploads = fileTrackers.filter {$0.status != .uploaded}
             
-            // Once we start doing vN uploads, expect this to fail.
-            guard result.uploadsFinished == .v0UploadsFinished else {
-                throw SyncServerError.internalError("Did not get v0UploadsFinished when expected.")
+            if remainingUploads.count == 0 {
+                try deleteTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
+                
+                guard result.uploadsFinished == .v0UploadsFinished else {
+                    throw SyncServerError.internalError("Did not get v0UploadsFinished when expected.")
+                }
             }
         }
+        else {
+            // Need to wait on final cleanup until poll for deferred uploads indicates full completion.
+            if result.uploadsFinished == .vNUploadsTransferPending {
+                logger.debug("result.deferredUploadId: \(String(describing: result.deferredUploadId))")
+                try objectTracker.update(setters: UploadObjectTracker.deferredUploadIdField.description <- result.deferredUploadId)
+            }
+            
+            logger.debug("vN upload: result.uploadsFinished: \(result.uploadsFinished)")
+        }
+    }
+    
+    func deleteTrackers(fileTrackers: [UploadFileTracker], objectTracker: UploadObjectTracker) throws {
+        for fileTracker in fileTrackers {
+            if fileTracker.uploadCopy {
+                guard let url = fileTracker.localURL else {
+                    throw SyncServerError.internalError("Did not have URL")
+                }
+                try FileManager.default.removeItem(at: url)
+            }
+            try fileTracker.delete()
+        }
+        
+        try objectTracker.delete()
+    }
+    
+    func cleanupAfterVNUploadCompleted(uploadObjectTrackerId: Int64) throws {
+        guard let objectTracker = try UploadObjectTracker.fetchSingleRow(db: db, where: uploadObjectTrackerId == UploadObjectTracker.idField.description) else {
+            throw SyncServerError.internalError("Problem in fetchSingleRow for UploadObjectTracker")
+        }
+        
+        let fileTrackers = try objectTracker.dependentFileTrackers()
+        try deleteTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
     }
 }

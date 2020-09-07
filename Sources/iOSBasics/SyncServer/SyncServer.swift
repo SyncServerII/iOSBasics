@@ -39,7 +39,11 @@ public class SyncServer {
         try queueObject(declaration: declaration, uploads: uploads)
     }
     
-    public func sync() {
+    // Trigger any next pending uploads or downloads. In general, after a set of uploads or downloads have been triggered by your call(s) to SyncServer methods, further uploads or downloads are not automatically initiated. It's up to the caller of this interface to call `sync` periodically to drive that. It's likely best that `sync` only be called while the app is in the foreground-- to avoid penalties (e.g., increased latencies) incurred by initating network requests while the app is in the background. Uploads and downloads are carried out using a background URLSession and so can run while the app is in the background.
+    // This also checks, for deferred uploads on the server, if those deferred operations have completed.
+    public func sync() throws {
+        try triggerUploads()
+        try checkOnDeferredUploads()
     }
     
     // MARK: Unqueued requests-- these will fail if they involve a file or other object currently queued for upload.

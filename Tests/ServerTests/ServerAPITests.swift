@@ -22,7 +22,9 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
     var user: TestUser!
     var database: Connection!
     let config = Configuration.defaultTemporaryFiles
-
+    var error:((SyncServer, Error?) -> ())?
+    var uploadCompleted: ((SyncServer, UploadFileResult) -> ())?
+    
     override func setUpWithError() throws {
         try super.setUpWithError()
         uploadCompletedHandler = nil

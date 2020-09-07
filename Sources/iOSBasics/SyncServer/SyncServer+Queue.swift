@@ -158,18 +158,23 @@ extension SyncServer {
             throw SyncServerError.internalError("Had two registered DeclaredObject's for the same fileGroupUUID: fileGroupUUID: \(declaration.fileGroupUUID)")
         }
         
-        // If there is a UploadObjectTracker, this upload will be deferred. If there is not one, we'll trigger the upload now.
+        // Create an UploadObjectTracker and UploadFileTracker(s)
+        
+        // If there is an active upload for this fileGroupUUID, this upload will be deferred. If there is not one, we'll trigger the upload now.
+        // NOTE: This isn't yet actually checking if there are *active* uploads for the file group. Just checking if there are pending, possibly, non-active uploads.
         let objectTrackers = try UploadObjectTracker.fetch(db: db, where: declaration.fileGroupUUID == UploadObjectTracker.fileGroupUUIDField.description)
         
         let existingObjectTrackers = objectTrackers.count > 0
         
         // Add a new tracker into UploadObjectTracker, and one for each new upload.
-        let newObjectTracker = try UploadObjectTracker(db: db, fileGroupUUID: declaration.fileGroupUUID)
+        let newObjectTracker = try UploadObjectTracker(db: db, fileGroupUUID: declaration.fileGroupUUID, v0Upload: newFiles)
         try newObjectTracker.insert()
         
         guard let newObjectTrackerId = newObjectTracker.id else {
             throw SyncServerError.internalError("No object tracker id")
         }
+        
+        logger.debug("newObjectTrackerId: \(newObjectTrackerId)")
         
         for file in uploads {
             let url: URL
@@ -187,6 +192,8 @@ extension SyncServer {
             
             let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: newObjectTrackerId, status: .notStarted, fileUUID: file.uuid, fileVersion: nil, localURL: url, goneReason: nil, uploadCopy: file.dataSource.isCopy, checkSum: checkSum)
             try fileTracker.insert()
+            
+            logger.debug("fileTracker: \(String(describing: fileTracker.id))")
         }
 
         guard !existingObjectTrackers else {
@@ -194,66 +201,19 @@ extension SyncServer {
             return
         }
         
-        let uploadCount = Int32(uploads.count)
-        
-        for (uploadIndex, file) in uploads.enumerated() {
-            let declaredFile = try fileDeclaration(for: file.uuid, declaration: declaration)
-            guard let uploadFileTracker = try UploadFileTracker.fetchSingleRow(db: db, where: file.uuid == UploadFileTracker.fileUUIDField.description),
-                let checkSum = uploadFileTracker.checkSum,
-                let localURL = uploadFileTracker.localURL else {
-                throw SyncServerError.internalError("Could not get upload file tracker: \(file.uuid)")
-            }
+        if newFiles {
+            let uploadCount = Int32(uploads.count)
             
-            let uploadObjectTrackerId = uploadFileTracker.uploadObjectTrackerId
-
-            let fileVersion:ServerAPI.File.Version
-            if newFiles {
-                var appMetaData: AppMetaData?
-                if let appMetaDataContents = declaredFile.appMetaData {
-                    appMetaData = AppMetaData(contents: appMetaDataContents)
-                }
-                
-                fileVersion = .v0(url: localURL, mimeType: declaredFile.mimeType, checkSum: checkSum, changeResolverName: declaredFile.changeResolverName, fileGroupUUID: declaration.fileGroupUUID.uuidString, appMetaData: appMetaData)
+            for (uploadIndex, file) in uploads.enumerated() {
+                try singleUpload(declaration: declaration, fileUUID: file.uuid, newFile: true, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount)
             }
-            else {
-                fileVersion = .vN(url: localURL)
-            }
-            
-            let serverAPIFile = ServerAPI.File(fileUUID: file.uuid.uuidString, sharingGroupUUID: declaration.sharingGroupUUID.uuidString, deviceUUID: configuration.deviceUUID.uuidString, uploadObjectTrackerId: uploadObjectTrackerId, version: fileVersion)
-            
-            if let error = api.uploadFile(file: serverAPIFile, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount) {
-                throw SyncServerError.internalError("\(error)")
-            }
-
-            try uploadFileTracker.update(setters:
-                UploadFileTracker.statusField.description <- .uploading)
         }
-        
-        // No existing trackers for this object prior to this `queue` call-- need to trigger these uploads.
-        
-        // See if there are queued object(s) for this file group.
-//        let queuedFiles = try UploadFileTracker.numberRows(db: db, where:
-//            declaration.fileGroupUUID == UploadFileTracker.fileGroupUUIDField.description
-//        )
-        
-        // Queue tracker(s) for this upload
-        var trackers = [UploadFileTracker]()
-//        for file in object.files {
-//            // TODO: If we get a failure here, we ought to clean up.
-//            let tracker = try queueFileUpload(file, forObject: object)
-//            trackers += [tracker]
-//        }
-
-//        if queuedFiles == 0 {
-//            // We can start these uploads.
-//            //api.uploadFile(file: <#T##ServerAPI.File#>, serverMasterVersion: <#T##MasterVersionInt#>)
-//        }
-//        else {
-//            // These uploads need to wait.
-//        }
+        else {
+            try triggerUploads()
+        }
     }
     
-    private func fileDeclaration<DECL: DeclarableObject>(for uuid: UUID, declaration: DECL) throws -> some DeclarableFile {
+    func fileDeclaration<DECL: DeclarableObject>(for uuid: UUID, declaration: DECL) throws -> some DeclarableFile {
         let declaredFiles = declaration.declaredFiles.filter {$0.uuid == uuid}
         guard declaredFiles.count == 1,
             let declaredFile = declaredFiles.first else {

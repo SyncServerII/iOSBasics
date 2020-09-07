@@ -113,4 +113,26 @@ class UploadFileTrackerTests: XCTestCase {
         
         try entry.delete()
     }
+    
+    func testChangeStatusOfExactlyOneRecord() throws {
+        try UploadFileTracker.createTable(db: database)
+        
+        let originalStatus: UploadFileTracker.Status = .notStarted
+        
+        let e1 = try UploadFileTracker(db: database, uploadObjectTrackerId: 1, status: originalStatus, fileUUID: fileUUID, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly")
+        try e1.insert()
+        
+        let e2 = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: originalStatus, fileUUID: fileUUID, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly")
+        try e2.insert()
+        
+        try e1.update(setters:
+            UploadFileTracker.statusField.description <- .uploaded)
+            
+        guard let e2Copy = try UploadFileTracker.fetchSingleRow(db: database, where: e2.id == UploadFileTracker.idField.description) else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(e2Copy.status == originalStatus, "\(e2Copy.status)")
+    }
 }

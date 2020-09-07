@@ -10,7 +10,7 @@ class UploadObjectTrackerTests: XCTestCase {
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID)
+        entry = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true)
     }
 
     override func tearDownWithError() throws {
@@ -66,7 +66,7 @@ class UploadObjectTrackerTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileGroupUUID, the primary key.
-        let entry2 = try UploadObjectTracker(db: database, fileGroupUUID: UUID())
+        let entry2 = try UploadObjectTracker(db: database, fileGroupUUID: UUID(), v0Upload: false)
 
         try entry2.insert()
 

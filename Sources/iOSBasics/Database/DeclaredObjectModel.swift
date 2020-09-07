@@ -22,7 +22,7 @@ class DeclaredObjectModel: DatabaseModel, DeclarableObjectBasics, Equatable {
     
     static let sharingGroupUUIDField = Field("sharingGroupUUID", \M.sharingGroupUUID)
     var sharingGroupUUID: UUID
-    
+        
     init(db: Connection,
         id: Int64! = nil,
         fileGroupUUID: UUID,
@@ -63,6 +63,34 @@ class DeclaredObjectModel: DatabaseModel, DeclarableObjectBasics, Equatable {
             Self.objectTypeField.description <- objectType,
             Self.sharingGroupUUIDField.description <- sharingGroupUUID
         )
+    }
+}
+
+extension DeclaredObjectModel {
+    // Get a DeclarableObject to represent the DeclaredObjectModel and its component declared files. throws DatabaseModelError.noObject if no object found for declObjectId.
+    static func lookupDeclarableObject(declObjectId: UUID, db: Connection) throws -> some DeclarableObject {
+        let models:[DeclaredObjectModel] = try DeclaredObjectModel.fetch(db: db, where: declObjectId == DeclaredObjectModel.fileGroupUUIDField.description)
+        
+        switch models.count {
+        case 0:
+            throw DatabaseModelError.noObject
+            
+        case 1:
+            break
+            
+        default:
+            throw DatabaseModelError.tooManyObjects
+        }
+        
+        let model = models[0]
+                    
+        let declaredFilesInDatabase = try DeclaredFileModel.fetch(db: db, where: declObjectId == DeclaredFileModel.fileGroupUUIDField.description).map { FileDeclaration(uuid: $0.uuid, mimeType: $0.mimeType, cloudStorageType: $0.cloudStorageType, appMetaData: $0.appMetaData, changeResolverName: $0.changeResolverName) }
+        
+        let files = Set<FileDeclaration>(declaredFilesInDatabase)
+        
+        let declObject = ObjectDeclaration(fileGroupUUID: model.fileGroupUUID, objectType: model.objectType, sharingGroupUUID: model.sharingGroupUUID, declaredFiles: files)
+        
+        return declObject
     }
 }
 

@@ -30,4 +30,6 @@ public protocol SyncServerDelegate: AnyObject {
     
     // Request to server for upload completed successfully.
     func uploadCompleted(_ syncServer: SyncServer, result: UploadFileResult)
+    
+    func deferredUploadCompleted(_ syncServer: SyncServer)
 }
