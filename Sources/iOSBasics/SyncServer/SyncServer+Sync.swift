@@ -53,53 +53,73 @@ extension SyncServer {
             }
         }
     }
-    
-    // JUST A DRAFT!!! Needs to work on all vNCompletedUploads.
-    func checkOnDeferredUploads() throws {
+
+    // This can take appreciable time to complete-- it *synchronously* makes requests to server endpoint(s). You probably want to use DispatchQueue to asynchronously let this do it's work.
+    // This does *not* call SyncServer delegate methods. You may want to report errors thrown using SyncServer delegate methods if needed after calling this.
+    // On success, returns the number of deferred uploads detected as successfully completed.
+    func checkOnDeferredUploads() throws -> Int {
         let vNCompletedUploads = try UploadObjectTracker.uploadsWith(status: .uploaded, db: db)
         let v0 = vNCompletedUploads.filter { $0.object.v0Upload }
+        
         guard v0.count == 0 else {
             throw SyncServerError.internalError("Somehow, there are v0 uploads with all trackers uploaded, but not yet removed.")
         }
         
         guard vNCompletedUploads.count > 0 else {
-            return
+            // This just means that there are no vN uploads we are waiting for to have their final deferred upload completed. It's the typical expected case when calling the current method.
+            return 0
         }
         
-        let vNCompletedUpload = vNCompletedUploads[0]
-        guard let deferredUploadId = vNCompletedUpload.object.deferredUploadId else {
-            throw SyncServerError.internalError("Did not have deferredUploadId.")
-        }
+        var numberSuccessfullyCompleted = 0
         
-        guard let uploadObjectTrackerId = vNCompletedUpload.object.id else {
-            throw SyncServerError.internalError("Did not have tracker object id.")
-        }
-        
-        api.getUploadsResults(deferredUploadId: deferredUploadId) { [weak self] result in
-            guard let self = self else { return }
-            switch result {
-            case .failure(let error):
-                self.delegate.error(self, error: error)
-            case .success(let status):
-                switch status {
-                case .error:
-                    self.delegate.error(self, error:
-                        SyncServerError.internalError("Error reported from getUploadsResults."))
-                case .pendingChange, .pendingDeletion:
-                    break
-                case .completed:
-                    do {
-                        try self.cleanupAfterVNUploadCompleted(uploadObjectTrackerId: uploadObjectTrackerId)
-                        DispatchQueue.main.async {
-                            self.delegate.deferredUploadCompleted(self)
+        func apply(upload: UploadObjectTracker.UploadWithStatus, completion: @escaping (Swift.Result<Void, Error>) -> ()) {
+
+            guard let deferredUploadId = upload.object.deferredUploadId else {
+                completion(.failure(SyncServerError.internalError("Did not have deferredUploadId.")))
+                return
+            }
+            
+            guard let uploadObjectTrackerId = upload.object.id else {
+                completion(.failure(SyncServerError.internalError("Did not have tracker object id.")))
+                return
+            }
+            
+            api.getUploadsResults(deferredUploadId: deferredUploadId) { [weak self] result in
+                guard let self = self else { return }
+                switch result {
+                case .failure(let error):
+                    completion(.failure(error))
+                    
+                case .success(let status):
+                    switch status {
+                    case .error:
+                        completion(.failure(
+                            SyncServerError.internalError("Error reported within the `success` from getUploadsResults.")))
+                    case .pendingChange, .pendingDeletion:
+                        // A "success" only in the sense of non-failure. The deferred upload is not completed, so not doing a cleanup yet.
+                        completion(.success(()))
+                    case .completed:
+                        do {
+                            try self.cleanupAfterVNUploadCompleted(uploadObjectTrackerId: uploadObjectTrackerId)
+                            numberSuccessfullyCompleted += 1
+                            completion(.success(()))
+                        } catch let error {
+                            completion(.failure(error))
                         }
-                    } catch let error {
-                        self.delegate.error(self, error: error)
+                    case .none:
+                        // This indicates no record was found on the server. This should *not* happen.
+                        completion(.failure(
+                            SyncServerError.internalError("No record of deferred upload found on server.")))
                     }
-                case .none:
-                    break
                 }
             }
         }
+        
+        let (_, errors) = vNCompletedUploads.synchronouslyRun(apply: apply)
+        guard errors.count == 0 else {
+            throw SyncServerError.internalError("synchronouslyRun: \(errors)")
+        }
+        
+        return numberSuccessfullyCompleted
     }
 }

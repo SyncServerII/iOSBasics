@@ -63,6 +63,7 @@ extension UserSetup {
             case .success:
                 break
             case .failure(let error):
+                logger.error("\(error)")
                 success = false
             }
             exp.fulfill()

@@ -569,6 +569,6 @@ extension UploadQueueTests: SyncServerDelegate {
         uploadCompleted?(syncServer, result)
     }
     
-    func deferredUploadCompleted(_ syncServer: SyncServer) {
+    func deferredUploadsCompleted(_ syncServer: SyncServer, numberCompleted: Int) {
     }
 }
