@@ -16,6 +16,7 @@ class DirectoryEntry: DatabaseModel {
     static let fileUUIDField = Field("fileUUID", \M.fileUUID)
     var fileUUID: UUID
     
+    // This will be 0 for a first upload for a file initiated by the local client. It will only be updated after that when a specific file version is downloaded in its entirety from the server. It cannot be updated for vN files on deferred upload completion because the local client, if other competing clients are concurrently making changes, may not have the complete file update for a specific version.
     static let fileVersionField = Field("fileVersion", \M.fileVersion)
     var fileVersion: Int64?
 
