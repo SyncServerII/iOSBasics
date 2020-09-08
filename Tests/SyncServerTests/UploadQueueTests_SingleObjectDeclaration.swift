@@ -5,7 +5,7 @@ import ServerShared
 import iOSShared
 import iOSSignIn
 
-class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
+class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
     var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
@@ -365,28 +365,6 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         try FileManager.default.removeItem(at: url)
     }
     
-    func testUploadFileDifferentFromDeclaredFileFails() throws {
-        let fileUUID1 = UUID()
-        let fileUUID2 = UUID()
-        let sharingGroupUUID = try getSharingGroupUUID()
-
-        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
-        let declarations = Set<FileDeclaration>([declaration])
-        
-        let uploadable = FileUpload(uuid: fileUUID2, dataSource: .copy(exampleTextFileURL))
-        let uploadables = Set<FileUpload>([uploadable])
-        
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
-        
-        do {
-            try syncServer.queue(declaration: testObject, uploads: uploadables)
-        } catch {
-            return
-        }
-        
-        XCTFail()
-    }
-    
     func runUploadFile(differentFromDeclaredFile:Bool) throws {
         let fileUUID1 = UUID()
         let fileUUID2: UUID
@@ -424,11 +402,11 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
         waitForUploadsToComplete(numberUploads: 1)
     }
     
-    func testUploadFileWithIdDifferentFromDeclaredFileFails() throws {
+    func testUploadFileWithUUIDDifferentFromDeclaredFileFails() throws {
         try runUploadFile(differentFromDeclaredFile:true)
     }
     
-    func testUploadFileWithIdSameAsDeclaredFileWorks() throws {
+    func testUploadFileWithUUIDSameAsDeclaredFileWorks() throws {
         try runUploadFile(differentFromDeclaredFile:false)
     }
 
@@ -544,13 +522,13 @@ class UploadQueueTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests
     }
 }
 
-extension UploadQueueTests: SyncServerCredentials {
+extension UploadQueueTests_SingleObjectDeclaration: SyncServerCredentials {
     func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials {
         return user.credentials
     }
 }
 
-extension UploadQueueTests: SyncServerDelegate {
+extension UploadQueueTests_SingleObjectDeclaration: SyncServerDelegate {
     func error(_ syncServer: SyncServer, error: Error?) {
         XCTFail("\(String(describing: error))")
         self.error?(syncServer, error)

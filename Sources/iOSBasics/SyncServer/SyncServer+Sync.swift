@@ -19,21 +19,18 @@ extension SyncServer {
         let inProgress = try UploadObjectTracker.uploadsWith(status: .uploading, db: db)
         let fileGroupsInProgress = Set<UUID>(inProgress.map { $0.object.fileGroupUUID })
         
-        var current = Set<UUID>()
+        // These are the objects we want to `exclude` from uploading. Start off with the file groups actively uploading. Don't want parallel uploads for the same file group.
+        var currentObjects = fileGroupsInProgress
+        
         var toTrigger = [UploadObjectTracker.UploadWithStatus]()
         
         for upload in notStartedUploads {
-            // filter out any duplicate fileGroupUUID's-- Don't want parallel uploads for the same declared object.
-            guard !current.contains(upload.object.fileGroupUUID) else {
+            // Don't want parallel uploads for the same declared object.
+            guard !currentObjects.contains(upload.object.fileGroupUUID) else {
                 continue
             }
             
-            // Similarly, if the file group is actively uploading, don't trigger another for the same file group.
-            guard !fileGroupsInProgress.contains(upload.object.fileGroupUUID) else {
-                continue
-            }
-            
-            current.insert(upload.object.fileGroupUUID)
+            currentObjects.insert(upload.object.fileGroupUUID)
             toTrigger += [upload]
         }
         
@@ -49,7 +46,6 @@ extension SyncServer {
 
             for (uploadIndex, file) in uploadObject.files.enumerated() {
                 try singleUpload(declaration: declaredObject, fileUUID: file.fileUUID, newFile: false, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount)
-                
             }
         }
     }

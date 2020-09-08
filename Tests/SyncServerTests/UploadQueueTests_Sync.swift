@@ -13,7 +13,7 @@ import iOSShared
 import iOSSignIn
 import ChangeResolvers
 
-class UploadQueue_SyncTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
+class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
     var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
@@ -125,13 +125,13 @@ class UploadQueue_SyncTests: XCTestCase, UserSetup, ServerBasics, TestFiles, API
     }
 }
 
-extension UploadQueue_SyncTests: SyncServerCredentials {
+extension UploadQueueTests_Sync: SyncServerCredentials {
     func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials {
         return user.credentials
     }
 }
 
-extension UploadQueue_SyncTests: SyncServerDelegate {
+extension UploadQueueTests_Sync: SyncServerDelegate {
     func error(_ syncServer: SyncServer, error: Error?) {
         XCTFail("\(String(describing: error))")
         self.error?(syncServer, error)
