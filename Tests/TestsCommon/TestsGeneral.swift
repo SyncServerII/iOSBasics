@@ -123,7 +123,7 @@ extension APITests where Self: XCTestCase {
 
         let file = FileObject(fileUUID: fileUUID, fileVersion: fileVersion, trackerId: downloadObjectTrackerId)
         
-        let result = api.downloadFile(file: file, downloadObjectTrackerId: downloadObjectTrackerId, sharingGroupUUID: sharingGroupUUID)
+        let result = api.downloadFile(file: file, sharingGroupUUID: sharingGroupUUID)
         XCTAssert(result == nil)
         
         waitForExpectations(timeout: 10, handler: nil)

@@ -159,7 +159,7 @@ extension ServerAPI {
     }
     
     // Download results, if nil is returned, are reported via the ServerAPIDelegate.
-    func downloadFile(file: Filenaming, downloadObjectTrackerId: Int64, sharingGroupUUID: String) -> Error? {
+    func downloadFile(file: Filenaming, sharingGroupUUID: String) -> Error? {
         let endpoint = ServerEndpoints.downloadFile
         
         let downloadFileRequest = DownloadFileRequest()
@@ -176,7 +176,7 @@ extension ServerAPI {
         let parameters = downloadFileRequest.urlParameters()!
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: parameters)
         
-        return networking.download(file: file, downloadObjectTrackerId: downloadObjectTrackerId, fromServerURL: serverURL, method: endpoint.method)
+        return networking.download(file: file, downloadObjectTrackerId: file.trackerId, fromServerURL: serverURL, method: endpoint.method)
     }
     
     enum DeletionFile {

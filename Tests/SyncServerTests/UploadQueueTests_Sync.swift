@@ -64,64 +64,83 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
     override func tearDownWithError() throws {
         // All temporary files should have been removed prior to end of test.
         let filePaths = try FileManager.default.contentsOfDirectory(atPath: config.temporaryFiles.directory.path)
-        XCTAssert(filePaths.count == 0)
+        XCTAssert(filePaths.count == 0, "\(filePaths.count)")
     }
-
+    
     // Since this uploads a vN file, it *must* use a change resolver.
     func testQueueObjectAlreadyRegisteredWorks() throws {
-        let fileUUID = UUID()
+        let fileUUID1 = UUID()
+        let fileGroupUUID1 = UUID()
         let sharingGroupUUID = try getSharingGroupUUID()
-        
+
         var queuedCount = 0
         uploadQueued = { _, syncObjectId in
             queuedCount += 1
         }
-                        
-        let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
+        
+        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
         let declarations = Set<FileDeclaration>([declaration])
 
-        let commentFile = CommentFile()
-        let commentFileData = try commentFile.getData()
-        let uploadable1 = FileUpload(uuid: fileUUID, dataSource: .data(commentFileData))
-        let uploadables1 = Set<FileUpload>([uploadable1])
+        let testObject = ObjectDeclaration(fileGroupUUID: fileGroupUUID1, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
+            
+        func object1(v0: Bool) throws {
+            let uploadables:Set<FileUpload>
+            
+            if v0 {
+                let commentFile = CommentFile()
+                let commentFileData = try commentFile.getData()
+                let uploadable = FileUpload(uuid: fileUUID1, dataSource: .data(commentFileData))
+                uploadables = Set<FileUpload>([uploadable])
+            }
+            else {
+                let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
+                let uploadable = FileUpload(uuid: fileUUID1, dataSource: .data(comment.updateContents))
+                uploadables = Set<FileUpload>([uploadable])
+            }
+
+            try syncServer.queue(declaration: testObject, uploads: uploadables)
+        }
         
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
-        try syncServer.queue(declaration: testObject, uploads: uploadables1)
-        XCTAssert(queuedCount == 0)
-
+        var count = 0
+        uploadQueued = { _, _ in
+            count += 1
+        }
+        
+        try object1(v0: true)
+        
         // This second one should work also-- but not trigger an upload-- because its for the same file group as the immediately prior `queue`. i.e., the active upload.
-        let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
-        let uploadable2 = FileUpload(uuid: fileUUID, dataSource: .data(comment.updateContents))
-        let uploadables2 = Set<FileUpload>([uploadable2])
-        try syncServer.queue(declaration: testObject, uploads: uploadables2)
-        // Can't do this yet due to async delegate callback.
-        // XCTAssert(queuedCount == 1)
-
-        let count = try DeclaredObjectModel.numberRows(db: database,
+        try object1(v0: false)
+        
+        let objectCount = try DeclaredObjectModel.numberRows(db: database,
             where: testObject.declObjectId == DeclaredObjectModel.fileGroupUUIDField.description)
+        XCTAssert(objectCount == 1)
+        
+        let fileCount = try DeclaredFileModel.numberRows(db: database, where: testObject.declObjectId == DeclaredFileModel.fileGroupUUIDField.description)
+        XCTAssert(fileCount == 1)
+
+        waitForUploadsToComplete(numberUploads: 1)
         XCTAssert(count == 1)
         
-        let count2 = try DeclaredFileModel.numberRows(db: database, where: testObject.declObjectId == DeclaredFileModel.fileGroupUUIDField.description)
-        XCTAssert(count2 == 1)
-        
-        waitForUploadsToComplete(numberUploads: 1)
-        XCTAssert(queuedCount == 1)
-        
+        // Trigger the second upload instance.
         try syncServer.sync()
         waitForUploadsToComplete(numberUploads: 1, v0Upload: false)
-        XCTAssert(queuedCount == 1)
+        XCTAssert(count == 1)
 
         // Wait for some period of time for the deferred upload to complete.
         Thread.sleep(forTimeInterval: 5)
-        
-        // This `sync` is to check for deferred upload completion.
+
+        // This `sync` is to trigger the check for the deferred upload completion.
         try syncServer.sync()
-        
+
         let exp = expectation(description: "exp")
         deferredUploadsCompleted = { _, _ in
             exp.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
+
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == 0)
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == 0)
+        XCTAssert(try DirectoryEntry.numberRows(db: database) == 1)
     }
 }
 

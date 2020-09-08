@@ -54,7 +54,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
     override func tearDownWithError() throws {
         // All temporary files should have been removed prior to end of test.
         let filePaths = try FileManager.default.contentsOfDirectory(atPath: config.temporaryFiles.directory.path)
-        XCTAssert(filePaths.count == 0)
+        XCTAssert(filePaths.count == 0, "\(filePaths.count)")
     }
     
     // No declared objects present

@@ -59,7 +59,24 @@ extension SyncServer: ServerAPIDelegate {
     }
     
     func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
-        assert(false)
+        switch result {
+        case .success(let downloadResult):
+            switch downloadResult {
+            case .gone:
+                assert(false)
+            case .success:
+                delegator { [weak self] delegate in
+                    guard let self = self else { return }
+                    delegate.downloadCompleted(self, declObjectId: UUID())
+                }
+            }
+            break
+        case .failure(let error):
+            delegator { [weak self] delegate in
+                guard let self = self else { return }
+                delegate.error(self, error: error)
+            }
+        }
     }
 }
 

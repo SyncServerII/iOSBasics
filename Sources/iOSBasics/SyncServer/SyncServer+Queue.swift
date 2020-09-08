@@ -208,7 +208,7 @@ extension SyncServer {
             let uploadCount = Int32(uploads.count)
             
             for (uploadIndex, file) in uploads.enumerated() {
-                try singleUpload(declaration: declaration, fileUUID: file.uuid, newFile: true, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount)
+                try singleUpload(declaration: declaration, fileUUID: file.uuid, objectTrackerId: newObjectTrackerId, newFile: true, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount)
             }
         }
         else {

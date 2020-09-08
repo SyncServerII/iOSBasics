@@ -11,9 +11,12 @@ import SQLite
 
 extension SyncServer {
     // uploadIndex >= 1 and uploadIndex <= uploadCount
-    func singleUpload<DECL: DeclarableObject>(declaration: DECL, fileUUID uuid: UUID, newFile: Bool, uploadIndex: Int32, uploadCount: Int32) throws {
+    func singleUpload<DECL: DeclarableObject>(declaration: DECL, fileUUID uuid: UUID, objectTrackerId: Int64, newFile: Bool, uploadIndex: Int32, uploadCount: Int32) throws {
         let declaredFile = try fileDeclaration(for: uuid, declaration: declaration)
-        guard let uploadFileTracker = try UploadFileTracker.fetchSingleRow(db: db, where: uuid == UploadFileTracker.fileUUIDField.description),
+        
+        guard let uploadFileTracker = try UploadFileTracker.fetchSingleRow(db: db, where:
+            uuid == UploadFileTracker.fileUUIDField.description &&
+            objectTrackerId == UploadFileTracker.uploadObjectTrackerIdField.description),
             let checkSum = uploadFileTracker.checkSum,
             let localURL = uploadFileTracker.localURL else {
             throw SyncServerError.internalError("Could not get upload file tracker: \(uuid)")
