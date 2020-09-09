@@ -106,4 +106,85 @@ class UploadObjectTrackerTests: XCTestCase {
         
         try entry.delete()
     }
+     
+     enum UploadsWithBasicTests {
+        // Not really a valid expected case, but want to make sure it does something reasonable
+        case noFiles
+        
+        case oneFile
+        
+        case oneOfTwoFilesMatching
+     }
+     
+     func runUploadsWith(type: UploadsWithBasicTests) throws {
+        try UploadObjectTracker.createTable(db: database)
+        try UploadFileTracker.createTable(db: database)
+        
+        let fileGroupUUID = UUID()
+        let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil)
+        try objectTracker.insert()
+        
+        guard let objectTrackerId = objectTracker.id else {
+            XCTFail()
+            return
+        }
+        
+        var fileTracker:UploadFileTracker!
+        
+        switch type {
+        case .noFiles:
+            break
+            
+        case .oneFile:
+            fileTracker = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTrackerId, status: .uploaded, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil)
+            try fileTracker.insert()
+            
+        case .oneOfTwoFilesMatching:
+            let fileTracker2 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTrackerId, status: .uploading, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil)
+            try fileTracker2.insert()
+        }
+        
+        let results = try UploadObjectTracker.uploadsWith(status: .uploaded, db: database)
+
+        switch type {
+        case .noFiles:
+            XCTAssert(results.count == 0)
+            
+        case .oneFile:
+            guard results.count == 1 else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssert(results[0].object.fileGroupUUID == fileGroupUUID)
+            guard results[0].files.count == 1 else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssert(results[0].files[0].fileUUID == fileTracker.fileUUID)
+            
+        case .oneOfTwoFilesMatching:
+            XCTAssert(results.count == 0)
+        }
+    }
+    
+    func testUploadsWithObjectTrackerWithNoFiles() throws {
+        try runUploadsWith(type: .noFiles)
+    }
+
+    func testUploadsWithObjectTrackerWithOneFile() throws {
+        try runUploadsWith(type: .oneFile)
+    }
+    
+    func testUploadsWithObjectTrackerWithOneOfTwoFilesMatching() throws {
+        try runUploadsWith(type: .oneOfTwoFilesMatching)
+    }
+    
+    func testUploadsWithWithNothing() throws {
+        try UploadObjectTracker.createTable(db: database)
+        try UploadFileTracker.createTable(db: database)
+        let results = try UploadObjectTracker.uploadsWith(status: .uploaded, db: database)
+        XCTAssert(results.count == 0)
+    }
 }

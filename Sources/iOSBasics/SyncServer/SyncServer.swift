@@ -90,6 +90,8 @@ public class SyncServer {
     // If you upload an object that has a fileGroupUUID which is already queued or in progress of uploading, your request will be queued.
     // The first time you queue a SyncedObject, this call persistently registers the DeclaredObject portion of the object. Subsequent `queue` calls with the same syncObjectId in the object, must exactly match the DeclaredObject.
     // The `uuid` of files present in the uploads must be in the declaration.
+    // All files that end up being uploaded in the same queued batch must either be v0 (their first upload) or vN (not their first upload). It is an error to attempt to upload v0 and vN files together in the same batch. This issue may not always be detected (i.e., an error thrown by this call). An error might instead be thrown on a subsequent call to `sync`.
+    // In this last regard, it is a best practice to do a v0 upload for all files in a declared object in it's first `queue` call. This way, having both v0 and vN files in the same queued batch *cannot* occur.
     public func queue<DECL: DeclarableObject, UPL:UploadableFile>
         (declaration: DECL, uploads: Set<UPL>) throws {
         try queueObject(declaration: declaration, uploads: uploads)

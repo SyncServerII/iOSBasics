@@ -16,9 +16,9 @@ class DirectoryEntry: DatabaseModel {
     static let fileUUIDField = Field("fileUUID", \M.fileUUID)
     var fileUUID: UUID
     
-    // This will be 0 for a first upload for a file initiated by the local client. It will only be updated after that when a specific file version is downloaded in its entirety from the server. It cannot be updated for vN files on deferred upload completion because the local client, if other competing clients are concurrently making changes, may not have the complete file update for a specific version.
+    // This will be 0 after a first *successful* upload for a file initiated by the local client. After that, it will only be updated when a specific file version is downloaded in its entirety from the server. It cannot be updated for vN files on deferred upload completion because the local client, if other competing clients are concurrently making changes, may not have the complete file update for a specific version.
     static let fileVersionField = Field("fileVersion", \M.fileVersion)
-    var fileVersion: Int64?
+    var fileVersion: Int32?
 
     static let deletedLocallyField = Field("deletedLocally", \M.deletedLocally)
     var deletedLocally: Bool
@@ -32,7 +32,7 @@ class DirectoryEntry: DatabaseModel {
     init(db: Connection,
         id: Int64! = nil,
         fileUUID: UUID,
-        fileVersion: Int64?,
+        fileVersion: FileVersionInt?,
         deletedLocally: Bool,
         deletedOnServer: Bool,
         goneReason: String? = nil) throws {
@@ -87,8 +87,34 @@ class DirectoryEntry: DatabaseModel {
     }
 }
 
+extension DirectoryEntry {
+    static func fileVersion(fileUUID: UUID, db: Connection) throws -> FileVersionInt? {
+        guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where:
+            fileUUID == DirectoryEntry.fileUUIDField.description) else {
+            throw DatabaseModelError.noObject
+        }
+        
+        return entry.fileVersion
+    }
+    
+    enum UploadState {
+        case v0
+        case vN
+    }
 
-
-
-
-
+    // Are all files we're uploading either v0 or vN? Return nil if all files are not either v0 or vN.
+    static func versionOfAllFiles(fileUUIDs:[UUID], db: Connection) throws -> UploadState? {
+        var uploadState = Set<UploadState>()
+        
+        for fileUUID in fileUUIDs {
+            let version = try DirectoryEntry.fileVersion(fileUUID: fileUUID, db: db)
+            uploadState.insert(version == nil ? .v0 : .vN)
+        }
+        
+        guard uploadState.count == 1, let uploadVersion = uploadState.first else {
+            return nil
+        }
+        
+        return uploadVersion
+    }
+}

@@ -13,6 +13,7 @@ enum SyncServerError: Error {
     case noUploads
     case noDeclaredFiles
     case internalError(String)
+    case attemptToQueueUploadOfVNAndV0Files
     
     static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
@@ -69,11 +70,17 @@ enum SyncServerError: Error {
                 return false
             }
             return true
+            
+        case attemptToQueueUploadOfVNAndV0Files:
+            guard case .attemptToQueueUploadOfVNAndV0Files = rhs else {
+                return false
+            }
+            return true
         }
     }
 }
 
-extension SyncServer {
+extension SyncServer {    
     func queueObject<DECL: DeclarableObject, UPL:UploadableFile>
         (declaration: DECL, uploads: Set<UPL>) throws {
         guard uploads.count > 0 else {
@@ -122,7 +129,8 @@ extension SyncServer {
             
             // And, add a DirectoryEntry per file
             for file in declaration.declaredFiles {
-                let dirEntry = try DirectoryEntry(db: db, fileUUID: file.uuid, fileVersion: 0, deletedLocally: false, deletedOnServer: false, goneReason: nil)
+                // `fileVersion` is specifically nil-- until we get a first successful upload of v0.
+                let dirEntry = try DirectoryEntry(db: db, fileUUID: file.uuid, fileVersion: nil, deletedLocally: false, deletedOnServer: false, goneReason: nil)
                 try dirEntry.insert()
             }
             
@@ -160,14 +168,14 @@ extension SyncServer {
         
         // Create an UploadObjectTracker and UploadFileTracker(s)
         
-        // If there is an active upload for this fileGroupUUID, this upload will be deferred. If there is not one, we'll trigger the upload now.
+        // If there is an active upload for this fileGroupUUID, then this upload will be locally queued for later processing. If there is not one, we'll trigger the upload now.
         // NOTE: This isn't yet actually checking if there are *active* uploads for the file group. Just checking if there are pending, possibly, non-active uploads.
         let objectTrackers = try UploadObjectTracker.fetch(db: db, where: declaration.fileGroupUUID == UploadObjectTracker.fileGroupUUIDField.description)
         
         let existingObjectTrackers = objectTrackers.count > 0
         
         // Add a new tracker into UploadObjectTracker, and one for each new upload.
-        let newObjectTracker = try UploadObjectTracker(db: db, fileGroupUUID: declaration.fileGroupUUID, v0Upload: newFiles)
+        let newObjectTracker = try UploadObjectTracker(db: db, fileGroupUUID: declaration.fileGroupUUID)
         try newObjectTracker.insert()
         
         guard let newObjectTrackerId = newObjectTracker.id else {
@@ -207,8 +215,14 @@ extension SyncServer {
         if newFiles {
             let uploadCount = Int32(uploads.count)
             
+            // `v0Upload` is simple here: Because all files are new, we must be uploading v0 for all of them.
+            let v0Upload = true
+            
+            try newObjectTracker.update(setters:
+                UploadObjectTracker.v0UploadField.description <- v0Upload)
+                
             for (uploadIndex, file) in uploads.enumerated() {
-                try singleUpload(declaration: declaration, fileUUID: file.uuid, objectTrackerId: newObjectTrackerId, newFile: true, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount)
+                try singleUpload(declaration: declaration, fileUUID: file.uuid, v0Upload: v0Upload, objectTrackerId: newObjectTrackerId, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount)
             }
         }
         else {

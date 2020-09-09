@@ -11,7 +11,7 @@ import SQLite
 
 extension SyncServer {
     // uploadIndex >= 1 and uploadIndex <= uploadCount
-    func singleUpload<DECL: DeclarableObject>(declaration: DECL, fileUUID uuid: UUID, objectTrackerId: Int64, newFile: Bool, uploadIndex: Int32, uploadCount: Int32) throws {
+    func singleUpload<DECL: DeclarableObject>(declaration: DECL, fileUUID uuid: UUID, v0Upload: Bool, objectTrackerId: Int64, uploadIndex: Int32, uploadCount: Int32) throws {
         let declaredFile = try fileDeclaration(for: uuid, declaration: declaration)
         
         guard let uploadFileTracker = try UploadFileTracker.fetchSingleRow(db: db, where:
@@ -23,9 +23,9 @@ extension SyncServer {
         }
         
         let uploadObjectTrackerId = uploadFileTracker.uploadObjectTrackerId
-
         let fileVersion:ServerAPI.File.Version
-        if newFile {
+        
+        if v0Upload {
             var appMetaData: AppMetaData?
             if let appMetaDataContents = declaredFile.appMetaData {
                 appMetaData = AppMetaData(contents: appMetaDataContents)

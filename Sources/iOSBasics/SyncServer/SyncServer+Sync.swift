@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SQLite
 
 extension SyncServer {
     // Only re-check of uploads so far. This handles vN uploads only. v0 uploads are always handled in `queueObject`.
@@ -48,8 +49,17 @@ extension SyncServer {
                 throw SyncServerError.internalError("Could not get object id")
             }
             
+            let fileUUIDs = uploadObject.files.map { $0.fileUUID }
+            guard let versions = try DirectoryEntry.versionOfAllFiles(fileUUIDs: fileUUIDs, db: db) else {
+                throw SyncServerError.attemptToQueueUploadOfVNAndV0Files
+            }
+            
+            let v0Upload = versions == .v0
+            try uploadObject.object.update(setters:
+                UploadObjectTracker.v0UploadField.description <- v0Upload)
+            
             for (uploadIndex, file) in uploadObject.files.enumerated() {
-                try singleUpload(declaration: declaredObject, fileUUID: file.fileUUID, objectTrackerId: objectId, newFile: false, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount)
+                try singleUpload(declaration: declaredObject, fileUUID: file.fileUUID, v0Upload: v0Upload, objectTrackerId: objectId, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount)
             }
         }
     }
@@ -59,7 +69,12 @@ extension SyncServer {
     // On success, returns the number of deferred uploads detected as successfully completed.
     func checkOnDeferredUploads() throws -> Int {
         let vNCompletedUploads = try UploadObjectTracker.uploadsWith(status: .uploaded, db: db)
-        let v0 = vNCompletedUploads.filter { $0.object.v0Upload }
+        
+        guard (vNCompletedUploads.compactMap { $0.object.v0Upload }).count == vNCompletedUploads.count else {
+            throw SyncServerError.internalError("v0Upload not set in some UploadObjectTracker")
+        }
+
+        let v0 = vNCompletedUploads.filter { $0.object.v0Upload == true }
         
         guard v0.count == 0 else {
             throw SyncServerError.internalError("Somehow, there are v0 uploads with all trackers uploaded, but not yet removed.")

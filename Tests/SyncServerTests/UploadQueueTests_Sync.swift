@@ -120,7 +120,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
 
         waitForUploadsToComplete(numberUploads: 1)
         XCTAssert(count == 1)
-        
+                
         // Trigger the second upload instance.
         try syncServer.sync()
         waitForUploadsToComplete(numberUploads: 1, v0Upload: false)
@@ -141,6 +141,43 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         XCTAssert(try UploadFileTracker.numberRows(db: database) == 0)
         XCTAssert(try UploadObjectTracker.numberRows(db: database) == 0)
         XCTAssert(try DirectoryEntry.numberRows(db: database) == 1)
+    }
+    
+    func testUploadFileAfterInitialQueueOtherDeclaredFile() throws {
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+        
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declarations = Set<FileDeclaration>([declaration1, declaration2])
+        
+        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
+        let uploadables1 = Set<FileUpload>([uploadable1])
+        
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
+
+        try syncServer.queue(declaration: testObject, uploads: uploadables1)
+
+        let uploadable2 = FileUpload(uuid: fileUUID2, dataSource: .copy(exampleTextFileURL))
+        let uploadables2 = Set<FileUpload>([uploadable2])
+        
+        do {
+            try syncServer.queue(declaration: testObject, uploads: uploadables2)
+        } catch {
+            XCTFail()
+            return
+        }
+        
+        // Wait for 1st upload to complete.
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        // Need to trigger second upload
+        try syncServer.sync()
+        
+        // Wait for 2nd upload to complete.
+        waitForUploadsToComplete(numberUploads: 1)
     }
 }
 
