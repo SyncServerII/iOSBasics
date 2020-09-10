@@ -102,3 +102,18 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
     }
 }
 
+extension DeclaredFileModel {
+    // Throws error if `declaredFiles` differ from corresponding `DeclaredFileModel`'s in the database.
+    static func lookupModels<FILE: DeclarableFile>(for declaredFiles: Set<FILE>, inFileGroupUUID fileGroupUUID: UUID, db: Connection) throws -> [DeclaredFileModel] {
+
+        let declaredFilesInDatabase = try DeclaredFileModel.fetch(db: db, where: fileGroupUUID == DeclaredFileModel.fileGroupUUIDField.description)
+        
+        let first = Set<DeclaredFileModel>(declaredFilesInDatabase)
+
+        guard DeclaredFileModel.compare(first: first, second: declaredFiles) else {
+            throw DatabaseModelError.declarationDifferentThanModel
+        }
+        
+        return declaredFilesInDatabase
+    }
+}

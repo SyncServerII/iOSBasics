@@ -92,5 +92,17 @@ extension DeclaredObjectModel {
         
         return declObject
     }
+    
+    // Create a `DeclaredObjectModel` and `DeclaredFileModel`'s corresponding to a `DeclarableObject`.
+    static func createModels<DECL: DeclarableObject>(from declaration: DECL, db: Connection) throws {
+        let declaredObject = try DeclaredObjectModel(db: db, fileGroupUUID: declaration.fileGroupUUID, objectType: declaration.objectType, sharingGroupUUID: declaration.sharingGroupUUID)
+        try declaredObject.insert()
+                    
+        // Need to add entries for the file declarations.
+        for file in declaration.declaredFiles {
+            let declared = try DeclaredFileModel(db: db, fileGroupUUID: declaration.fileGroupUUID, uuid: file.uuid, mimeType: file.mimeType, cloudStorageType: file.cloudStorageType, appMetaData: file.appMetaData, changeResolverName: file.changeResolverName)
+            try declared.insert()
+        }
+    }
 }
 

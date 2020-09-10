@@ -117,4 +117,25 @@ extension DirectoryEntry {
         
         return uploadVersion
     }
+    
+    // Create a `DirectoryEntry` per file in `declaredFiles`.
+    static func createEntries<FILE: DeclarableFile>(for declaredFiles: Set<FILE>, db: Connection) throws {
+        for file in declaredFiles {
+            // `fileVersion` is specifically nil-- until we get a first successful upload of v0.
+            let dirEntry = try DirectoryEntry(db: db, fileUUID: file.uuid, fileVersion: nil, deletedLocally: false, deletedOnServer: false, goneReason: nil)
+            try dirEntry.insert()
+        }
+    }
+    
+    // See if there is exactly one DirectoryEntry per `DeclaredFileModel`
+    static func isOneEntryForEach(declaredModels: [DeclaredFileModel], db: Connection) throws -> Bool {
+        for file in declaredModels {
+            let rows = try DirectoryEntry.fetch(db: db, where: file.uuid == DirectoryEntry.fileUUIDField.description)
+            guard rows.count == 1 else {
+                return false
+            }
+        }
+        
+        return true
+    }
 }

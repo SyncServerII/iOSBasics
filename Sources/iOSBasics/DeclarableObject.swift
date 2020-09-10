@@ -153,5 +153,16 @@ extension DeclarableObject {
         return self.compare(to: other) &&
             DeclaredFile.compare(first: self.declaredFiles, second: other.declaredFiles)
     }
+    
+    // Get a specific `DeclarableFile` from a declaration.
+    static func fileDeclaration<OBJ: DeclarableObject>(forFileUUID uuid: UUID, from declaration: OBJ) throws -> some DeclarableFile {
+        let declaredFiles = declaration.declaredFiles.filter {$0.uuid == uuid}
+        guard declaredFiles.count == 1,
+            let declaredFile = declaredFiles.first else {
+            throw SyncServerError.internalError("Not just one declared file: \(declaredFiles.count)")
+        }
+        
+        return declaredFile
+    }
 }
 

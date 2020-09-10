@@ -3,6 +3,7 @@
 import SQLite
 import Foundation
 import ServerShared
+import iOSShared
 
 class UploadFileTracker: DatabaseModel {
     let db: Connection
@@ -104,5 +105,28 @@ class UploadFileTracker: DatabaseModel {
             Self.uploadCopyField.description <- uploadCopy,
             Self.checkSumField.description <- checkSum
         )
+    }
+}
+
+extension UploadFileTracker {
+    // The returned `UploadFileTracker` has been inserted into the database
+    static func create<UPL: UploadableFile, DECL: DeclarableObject>(file: UPL, in declaration: DECL, newObjectTrackerId: Int64, config: Configuration.TemporaryFiles, hashingManager: HashingManager, db: Connection) throws -> UploadFileTracker {
+        let url: URL
+        switch file.dataSource {
+        case .data(let data):
+            url = try FileUtils.copyDataToNewTemporary(data: data, config: config)
+        case .copy(let copyURL):
+            url = try FileUtils.copyFileToNewTemporary(original: copyURL, config: config)
+        case .immutable(let immutableURL):
+            url = immutableURL
+        }
+        
+        let declaredFile = try DECL.fileDeclaration(forFileUUID: file.uuid, from: declaration)
+        let checkSum = try hashingManager.hashFor(cloudStorageType: declaredFile.cloudStorageType).hash(forURL: url)
+        
+        let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: newObjectTrackerId, status: .notStarted, fileUUID: file.uuid, fileVersion: nil, localURL: url, goneReason: nil, uploadCopy: file.dataSource.isCopy, checkSum: checkSum)
+        try fileTracker.insert()
+        
+        return fileTracker
     }
 }

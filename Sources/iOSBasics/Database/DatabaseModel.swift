@@ -8,6 +8,7 @@ enum DatabaseModelError: Error {
     case moreThanOneRowInResult
     case tooManyObjects
     case notExactlyOneRowUpdated
+    case declarationDifferentThanModel
 }
 
 // I'd like to be able to automatically extract the property name from the KeyPath. That would make it so that I can omit one parameter from this field structure. But it looks like that's not supported yet. See https://forums.swift.org/t/pitch-improving-keypath/6541

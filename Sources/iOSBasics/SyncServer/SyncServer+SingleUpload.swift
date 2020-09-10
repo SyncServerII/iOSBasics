@@ -12,7 +12,7 @@ import SQLite
 extension SyncServer {
     // uploadIndex >= 1 and uploadIndex <= uploadCount
     func singleUpload<DECL: DeclarableObject>(declaration: DECL, fileUUID uuid: UUID, v0Upload: Bool, objectTrackerId: Int64, uploadIndex: Int32, uploadCount: Int32) throws {
-        let declaredFile = try fileDeclaration(for: uuid, declaration: declaration)
+        let declaredFile = try DECL.fileDeclaration(forFileUUID: uuid, from: declaration)
         
         guard let uploadFileTracker = try UploadFileTracker.fetchSingleRow(db: db, where:
             uuid == UploadFileTracker.fileUUIDField.description &&

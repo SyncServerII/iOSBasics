@@ -144,7 +144,7 @@ class UploadObjectTrackerTests: XCTestCase {
             try fileTracker2.insert()
         }
         
-        let results = try UploadObjectTracker.uploadsWith(status: .uploaded, db: database)
+        let results = try UploadObjectTracker.allUploadsWith(status: .uploaded, db: database)
 
         switch type {
         case .noFiles:
@@ -184,7 +184,7 @@ class UploadObjectTrackerTests: XCTestCase {
     func testUploadsWithWithNothing() throws {
         try UploadObjectTracker.createTable(db: database)
         try UploadFileTracker.createTable(db: database)
-        let results = try UploadObjectTracker.uploadsWith(status: .uploaded, db: database)
+        let results = try UploadObjectTracker.allUploadsWith(status: .uploaded, db: database)
         XCTAssert(results.count == 0)
     }
 }

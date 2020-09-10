@@ -11,13 +11,13 @@ import SQLite
 extension SyncServer {
     // Only re-check of uploads so far. This handles vN uploads only. v0 uploads are always handled in `queueObject`.
     func triggerUploads() throws {
-        let notStartedUploads = try UploadObjectTracker.uploadsWith(status: .notStarted, db: db)
+        let notStartedUploads = try UploadObjectTracker.allUploadsWith(status: .notStarted, db: db)
         guard notStartedUploads.count > 0 else {
             return
         }
         
         // What uploads are currently in-progress?
-        let inProgress = try UploadObjectTracker.uploadsWith(status: .uploading, db: db)
+        let inProgress = try UploadObjectTracker.allUploadsWith(status: .uploading, db: db)
         let fileGroupsInProgress = Set<UUID>(inProgress.map { $0.object.fileGroupUUID })
         
         // These are the objects we want to `exclude` from uploading. Start off with the file groups actively uploading. Don't want parallel uploads for the same file group.
@@ -68,7 +68,7 @@ extension SyncServer {
     // This does *not* call SyncServer delegate methods. You may want to report errors thrown using SyncServer delegate methods if needed after calling this.
     // On success, returns the number of deferred uploads detected as successfully completed.
     func checkOnDeferredUploads() throws -> Int {
-        let vNCompletedUploads = try UploadObjectTracker.uploadsWith(status: .uploaded, db: db)
+        let vNCompletedUploads = try UploadObjectTracker.allUploadsWith(status: .uploaded, db: db)
         
         guard (vNCompletedUploads.compactMap { $0.object.v0Upload }).count == vNCompletedUploads.count else {
             throw SyncServerError.internalError("v0Upload not set in some UploadObjectTracker")

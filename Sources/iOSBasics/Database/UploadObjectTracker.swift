@@ -94,7 +94,7 @@ extension UploadObjectTracker {
     //  Get their dependent file trackers
     //    Check the status of *all* of these trackers: Do they match `status`?
     // Each returned `UploadWithStatus` will have an `UploadObjectTracker` with at least one file tracker.
-    static func uploadsWith(status: UploadFileTracker.Status, db: Connection) throws -> [UploadWithStatus] {
+    static func allUploadsWith(status: UploadFileTracker.Status, db: Connection) throws -> [UploadWithStatus] {
         var uploads = [UploadWithStatus]()
         let objectTrackers = try UploadObjectTracker.fetch(db: db)
         for objectTracker in objectTrackers {
@@ -108,5 +108,19 @@ extension UploadObjectTracker {
         }
         
         return uploads
+    }
+    
+    // Are there *any* dependent file trackers for a given file group that are currently having a specific status?
+    static func anyUploadsWith(status: UploadFileTracker.Status, fileGroupUUID: UUID, db: Connection) throws -> Bool {
+        let objectTrackers = try UploadObjectTracker.fetch(db: db, where: fileGroupUUID == UploadObjectTracker.fileGroupUUIDField.description)
+        for objectTracker in objectTrackers {
+            let fileTrackers = try objectTracker.dependentFileTrackers()
+            let filtered = fileTrackers.filter {$0.status == status}
+            if filtered.count > 0 {
+                return true
+            }
+        }
+        
+        return false
     }
 }
