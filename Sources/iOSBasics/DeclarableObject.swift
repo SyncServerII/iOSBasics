@@ -166,3 +166,6 @@ extension DeclarableObject {
     }
 }
 
+protocol DownloadableFile: File {
+    var fileVersion: FileVersionInt { get }
+}

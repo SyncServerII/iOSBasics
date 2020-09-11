@@ -108,6 +108,12 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         
         XCTAssert(try UploadFileTracker.numberRows(db: database) == 0)
         XCTAssert(try UploadObjectTracker.numberRows(db: database) == 0)
+        
+        guard let fileVersion = try DirectoryEntry.fileVersion(fileUUID: fileUUID1, db: database) else {
+            XCTFail()
+            return
+        }
+        XCTAssert(fileVersion == 0)
     }
     
     func testTestWithADeclaredFileWorks() throws {
@@ -291,6 +297,12 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         XCTAssert(count2 == 1)
         
         waitForUploadsToComplete(numberUploads: 1)
+        
+        guard let fileVersion = try DirectoryEntry.fileVersion(fileUUID: fileUUID, db: database) else {
+            XCTFail()
+            return
+        }
+        XCTAssert(fileVersion == 0)
     }
     
     // Other declared object(s) present, but give the wrong id

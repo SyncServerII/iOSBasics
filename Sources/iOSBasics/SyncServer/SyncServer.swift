@@ -15,20 +15,8 @@ class Delegator {
     }
     
     // All delegate methods must be called using this, to have them called on the client requested DispatchQueue. Delegate methods are called asynchronously on the `delegateDispatchQueue`.
-    // (Not doing sync here becuase need to resolve issue: https://stackoverflow.com/questions/63784355)
+    // (Not doing sync here because need to resolve issue: https://stackoverflow.com/questions/63784355)
     func call(callback: @escaping (SyncServerDelegate)->()) {
-        /*
-        if sync {
-            // This is crashing with: Thread 1: EXC_BAD_INSTRUCTION (code=EXC_I386_INVOP, subcode=0x0)
-            // seemingly because I am doing a sync dispatch on the main thread when I'm already on the main thread. The problem is, I can't compare threads/queues. https://stackoverflow.com/questions/17489098
-            let isMainThread = Thread.isMainThread
-            logger.debug("isMainThread: \(isMainThread)")
-            delegateDispatchQueue.sync { [weak self] in
-                guard let self = self else { return }
-                callback(self.delegate)
-            }
-        }
-        */
         delegateDispatchQueue.async { [weak self] in
             guard let self = self else { return }
             callback(self.delegate)
@@ -54,7 +42,7 @@ public class SyncServer {
     public weak var credentialsDelegate: SyncServerCredentials!
     
     // Use these to call delegate methods.
-    private(set) var _delegator: Delegator!
+    private var _delegator: Delegator!
     func delegator(callDelegate: @escaping (SyncServerDelegate)->()) {
         _delegator.call(callback: callDelegate)
     }
@@ -121,13 +109,14 @@ public class SyncServer {
         }
     }
     
+    public func delete<DECL: DeclarableObject>(object: DECL) throws {
+    }
+    
     // MARK: Unqueued requests-- these will fail if they involve a file or other object currently queued for upload.
     
     public func uploadAppMetaData(file: UUID) {
     }
-    
-//    public func delete(object: SyncedObject) {
-//    }
+
     
     public func createSharingGroup(sharingGroup: UUID, sharingGroupName: String? = nil) {
     }
@@ -141,13 +130,13 @@ public class SyncServer {
     
     // MARK: Download
     
-    // The list of files returned here survive app relaunch.
-    func filesNeedingDownload() -> [(UUID, FileVersionInt)] {
+    // The list of files returned here survive app relaunch. A given declaration will appear at most once in the returned list.
+    func filesNeedingDownload<DECL: DeclarableObject, DWL: DownloadableFile>() -> [(declaration: DECL, files: Set<DWL>)] {
         return []
     }
     
     // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.
-    func startDownload(file: UUID, version: FileVersionInt) {
+    func startDownloads<DECL: DeclarableObject, DWL: DownloadableFile>(declaration: DECL, files: Set<DWL>) throws {
     }
     
     // MARK: Sharing
