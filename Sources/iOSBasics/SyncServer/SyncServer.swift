@@ -53,7 +53,9 @@ public class SyncServer {
     let hashingManager: HashingManager
     private(set) var api:ServerAPI!
     let delegateDispatchQueue: DispatchQueue
-    
+    let block = Synchronized()
+    var _sharingGroups = [ServerShared.SharingGroup]()
+
     // `delegateDispatchQueue` is used to call `SyncServerDelegate` methods. (`SyncServerCredentials` methods may be called on any queue.)
     public init(hashingManager: HashingManager,
         db:Connection,
@@ -82,30 +84,21 @@ public class SyncServer {
     // In this last regard, it is a best practice to do a v0 upload for all files in a declared object in it's first `queue` call. This way, having both v0 and vN files in the same queued batch *cannot* occur.
     public func queue<DECL: DeclarableObject, UPL:UploadableFile>
         (declaration: DECL, uploads: Set<UPL>) throws {
-        try queueObject(declaration: declaration, uploads: uploads)
+        try block.sync {
+            try queueObject(declaration: declaration, uploads: uploads)
+        }
     }
     
-    // Trigger any next pending uploads or downloads. In general, after a set of uploads or downloads have been triggered by your call(s) to SyncServer methods, further uploads or downloads are not automatically initiated. It's up to the caller of this interface to call `sync` periodically to drive that. It's likely best that `sync` only be called while the app is in the foreground-- to avoid penalties (e.g., increased latencies) incurred by initating network requests, from other networking requests, while the app is in the background. Uploads and downloads are carried out using a background URLSession and so can run while the app is in the background.
-    // This also checks if vN deferred uploads server requests have completed.
-    public func sync() throws {
-        try triggerUploads()
-        
-        // `checkOnDeferredUploads` does networking calls *synchronously*. So run it asynchronously as to not block the caller for a long period of time.
-        DispatchQueue.global().async {
-            do {
-                let count = try self.checkOnDeferredUploads()
-                if count > 0 {
-                    self.delegator { [weak self] delegate in
-                        guard let self = self else { return }
-                        delegate.deferredUploadsCompleted(self, numberCompleted: count)
-                    }
-                }
-            } catch let error {
-                self.delegator { [weak self] delegate in
-                    guard let self = self else { return }
-                    delegate.error(self, error: error)
-                }
-            }
+    /* This performs a variety of actions:
+    1) It triggers any next pending uploads. In general, after a set of uploads queued by your call(s) to the SyncServer `queue` method, further uploads are not automatically initiated. It's up to the caller of this interface to call `sync` periodically to drive that. It's likely best that `sync` only be called while the app is in the foreground-- to avoid penalties (e.g., increased latencies) incurred by initating network requests, from other networking requests, while the app is in the background. Uploads are carried out using a background URLSession and so can run while the app is in the background.
+    2) It checks if vN deferred uploads server requests have completed.
+    3) If a non-nil sharingGroupUUID is given, this fetches the index for all files in that sharing group from the server. If successful, the syncCompleted delegate method is called, and:
+        a) the `sharingGroups` property has been updated
+        b) the `filesNeedingDownload` method can be called to determine any files needing downloading for the sharing group.
+    */
+    public func sync(sharingGroupUUID: UUID? = nil) throws {
+        try block.sync {
+            try syncHelper(sharingGroupUUID: sharingGroupUUID)
         }
     }
     
@@ -117,7 +110,6 @@ public class SyncServer {
     public func uploadAppMetaData(file: UUID) {
     }
 
-    
     public func createSharingGroup(sharingGroup: UUID, sharingGroupName: String? = nil) {
     }
     
@@ -131,7 +123,8 @@ public class SyncServer {
     // MARK: Download
     
     // The list of files returned here survive app relaunch. A given declaration will appear at most once in the returned list.
-    func filesNeedingDownload<DECL: DeclarableObject, DWL: DownloadableFile>() -> [(declaration: DECL, files: Set<DWL>)] {
+    func filesNeedingDownload<DECL: DeclarableObject, DWL: DownloadableFile>(sharingGroupUUID: UUID) ->
+            [(declaration: DECL, files: Set<DWL>)] {
         return []
     }
     
@@ -140,20 +133,13 @@ public class SyncServer {
     }
     
     // MARK: Sharing
-    
-    public struct SharingGroup {
-        let sharingGroup: UUID
-        let sharingGroupName: String?
+
+    // The sharing groups in which the signed in user is a member.
+    public var sharingGroups: [ServerShared.SharingGroup] {
+        return _sharingGroups
     }
     
-    public var sharingGroups: [SharingGroup] {
-        return []
-    }
-    
-    public struct Permission {
-    }
-    
-    public func createSharingInvitation(withPermission permission:Permission, sharingGroupUUID: String, numberAcceptors: UInt, allowSharingAcceptance: Bool = true, completion:((_ invitationCode:String?, Error?)->(Void))?) {
+    public func createSharingInvitation(withPermission permission:ServerShared.Permission, sharingGroupUUID: String, numberAcceptors: UInt, allowSharingAcceptance: Bool = true, completion:((_ invitationCode:String?, Error?)->(Void))?) {
     }
     
     // MARK: Accessor

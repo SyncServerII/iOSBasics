@@ -17,7 +17,7 @@ public protocol SyncServerCredentials: AnyObject {
 public protocol SyncServerDelegate: AnyObject {
     func error(_ syncServer: SyncServer, error: Error?)
     
-    // TODO: Not sure this is needed. Not using it yet.
+    // After the `sync` method is called, if a sharingGroupUUID was given, this method will be called if that server request was successful.
     func syncCompleted(_ syncServer: SyncServer)
     
     func downloadCompleted(_ syncServer: SyncServer, declObjectId: UUID)

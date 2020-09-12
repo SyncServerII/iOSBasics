@@ -113,14 +113,14 @@ extension UploadableFile {
 }
 
 public protocol DeclarableObjectBasics {
-    // An id for this SyncedObject. This is required because we're organizing DeclarableObject's around these UUID's. AKA, declObjectId
+    // An id for this Object. This is required because we're organizing DeclarableObject's around these UUID's. AKA, declObjectId
     var fileGroupUUID: UUID { get }
     
     // The type of object that this collection of files is representing.
     // E.g., a Neebla image or Neebla URL as above.
     var objectType: String { get }
 
-    // An id for the group of users that have access to this SyncedObject
+    // An id for the group of users that have access to this Object
     var sharingGroupUUID: UUID { get }
 }
 

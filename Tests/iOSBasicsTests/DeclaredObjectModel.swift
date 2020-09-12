@@ -125,4 +125,31 @@ class DeclaredFileModelTests: XCTestCase {
         
         XCTAssert(try DeclaredFileModel.numberRows(db: database) == 0)
     }
+    
+    func testUpsert() throws {
+        try DeclaredObjectModel.createTable(db: database)
+        try DeclaredFileModel.createTable(db: database)
+        try entry.insert()
+        
+        let obj = ObjectBasics(fileGroupUUID: UUID(), objectType: "obj", sharingGroupUUID: UUID())
+        let declaredObject = try DeclaredObjectModel.upsert(object: obj, db: database)
+
+        let fileInfo1 = FileInfo()
+        fileInfo1.fileGroupUUID = entry.fileGroupUUID.uuidString
+        fileInfo1.fileUUID = entry.uuid.uuidString
+        fileInfo1.mimeType = entry.mimeType.rawValue
+        fileInfo1.cloudStorageType = entry.cloudStorageType.rawValue
+        
+        let model1 = try DeclaredFileModel.upsert(fileInfo: fileInfo1, object: declaredObject, db: database)
+        XCTAssert(model1 == entry)
+
+        let fileInfo2 = FileInfo()
+        fileInfo2.fileGroupUUID = UUID().uuidString
+        fileInfo2.fileUUID = UUID().uuidString
+        fileInfo2.mimeType = MimeType.text.rawValue
+        fileInfo2.cloudStorageType = CloudStorageType.Dropbox.rawValue
+        
+        let model2 = try DeclaredFileModel.upsert(fileInfo: fileInfo2, object: declaredObject, db: database)
+        XCTAssert(model2 != entry)
+    }
 }

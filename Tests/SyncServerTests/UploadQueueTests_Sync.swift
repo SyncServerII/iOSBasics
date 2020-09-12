@@ -179,6 +179,262 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         // Wait for 2nd upload to complete.
         waitForUploadsToComplete(numberUploads: 1)
     }
+    
+    func runQueueObject(fileHasBeenDeleted: Bool) throws {
+        let fileUUID1 = UUID()
+        let fileGroupUUID1 = UUID()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        var queuedCount = 0
+        uploadQueued = { _, syncObjectId in
+            queuedCount += 1
+        }
+        
+        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
+        let declarations = Set<FileDeclaration>([declaration])
+
+        let testObject = ObjectDeclaration(fileGroupUUID: fileGroupUUID1, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
+            
+        func object1(v0: Bool) throws {
+            let uploadables:Set<FileUpload>
+            
+            if v0 {
+                let commentFile = CommentFile()
+                let commentFileData = try commentFile.getData()
+                let uploadable = FileUpload(uuid: fileUUID1, dataSource: .data(commentFileData))
+                uploadables = Set<FileUpload>([uploadable])
+            }
+            else {
+                let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
+                let uploadable = FileUpload(uuid: fileUUID1, dataSource: .data(comment.updateContents))
+                uploadables = Set<FileUpload>([uploadable])
+            }
+
+            try syncServer.queue(declaration: testObject, uploads: uploadables)
+        }
+        
+        var count = 0
+        uploadQueued = { _, _ in
+            count += 1
+        }
+        
+        try object1(v0: true)
+        
+        if fileHasBeenDeleted {
+            guard let entry = try DirectoryEntry.fetchSingleRow(db: database, where: fileUUID1 == DirectoryEntry.fileUUIDField.description) else {
+                throw DatabaseModelError.noObject
+            }
+            
+            try entry.update(setters:
+                DirectoryEntry.deletedLocallyField.description <- true
+            )
+        }
+        
+        // This second one should work also-- but not trigger an upload-- because its for the same file group as the immediately prior `queue`. i.e., the active upload.
+        do {
+            try object1(v0: false)
+        } catch {
+            if fileHasBeenDeleted {
+                waitForUploadsToComplete(numberUploads: 1)
+                return
+            }
+            XCTFail()
+            return
+        }
+        
+        let objectCount = try DeclaredObjectModel.numberRows(db: database,
+            where: testObject.declObjectId == DeclaredObjectModel.fileGroupUUIDField.description)
+        XCTAssert(objectCount == 1)
+        
+        let fileCount = try DeclaredFileModel.numberRows(db: database, where: testObject.declObjectId == DeclaredFileModel.fileGroupUUIDField.description)
+        XCTAssert(fileCount == 1)
+
+        waitForUploadsToComplete(numberUploads: 1)
+        XCTAssert(count == 1)
+                
+        // Trigger the second upload instance.
+        try syncServer.sync()
+        waitForUploadsToComplete(numberUploads: 1, v0Upload: false)
+        XCTAssert(count == 1)
+
+        // Wait for some period of time for the deferred upload to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+
+        let exp = expectation(description: "exp")
+        deferredUploadsCompleted = { _, _ in
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == 0)
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == 0)
+        XCTAssert(try DirectoryEntry.numberRows(db: database) == 1)
+    }
+    
+    func testRunQueueObjectFileHasBeenDeletedFails() throws {
+        try runQueueObject(fileHasBeenDeleted: true)
+    }
+    
+    func testRunQueueObjectFileHasNotBeenDeletedWorks() throws {
+        try runQueueObject(fileHasBeenDeleted: false)
+    }
+    
+    // Sync with two uploads pending of the same file group doesn't trigger both.
+    func testQueueTwoObjectsAlreadyRegisteredWorks() throws {
+        let fileUUID1 = UUID()
+        let fileGroupUUID1 = UUID()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        var queuedCount = 0
+        uploadQueued = { _, syncObjectId in
+            queuedCount += 1
+        }
+        
+        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
+        let declarations = Set<FileDeclaration>([declaration])
+
+        let testObject = ObjectDeclaration(fileGroupUUID: fileGroupUUID1, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
+            
+        func object1(v0: Bool, v1Id: UUID = Foundation.UUID()) throws {
+            let uploadables:Set<FileUpload>
+            
+            if v0 {
+                let commentFile = CommentFile()
+                let commentFileData = try commentFile.getData()
+                let uploadable = FileUpload(uuid: fileUUID1, dataSource: .data(commentFileData))
+                uploadables = Set<FileUpload>([uploadable])
+            }
+            else {
+                let comment = ExampleComment(messageString: "Example", id: v1Id.uuidString)
+                let uploadable = FileUpload(uuid: fileUUID1, dataSource: .data(comment.updateContents))
+                uploadables = Set<FileUpload>([uploadable])
+            }
+
+            try syncServer.queue(declaration: testObject, uploads: uploadables)
+        }
+        
+        var count = 0
+        uploadQueued = { _, _ in
+            count += 1
+        }
+        
+        try object1(v0: true)
+        
+        // This two should also work -- but not trigger uploads-- because they are for the same file group as the immediately prior `queue`. i.e., the active upload.
+        try object1(v0: false, v1Id: Foundation.UUID())
+        try object1(v0: false, v1Id: Foundation.UUID())
+
+        let objectCount = try DeclaredObjectModel.numberRows(db: database,
+            where: testObject.declObjectId == DeclaredObjectModel.fileGroupUUIDField.description)
+        XCTAssert(objectCount == 1)
+        
+        let fileCount = try DeclaredFileModel.numberRows(db: database, where: testObject.declObjectId == DeclaredFileModel.fileGroupUUIDField.description)
+        XCTAssert(fileCount == 1)
+
+        waitForUploadsToComplete(numberUploads: 1)
+        XCTAssert(count == 2)
+                
+        // Trigger the second upload instance.
+        try syncServer.sync()
+        waitForUploadsToComplete(numberUploads: 1, v0Upload: false)
+        XCTAssert(count == 2)
+
+        // Wait for some period of time for the deferred upload to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+
+        let exp = expectation(description: "exp")
+        deferredUploadsCompleted = { _, _ in
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Trigger the third upload instance.
+        try syncServer.sync()
+        waitForUploadsToComplete(numberUploads: 1, v0Upload: false)
+
+        // Wait for some period of time for the deferred upload to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+
+        let exp2 = expectation(description: "exp2")
+        deferredUploadsCompleted = { _, _ in
+            exp2.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == 0)
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == 0)
+        XCTAssert(try DirectoryEntry.numberRows(db: database) == 1)
+    }
+    
+    func testVNAndV0UploadFails() throws {
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+        let fileGroupUUID1 = UUID()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        let commentFile = CommentFile()
+
+        var queuedCount = 0
+        uploadQueued = { _, syncObjectId in
+            queuedCount += 1
+        }
+        
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
+        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declarations = Set<FileDeclaration>([declaration1, declaration2])
+
+        let testObject = ObjectDeclaration(fileGroupUUID: fileGroupUUID1, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
+        
+        // v0 upload for fileUUID1
+        let commentFileData = try commentFile.getData()
+        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .data(commentFileData))
+        let uploadables1 = Set<FileUpload>([uploadable1])
+        try syncServer.queue(declaration: testObject, uploads: uploadables1)
+
+        waitForUploadsToComplete(numberUploads: 1)
+                
+        // vN + v0 upload attempt
+        let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
+        
+        // v1
+        let uploadable2 = FileUpload(uuid: fileUUID1, dataSource: .data(comment.updateContents))
+        
+        // v0
+        let uploadable3 = FileUpload(uuid: fileUUID2, dataSource: .copy(exampleTextFileURL))
+        let uploadables2 = Set<FileUpload>([uploadable2, uploadable3])
+        
+        // Fails because we're not allowing uploads of v0 and vN together within the same `queue` for the same file group.
+        do {
+            try syncServer.queue(declaration: testObject, uploads: uploadables2)
+        } catch {
+            // Need to remove both of the url's for the failed uploads or the test will fail in the cleanup.
+            guard let fileTracker1 = try UploadFileTracker.fetchSingleRow(db: database, where: fileUUID1 == UploadFileTracker.fileUUIDField.description),
+                let localURL1 = fileTracker1.localURL else {
+                XCTFail()
+                return
+            }
+            
+            guard let fileTracker2 = try UploadFileTracker.fetchSingleRow(db: database, where: fileUUID2 == UploadFileTracker.fileUUIDField.description),
+                let localURL2 = fileTracker2.localURL else {
+                XCTFail()
+                return
+            }
+            
+            try FileManager.default.removeItem(at: localURL1)
+            try FileManager.default.removeItem(at: localURL2)
+            return
+        }
+        
+        XCTFail()
+    }
 }
 
 extension UploadQueueTests_Sync: SyncServerCredentials {

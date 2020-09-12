@@ -109,4 +109,19 @@ class DeclaredObjectModelTests: XCTestCase {
         
         XCTAssert(count == 0)
     }
+    
+    func testUpsert() throws {
+        try DeclaredObjectModel.createTable(db: database)
+        try entry.insert()
+        
+        let obj = ObjectBasics(fileGroupUUID: entry.fileGroupUUID, objectType: entry.objectType, sharingGroupUUID: entry.sharingGroupUUID)
+        let declaredObject = try DeclaredObjectModel.upsert(object: obj, db: database)
+                
+        XCTAssert(entry == declaredObject)
+        
+        let obj2 = ObjectBasics(fileGroupUUID: UUID(), objectType: entry.objectType, sharingGroupUUID: entry.sharingGroupUUID)
+        let declaredObject2 = try DeclaredObjectModel.upsert(object: obj2, db: database)
+        
+        XCTAssert(entry != declaredObject2)
+    }
 }

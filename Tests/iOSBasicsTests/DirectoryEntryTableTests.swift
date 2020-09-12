@@ -13,7 +13,7 @@ final class DirectoryEntryTableTests: XCTestCase {
         super.setUp()
         do {
             database = try Connection(.inMemory)
-            entry = try DirectoryEntry(db: database, fileUUID: uuid, fileVersion: 1, deletedLocally: false, deletedOnServer: true, goneReason: GoneReason.userRemoved.rawValue)
+            entry = try DirectoryEntry(db: database, fileUUID: uuid, fileVersion: 1, serverFileVersion: nil, deletedLocally: false, deletedOnServer: true, goneReason: GoneReason.userRemoved.rawValue)
         } catch {
             XCTFail()
             return
@@ -75,7 +75,7 @@ final class DirectoryEntryTableTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
-        let entry2 = try DirectoryEntry(db: database, fileUUID: UUID(), fileVersion: 1, deletedLocally: false, deletedOnServer: true, goneReason: GoneReason.userRemoved.rawValue)
+        let entry2 = try DirectoryEntry(db: database, fileUUID: UUID(), fileVersion: 1, serverFileVersion: nil, deletedLocally: false, deletedOnServer: true, goneReason: GoneReason.userRemoved.rawValue)
 
         try entry2.insert()
 
@@ -115,8 +115,21 @@ final class DirectoryEntryTableTests: XCTestCase {
         
         try entry.delete()
     }
-
-    static var allTests = [
-        ("testCreateTable", testCreateTable),
-    ]
+    
+    func testUpsert() throws {
+        try DirectoryEntry.createTable(db: database)
+        try entry.insert()
+         
+        let fileInfo1 = FileInfo()
+        fileInfo1.fileUUID = entry.fileUUID.uuidString
+        let entry1 = try DirectoryEntry.upsert(fileInfo: fileInfo1, db: database)
+        // These match because the search is done (a) on the basis of fileUUID, and no update is done.
+        XCTAssert(entry == entry1)
+        
+        let fileInfo2 = FileInfo()
+        fileInfo2.fileUUID = UUID().uuidString
+        
+        let entry2 = try DirectoryEntry.upsert(fileInfo: fileInfo2, db: database)
+        XCTAssert(entry2 != entry)
+    }
 }

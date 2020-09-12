@@ -62,6 +62,10 @@ extension SyncServer {
                 throw SyncServerError.declarationDifferentThanSyncedObject(
                         "DirectoryEntry missing.")
             }
+            
+            guard !(try DirectoryEntry.anyFileIsDeleted(declaredModels: declaredFilesInDatabase, db: db)) else {
+                throw SyncServerError.attemptToQueueADeletedFile
+            }
 
         default:
             throw SyncServerError.internalError("Had two registered DeclaredObject's for the same fileGroupUUID: fileGroupUUID: \(declaration.fileGroupUUID)")

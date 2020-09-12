@@ -58,3 +58,9 @@ public struct ObjectDeclaration: DeclarableObject {
         self.declaredFiles = declaredFiles
     }
 }
+
+struct ObjectBasics: DeclarableObjectBasics {
+    let fileGroupUUID: UUID
+    let objectType: String
+    let sharingGroupUUID: UUID
+}

@@ -70,7 +70,7 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
         try startCreateTable(db: db) { t in
             t.column(idField.description, primaryKey: true)
             t.column(fileGroupUUIDField.description)
-            t.column(uuidField.description)
+            t.column(uuidField.description, unique: true)
             t.column(mimeTypeField.description)
             t.column(cloudStorageTypeField.description)
             t.column(appMetaDataField.description)
@@ -115,5 +115,35 @@ extension DeclaredFileModel {
         }
         
         return declaredFilesInDatabase
+    }
+    
+    @discardableResult
+    static func upsert(fileInfo: FileInfo, object: DeclaredObjectModel, db: Connection) throws -> DeclaredFileModel {
+        guard let fileUUIDString = fileInfo.fileUUID,
+            let fileUUID = UUID(uuidString: fileUUIDString),
+            let fileGroupUUIDString = fileInfo.fileGroupUUID,
+            let fileGroupUUID = UUID(uuidString: fileGroupUUIDString) else {
+            throw DatabaseModelError.invalidUUID
+        }
+        
+        guard let mimeTypeString = fileInfo.mimeType,
+            let mimeType = MimeType(rawValue: mimeTypeString) else {
+            throw DatabaseModelError.badMimeType
+        }
+        
+        guard let cloudStorageTypeString = fileInfo.cloudStorageType,
+            let cloudStorageType = CloudStorageType(rawValue: cloudStorageTypeString) else {
+            throw DatabaseModelError.badCloudStorageType
+        }
+
+        if let entry = try DeclaredFileModel.fetchSingleRow(db: db, where: DeclaredFileModel.uuidField.description == fileUUID) {
+            // These don't change.
+            return entry
+        }
+        else {
+            let entry = try DeclaredFileModel(db: db, fileGroupUUID: fileGroupUUID, uuid: fileUUID, mimeType: mimeType, cloudStorageType: cloudStorageType, appMetaData: nil, changeResolverName: nil)
+            try entry.insert()
+            return entry
+        }
     }
 }

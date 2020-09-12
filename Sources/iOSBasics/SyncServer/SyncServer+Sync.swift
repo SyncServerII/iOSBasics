@@ -9,6 +9,32 @@ import Foundation
 import SQLite
 
 extension SyncServer {
+    func syncHelper(sharingGroupUUID: UUID? = nil) throws {
+        if let sharingGroupUUID = sharingGroupUUID {
+            getIndex(sharingGroupUUID: sharingGroupUUID)
+        }
+        
+        try triggerUploads()
+
+        // `checkOnDeferredUploads` does networking calls *synchronously*. So run it asynchronously as to not block the caller for a long period of time.
+        DispatchQueue.global().async {
+            do {
+                let count = try self.checkOnDeferredUploads()
+                if count > 0 {
+                    self.delegator { [weak self] delegate in
+                        guard let self = self else { return }
+                        delegate.deferredUploadsCompleted(self, numberCompleted: count)
+                    }
+                }
+            } catch let error {
+                self.delegator { [weak self] delegate in
+                    guard let self = self else { return }
+                    delegate.error(self, error: error)
+                }
+            }
+        }
+    }
+    
     // Only re-check of uploads so far. This handles vN uploads only. v0 uploads are always handled in `queueObject`.
     func triggerUploads() throws {
         let notStartedUploads = try UploadObjectTracker.allUploadsWith(status: .notStarted, db: db)

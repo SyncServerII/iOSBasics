@@ -13,9 +13,6 @@ class SharingEntry: DatabaseModel {
     
     let db: Connection
     var id: Int64!
-
-    static let masterVersionField = Field("masterVersion", \M.masterVersion)
-    var masterVersion: Int64
     
     static let permissionField = Field("permission", \M.permission)
     var permission: String?
@@ -37,7 +34,6 @@ class SharingEntry: DatabaseModel {
     
     init(db: Connection,
         id: Int64! = nil,
-        masterVersion: Int64,
         permission: String? = nil,
         removedFromGroup: Bool,
         sharingGroupName: String?,
@@ -61,7 +57,6 @@ class SharingEntry: DatabaseModel {
         self.db = db
         self.id = id
         self.sharingGroupUUID = sharingGroupUUID
-        self.masterVersion = masterVersion
         self.permission = permission
         self.removedFromGroup = removedFromGroup
         self.sharingGroupName = sharingGroupName
@@ -74,8 +69,7 @@ class SharingEntry: DatabaseModel {
     static func createTable(db: Connection) throws {
         try startCreateTable(db: db) { t in
             t.column(idField.description, primaryKey: true)
-            t.column(sharingGroupUUIDField.description)
-            t.column(masterVersionField.description)
+            t.column(sharingGroupUUIDField.description, unique: true)
             t.column(permissionField.description)
             t.column(removedFromGroupField.description)
             t.column(sharingGroupNameField.description)
@@ -87,7 +81,6 @@ class SharingEntry: DatabaseModel {
     static func rowToModel(db: Connection, row: Row) throws -> SharingEntry {
         return try SharingEntry(db: db,
             id: row[Self.idField.description],
-            masterVersion: row[Self.masterVersionField.description],
             permission: row[Self.permissionField.description],
             removedFromGroup: row[Self.removedFromGroupField.description],
             sharingGroupName: row[Self.sharingGroupNameField.description],
@@ -99,7 +92,6 @@ class SharingEntry: DatabaseModel {
     
     func insert() throws {
         try doInsertRow(db: db, values:
-            Self.masterVersionField.description <- masterVersion,
             Self.permissionField.description <- permission,
             Self.removedFromGroupField.description <- removedFromGroup,
             Self.sharingGroupNameField.description <- sharingGroupName,
@@ -110,4 +102,24 @@ class SharingEntry: DatabaseModel {
     }
 }
 
+extension SharingEntry {
+    // Update or insert the SharingEntry corresponding to the passed sharingGroup.
+    static func upsert(sharingGroup: ServerShared.SharingGroup, db: Connection) throws {
+        guard let sharingGroupUUIDString = sharingGroup.sharingGroupUUID,
+              let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString) else {
+            throw DatabaseModelError.invalidUUID
+        }
 
+        if let sharingEntry = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID) {
+            if sharingGroup.sharingGroupName != sharingEntry.sharingGroupName {
+                try sharingEntry.update(setters: SharingEntry.sharingGroupNameField.description <- sharingGroup.sharingGroupName)
+            }
+        }
+        else {
+            // `removedFromGroup` set to false because we shouldn't be getting this call unless the current user is part of the sharing group.
+            // Should eventually detect when a user is removed from a sharing group and update this.
+            let newSharingEntry = try SharingEntry(db: db, permission: sharingGroup.permission?.rawValue, removedFromGroup: false, sharingGroupName: sharingGroup.sharingGroupName, sharingGroupUUID: sharingGroupUUID, syncNeeded: false, cloudStorageType: sharingGroup.cloudStorageType)
+            try newSharingEntry.insert()
+        }
+    }
+}

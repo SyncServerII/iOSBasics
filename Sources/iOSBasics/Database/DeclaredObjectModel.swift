@@ -42,7 +42,7 @@ class DeclaredObjectModel: DatabaseModel, DeclarableObjectBasics, Equatable {
     static func createTable(db: Connection) throws {
         try startCreateTable(db: db) { t in
             t.column(idField.description, primaryKey: true)
-            t.column(fileGroupUUIDField.description)
+            t.column(fileGroupUUIDField.description, unique: true)
             t.column(objectTypeField.description)
             t.column(sharingGroupUUIDField.description)
         }
@@ -102,6 +102,18 @@ extension DeclaredObjectModel {
         for file in declaration.declaredFiles {
             let declared = try DeclaredFileModel(db: db, fileGroupUUID: declaration.fileGroupUUID, uuid: file.uuid, mimeType: file.mimeType, cloudStorageType: file.cloudStorageType, appMetaData: file.appMetaData, changeResolverName: file.changeResolverName)
             try declared.insert()
+        }
+    }
+
+    static func upsert<DECL: DeclarableObjectBasics>(object: DECL, db: Connection) throws -> DeclaredObjectModel {
+        if let entry = try DeclaredObjectModel.fetchSingleRow(db: db, where: DeclaredObjectModel.fileGroupUUIDField.description == object.fileGroupUUID) {
+            // The fields don't get updated with `DeclaredObjectModel`'s
+            return entry
+        }
+        else {
+            let entry = try DeclaredObjectModel(db: db, fileGroupUUID: object.fileGroupUUID, objectType: object.objectType, sharingGroupUUID: object.sharingGroupUUID)
+            try entry.insert()
+            return entry
         }
     }
 }

@@ -12,6 +12,7 @@ enum SyncServerError: Error {
     case noDeclaredFiles
     case internalError(String)
     case attemptToQueueUploadOfVNAndV0Files
+    case attemptToQueueADeletedFile
     
     static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
@@ -71,6 +72,12 @@ enum SyncServerError: Error {
             
         case attemptToQueueUploadOfVNAndV0Files:
             guard case .attemptToQueueUploadOfVNAndV0Files = rhs else {
+                return false
+            }
+            return true
+            
+        case attemptToQueueADeletedFile:
+            guard case .attemptToQueueADeletedFile = rhs else {
                 return false
             }
             return true

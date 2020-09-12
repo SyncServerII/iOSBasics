@@ -18,7 +18,7 @@ class SharingEntryTests: XCTestCase {
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try SharingEntry(db: database, masterVersion: 0, removedFromGroup: true, sharingGroupName: "Foobly", sharingGroupUUID: uuid, syncNeeded: false)
+        entry = try SharingEntry(db: database, removedFromGroup: true, sharingGroupName: "Foobly", sharingGroupUUID: uuid, syncNeeded: false)
     }
 
     override func tearDownWithError() throws {
@@ -27,7 +27,6 @@ class SharingEntryTests: XCTestCase {
     
     func assertContentsCorrect(entry1: SharingEntry, entry2: SharingEntry) {
         XCTAssert(entry1.sharingGroupUUID == entry2.sharingGroupUUID)
-        XCTAssert(entry1.masterVersion == entry2.masterVersion)
         XCTAssert(entry1.permission == entry2.permission)
         XCTAssert(entry1.removedFromGroup == entry2.removedFromGroup)
         XCTAssert(entry1.sharingGroupName == entry2.sharingGroupName)
@@ -80,7 +79,7 @@ class SharingEntryTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
-        let entry2 = try SharingEntry(db: database, masterVersion: 0, removedFromGroup: true, sharingGroupName: "Foobly", sharingGroupUUID: UUID(), syncNeeded: false)
+        let entry2 = try SharingEntry(db: database, removedFromGroup: true, sharingGroupName: "Foobly", sharingGroupUUID: UUID(), syncNeeded: false)
 
         try entry2.insert()
 
