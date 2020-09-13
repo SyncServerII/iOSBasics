@@ -10,9 +10,7 @@ import SQLite
 
 extension SyncServer {
     func syncHelper(sharingGroupUUID: UUID? = nil) throws {
-        if let sharingGroupUUID = sharingGroupUUID {
-            getIndex(sharingGroupUUID: sharingGroupUUID)
-        }
+        getIndex(sharingGroupUUID: sharingGroupUUID)
         
         try triggerUploads()
 

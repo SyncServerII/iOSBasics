@@ -52,6 +52,29 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
         self.changeResolverName = changeResolverName
     }
     
+    // Returns true iff the static or invariants parts of `self` and the fileInfo are the same.
+    func sameInvariants(fileInfo: FileInfo) -> Bool {
+        guard fileGroupUUID.uuidString == fileInfo.fileGroupUUID else {
+            return false
+        }
+        
+        guard uuid.uuidString == fileInfo.fileUUID else {
+            return false
+        }
+
+        guard mimeType.rawValue == fileInfo.mimeType else {
+            return false
+        }
+
+        guard cloudStorageType.rawValue == fileInfo.cloudStorageType else {
+            return false
+        }
+
+        #warning("Should have comparisons for appMetaData and for changeResolverName")
+        
+        return true
+    }
+    
     static func == (lhs: DeclaredFileModel, rhs: DeclaredFileModel) -> Bool {
         return lhs.id == rhs.id &&
             lhs.fileGroupUUID == rhs.fileGroupUUID &&
@@ -141,6 +164,7 @@ extension DeclaredFileModel {
             return entry
         }
         else {
+            #warning("TODO: Need to add in appMetaData and changeResolverName once those are in FileInfo.")
             let entry = try DeclaredFileModel(db: db, fileGroupUUID: fileGroupUUID, uuid: fileUUID, mimeType: mimeType, cloudStorageType: cloudStorageType, appMetaData: nil, changeResolverName: nil)
             try entry.insert()
             return entry

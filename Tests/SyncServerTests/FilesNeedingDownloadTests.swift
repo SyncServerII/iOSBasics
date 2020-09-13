@@ -1,8 +1,8 @@
 //
-//  IndexTests.swift
+//  FilesNeedingDownloadTests.swift
 //  SyncServerTests
 //
-//  Created by Christopher G Prince on 9/11/20.
+//  Created by Christopher G Prince on 9/12/20.
 //
 
 import XCTest
@@ -13,7 +13,7 @@ import iOSShared
 import iOSSignIn
 import ChangeResolvers
 
-class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
+class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, SyncServerTests {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
     var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
@@ -26,6 +26,8 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
     var uploadCompleted: ((SyncServer, UploadFileResult) -> ())?
     var error:((SyncServer, Error?) -> ())?
     var syncCompleted:((SyncServer, _ sharingGroupUUID: UUID, _ index: [FileInfo]) -> ())?
+    var syncCompletedNoSharingGroup:((SyncServer) -> ())?
+    
     var user: TestUser!
     var database: Connection!
     var config:Configuration!
@@ -66,136 +68,130 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
         XCTAssert(filePaths.count == 0, "\(filePaths.count)")
     }
 
-    func testIndexCalledDirectly() throws {
-        let sharingGroupUUID = try getSharingGroupUUID()
-
-        let exp = expectation(description: "exp")
-        
-        syncCompleted = { _, sharingGroup, index in
-            XCTAssert(sharingGroupUUID == sharingGroup)
-            XCTAssert(index.count == 0)
-            guard let result = try? SharingEntry.fetchSingleRow(db: self.database, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID) else {
-                XCTFail()
-                exp.fulfill()
-                return
-            }
-            
-            XCTAssert(result.sharingGroupUUID == sharingGroupUUID)
-            exp.fulfill()
+    func testFilesNeedingDownloadUnknownSharingGroupFails() {
+        do {
+            _ = try syncServer.filesNeedingDownload(sharingGroupUUID: UUID())
+        } catch {
+            return
         }
-        
-        error = { _, error in
-            XCTFail("\(String(describing: error))")
-            exp.fulfill()
-        }
-        
-        syncServer.getIndex(sharingGroupUUID: sharingGroupUUID)
-
-        waitForExpectations(timeout: 10, handler: nil)
+        XCTFail()
     }
     
-    func testIndexCalledFromSyncServer() throws {
-        let sharingGroupUUID = try getSharingGroupUUID()
-
+    func syncToGetSharingGroupUUID() throws -> UUID {
         let exp = expectation(description: "exp")
-        
-        syncCompleted = { _, sharingGroup, index in
-            XCTAssert(sharingGroupUUID == sharingGroup)
-            XCTAssert(index.count == 0)
-            guard let result = try? SharingEntry.fetchSingleRow(db: self.database, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID) else {
-                XCTFail()
-                exp.fulfill()
-                return
-            }
-            
-            XCTAssert(result.sharingGroupUUID == sharingGroupUUID)
+        syncCompletedNoSharingGroup = { _ in
             exp.fulfill()
         }
         
-        error = { _, error in
-            XCTFail()
+        try syncServer.sync()
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        guard syncServer.sharingGroups.count > 0 else {
+            throw SyncServerError.internalError("Testing Error")
+        }
+        
+        guard let sharingGroupUUIDString = syncServer.sharingGroups[0].sharingGroupUUID,
+            let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString) else {
+            throw SyncServerError.internalError("Testing Error")
+        }
+        
+        return sharingGroupUUID
+    }
+    
+    func sync(withSharingGroupUUID sharingGroupUUID: UUID) throws {
+        let exp = expectation(description: "exp")
+        syncCompleted = { _, _, _ in
             exp.fulfill()
         }
         
         try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
-
         waitForExpectations(timeout: 10, handler: nil)
     }
     
-    func uploadExampleTextFile(sharingGroupUUID: UUID) throws -> ObjectDeclaration {
-        let fileUUID1 = UUID()
+    func testFilesNeedingDownloadKnownSharingGroupWorks() throws {
+        let sharingGroupUUID = try syncToGetSharingGroupUUID()
         
+        let files = try syncServer.filesNeedingDownload(sharingGroupUUID: sharingGroupUUID)
+        XCTAssert(files.count == 0)
+    }
+    
+    func testFilesNeedingDownloadSingleUploadedFileWorks() throws {
+        let sharingGroupUUID = try syncToGetSharingGroupUUID()
+        
+        _ = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
+        
+        let files = try syncServer.filesNeedingDownload(sharingGroupUUID: sharingGroupUUID)
+        XCTAssert(files.count == 0)
+    }
+    
+    func testFilesNeedingDownloadSingleFileNeedingDownloadWorks() throws {
+        let sharingGroupUUID = try syncToGetSharingGroupUUID()
+
+        let fileUUID1 = UUID()
+
         let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration1])
-
+        
         let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
         let uploadables = Set<FileUpload>([uploadable1])
 
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         try syncServer.queue(declaration: testObject, uploads: uploadables)
-        
         waitForUploadsToComplete(numberUploads: 1)
+
+        // Reset the database show a state *as if* another client instance had done the upload-- and show the upload as ready for download.
+        database = try Connection(.inMemory)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
+        syncServer.delegate = self
+        syncServer.credentialsDelegate = self
         
-        return testObject
-    }
-    
-    func testIndexCalledFromSyncServerWithOneFile() throws {
-        let sharingGroupUUID = try getSharingGroupUUID()
+        try sync(withSharingGroupUUID:sharingGroupUUID)
         
-        let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
-        guard declaration.declaredFiles.count == 1,
-            let declaredFile = declaration.declaredFiles.first else {
+        let downloadables = try syncServer.filesNeedingDownload(sharingGroupUUID: sharingGroupUUID)
+        
+        guard downloadables.count == 1 else {
+            XCTFail("\(downloadables.count)")
+            return
+        }
+        
+        let downloadable = downloadables[0]
+        XCTAssert(downloadable.declaration == testObject)
+        guard downloadable.downloads.count == 1 else {
             XCTFail()
             return
         }
-
-        let exp = expectation(description: "exp")
         
-        syncCompleted = { _, sharingGroup, index in
-            XCTAssert(sharingGroupUUID == sharingGroup)
-            guard index.count == 1 else {
-                XCTFail()
-                exp.fulfill()
-                return
-            }
-            
-            XCTAssert(declaredFile.uuid.uuidString == index[0].fileUUID)
-            
-            guard let result = try? SharingEntry.fetchSingleRow(db: self.database, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID) else {
-                XCTFail()
-                exp.fulfill()
-                return
-            }
-            
-            XCTAssert(result.sharingGroupUUID == sharingGroupUUID)
-            exp.fulfill()
-        }
-        
-        error = { _, error in
+        guard let download = downloadable.downloads.first else {
             XCTFail()
-            exp.fulfill()
+            return
         }
         
-        try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
-
-        waitForExpectations(timeout: 10, handler: nil)
+        XCTAssert(download.fileVersion == 0)
+        XCTAssert(download.uuid == fileUUID1)
+    }
+    
+    func testTwoFilesNeedingDownloadInSameFileGroupWorks() throws {
+    }
+    
+    func testTwoFilesNeedingDownloadInDifferentFileGroupWorks() throws {
     }
 }
 
-extension IndexTests: SyncServerCredentials {
+extension FilesNeedingDownloadTests: SyncServerCredentials {
     func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials {
         return user.credentials
     }
 }
 
-extension IndexTests: SyncServerDelegate {
+extension FilesNeedingDownloadTests: SyncServerDelegate {
     func error(_ syncServer: SyncServer, error: Error?) {
         XCTFail("\(String(describing: error))")
         self.error?(syncServer, error)
     }
 
     func syncCompleted(_ syncServer: SyncServer) {
+        syncCompletedNoSharingGroup?(syncServer)
     }
     
     func syncCompleted(_ syncServer: SyncServer, sharingGroupUUID: UUID, index: [FileInfo]) {

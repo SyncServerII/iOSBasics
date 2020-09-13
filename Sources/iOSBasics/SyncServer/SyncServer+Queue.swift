@@ -46,7 +46,7 @@ extension SyncServer {
             }
             
             try DeclaredObjectModel.createModels(from: declaration, db: db)
-            try DirectoryEntry.createEntries(for: declaration.declaredFiles, db: db)
+            try DirectoryEntry.createEntries(for: declaration.declaredFiles, fileGroupUUID: declaration.fileGroupUUID, sharingGroupUUID: declaration.sharingGroupUUID, db: db)
             
         case 1:
             newFiles = false
@@ -71,6 +71,14 @@ extension SyncServer {
             
             guard !(try DirectoryEntry.anyFileIsDeleted(declaredModels: declaredFilesInDatabase, db: db)) else {
                 throw SyncServerError.attemptToQueueADeletedFile
+            }
+            
+            // We should never try to upload a file that has an index (db info) from the server, but hasn't yet been downloaded. This doesn't seem to reflect a valid state: How can a user request an upload for a file they haven't yet seen?
+            let entriesForUploads = try DirectoryEntry.lookupFor(uploadables: uploads, db: db)
+            for entry in entriesForUploads {
+                if entry.fileVersion == nil && entry.serverFileVersion != nil {
+                    throw SyncServerError.attemptToQueueAFileThatHasNotBeenDownloaded
+                }
             }
 
         default:

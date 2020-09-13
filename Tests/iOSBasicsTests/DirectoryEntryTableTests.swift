@@ -13,7 +13,7 @@ final class DirectoryEntryTableTests: XCTestCase {
         super.setUp()
         do {
             database = try Connection(.inMemory)
-            entry = try DirectoryEntry(db: database, fileUUID: uuid, fileVersion: 1, serverFileVersion: nil, deletedLocally: false, deletedOnServer: true, goneReason: GoneReason.userRemoved.rawValue)
+            entry = try DirectoryEntry(db: database, fileUUID: uuid, fileGroupUUID: UUID(), sharingGroupUUID: UUID(), fileVersion: 1, serverFileVersion: nil, deletedLocally: false, deletedOnServer: true, goneReason: GoneReason.userRemoved.rawValue)
         } catch {
             XCTFail()
             return
@@ -75,7 +75,7 @@ final class DirectoryEntryTableTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
-        let entry2 = try DirectoryEntry(db: database, fileUUID: UUID(), fileVersion: 1, serverFileVersion: nil, deletedLocally: false, deletedOnServer: true, goneReason: GoneReason.userRemoved.rawValue)
+        let entry2 = try DirectoryEntry(db: database, fileUUID: UUID(), fileGroupUUID: UUID(), sharingGroupUUID: UUID(), fileVersion: 1, serverFileVersion: nil, deletedLocally: false, deletedOnServer: true, goneReason: GoneReason.userRemoved.rawValue)
 
         try entry2.insert()
 

@@ -92,6 +92,7 @@ public class SyncServer {
     3) If a non-nil sharingGroupUUID is given, this fetches the index for all files in that sharing group from the server. If successful, the syncCompleted delegate method is called, and:
         a) the `sharingGroups` property has been updated
         b) the `filesNeedingDownload` method can be called to determine any files needing downloading for the sharing group.
+    4) If a nil sharingGroupUUID is given, this fetches all sharing groups for this user from the server.
     */
     public func sync(sharingGroupUUID: UUID? = nil) throws {
         try syncHelper(sharingGroupUUID: sharingGroupUUID)
@@ -117,10 +118,14 @@ public class SyncServer {
     
     // MARK: Download
     
-    // The list of files returned here survive app relaunch. A given declaration will appear at most once in the returned list.
-    func filesNeedingDownload<DECL: DeclarableObject, DWL: DownloadableFile>(sharingGroupUUID: UUID) ->
-            [(declaration: DECL, files: Set<DWL>)] {
-        return []
+    // The list of files returned here survive app relaunch. A given object declaration will appear at most once in the returned list.
+    public func filesNeedingDownload(sharingGroupUUID: UUID) throws -> [(declaration: ObjectDeclaration, downloads: Set<FileDownload>)] {
+        let filtered = sharingGroups.filter { $0.sharingGroupUUID == sharingGroupUUID.uuidString }
+        guard filtered.count == 1 else {
+            throw SyncServerError.unknownSharingGroup
+        }
+        
+        return try filesNeedingDownloadHelper(sharingGroupUUID: sharingGroupUUID)
     }
     
     // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.

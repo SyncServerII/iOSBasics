@@ -452,6 +452,9 @@ extension UploadQueueTests_Sync: SyncServerDelegate {
     func syncCompleted(_ syncServer: SyncServer) {
     }
     
+    func syncCompleted(_ syncServer: SyncServer, sharingGroupUUID: UUID, index: [FileInfo]) {
+    }
+    
     func downloadCompleted(_ syncServer: SyncServer, declObjectId: UUID) {
     }
     

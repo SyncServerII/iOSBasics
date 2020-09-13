@@ -15,15 +15,52 @@ class DirectoryEntry: DatabaseModel, Equatable {
         
     static let fileUUIDField = Field("fileUUID", \M.fileUUID)
     var fileUUID: UUID
+
+    static let fileGroupUUIDField = Field("fileGroupUUID", \M.fileGroupUUID)
+    var fileGroupUUID: UUID
+    
+    static let sharingGroupUUIDField = Field("sharingGroupUUID", \M.sharingGroupUUID)
+    var sharingGroupUUID: UUID
     
     // The version of the file locally.
     // This will be 0 after a first *successful* upload for a file initiated by the local client. After that, it will only be updated when a specific file version is downloaded in its entirety from the server. It cannot be updated for vN files on deferred upload completion because the local client, if other competing clients are concurrently making changes, may not have the complete file update for a specific version.
+    // This can be nil, and the `serverFileVersion` can be non-nil. This will indicate a file that has not been created locally, that needs downloading.
     static let fileVersionField = Field("fileVersion", \M.fileVersion)
     var fileVersion: Int32?
     
     // The version of the file on the server.
     static let serverFileVersionField = Field("serverFileVersion", \M.serverFileVersion)
     var serverFileVersion: Int32?
+    
+    enum FileState {
+        case needsUpload
+        case needsDownload
+        case noChange
+    }
+    
+    var fileState: FileState {
+        switch (fileVersion, serverFileVersion) {
+        case (.none, .none):
+            // File has just been created.
+            return .needsUpload
+            
+        case (.none, .some):
+            // File was obtained via an `index` request to server. Needs download.
+            return .needsDownload
+            
+        case (.some, .none):
+            // File created locally, but no change on server or no `index` request to update serverFileVersion.
+            return .noChange
+            
+        case (.some(let fileVersion), .some(let serverFileVersion)):
+            if fileVersion < serverFileVersion {
+                return .needsDownload
+            }
+            else {
+                return .noChange
+            }
+        }
+    }
 
     // When a file group is deleted, all files in that group are marked as deleted locally.
     static let deletedLocallyField = Field("deletedLocally", \M.deletedLocally)
@@ -39,15 +76,36 @@ class DirectoryEntry: DatabaseModel, Equatable {
         return lhs.id == rhs.id &&
             lhs.fileUUID == rhs.fileUUID &&
             lhs.fileVersion == rhs.fileVersion &&
+            lhs.fileGroupUUID == rhs.fileGroupUUID &&
+            lhs.sharingGroupUUID == rhs.sharingGroupUUID &&
             lhs.serverFileVersion == rhs.serverFileVersion &&
             lhs.deletedLocally == rhs.deletedLocally &&
             lhs.deletedOnServer == rhs.deletedOnServer &&
             lhs.goneReason == rhs.goneReason
     }
     
+    // Returns true iff the static or invariants parts of `self` and the fileInfo are the same.
+    func sameInvariants(fileInfo: FileInfo) -> Bool {
+        guard fileUUID.uuidString == fileInfo.fileUUID else {
+            return false
+        }
+        
+        guard fileGroupUUID.uuidString == fileInfo.fileGroupUUID else {
+            return false
+        }
+        
+        guard sharingGroupUUID.uuidString == fileInfo.sharingGroupUUID else {
+            return false
+        }
+        
+        return true
+    }
+    
     init(db: Connection,
         id: Int64! = nil,
         fileUUID: UUID,
+        fileGroupUUID: UUID,
+        sharingGroupUUID: UUID,
         fileVersion: FileVersionInt?,
         serverFileVersion: FileVersionInt?,
         deletedLocally: Bool,
@@ -63,6 +121,8 @@ class DirectoryEntry: DatabaseModel, Equatable {
         self.db = db
         self.id = id
         self.fileUUID = fileUUID
+        self.fileGroupUUID = fileGroupUUID
+        self.sharingGroupUUID = sharingGroupUUID
         self.fileVersion = fileVersion
         self.serverFileVersion = serverFileVersion
         self.deletedLocally = deletedLocally
@@ -76,6 +136,8 @@ class DirectoryEntry: DatabaseModel, Equatable {
         try startCreateTable(db: db) { t in
             t.column(idField.description, primaryKey: true)
             t.column(fileUUIDField.description, unique: true)
+            t.column(fileGroupUUIDField.description)
+            t.column(sharingGroupUUIDField.description)
             t.column(fileVersionField.description)
             t.column(serverFileVersionField.description)
             t.column(deletedLocallyField.description)
@@ -88,6 +150,8 @@ class DirectoryEntry: DatabaseModel, Equatable {
         return try DirectoryEntry(db: db,
             id: row[Self.idField.description],
             fileUUID: row[Self.fileUUIDField.description],
+            fileGroupUUID: row[Self.fileGroupUUIDField.description],
+            sharingGroupUUID: row[Self.sharingGroupUUIDField.description],
             fileVersion: row[Self.fileVersionField.description],
             serverFileVersion: row[Self.serverFileVersionField.description],
             deletedLocally: row[Self.deletedLocallyField.description],
@@ -99,6 +163,8 @@ class DirectoryEntry: DatabaseModel, Equatable {
     func insert() throws {        
         try doInsertRow(db: db, values:
             Self.fileUUIDField.description <- fileUUID,
+            Self.fileGroupUUIDField.description <- fileGroupUUID,
+            Self.sharingGroupUUIDField.description <- sharingGroupUUID,
             Self.fileVersionField.description <- fileVersion,
             Self.serverFileVersionField.description <- serverFileVersion,
             Self.deletedLocallyField.description <- deletedLocally,
@@ -140,10 +206,10 @@ extension DirectoryEntry {
     }
     
     // Create a `DirectoryEntry` per file in `declaredFiles`.
-    static func createEntries<FILE: DeclarableFile>(for declaredFiles: Set<FILE>, db: Connection) throws {
+    static func createEntries<FILE: DeclarableFile>(for declaredFiles: Set<FILE>, fileGroupUUID: UUID, sharingGroupUUID: UUID, db: Connection) throws {
         for file in declaredFiles {
             // `fileVersion` is specifically nil-- until we get a first successful upload of v0.
-            let dirEntry = try DirectoryEntry(db: db, fileUUID: file.uuid, fileVersion: nil, serverFileVersion: nil, deletedLocally: false, deletedOnServer: false, goneReason: nil)
+            let dirEntry = try DirectoryEntry(db: db, fileUUID: file.uuid, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, fileVersion: nil, serverFileVersion: nil, deletedLocally: false, deletedOnServer: false, goneReason: nil)
             try dirEntry.insert()
         }
     }
@@ -174,6 +240,7 @@ extension DirectoryEntry {
         return false
     }
     
+    // The `fileInfo` is assumed to come from the server.
     @discardableResult
     static func upsert(fileInfo: FileInfo, db: Connection) throws -> DirectoryEntry {
         guard let fileUUIDString = fileInfo.fileUUID,
@@ -183,17 +250,46 @@ extension DirectoryEntry {
 
         if let entry = try DirectoryEntry.fetchSingleRow(db: db, where: DirectoryEntry.fileUUIDField.description == fileUUID) {
             try entry.update(setters: DirectoryEntry.serverFileVersionField.description <- fileInfo.fileVersion)
-            if fileInfo.deleted {
-                try entry.update(setters: DirectoryEntry.deletedLocallyField.description <- true,
+            if fileInfo.deleted && !entry.deletedOnServer {
+                // Specifically *not* changing `deletedLocallyField` because the difference between these two (i.e., deletedLocally false, and deletedOnServer true) will be used to drive local deletion for the client.
+                try entry.update(setters:
                     DirectoryEntry.deletedOnServerField.description <- true
                 )
             }
             return entry
         }
         else {
-            let entry = try DirectoryEntry(db: db, fileUUID: fileUUID, fileVersion:  nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, goneReason: nil)
+            // Creation of a DirectoryEntry for a file not yet known to the local client.
+            
+            guard let sharingGroupUUIDString = fileInfo.sharingGroupUUID,
+                let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString) else {
+                throw DatabaseModelError.invalidUUID
+            }
+            
+            guard let fileGroupUUIDString = fileInfo.fileGroupUUID,
+                let fileGroupUUID = UUID(uuidString: fileGroupUUIDString) else {
+                throw DatabaseModelError.invalidUUID
+            }
+            
+            // `deletedLocally` is set to the same state as `deletedOnServer` because this is a file not yet known the local client. This just indicates that, if deleted on server already, the local client doesn't have to take any deletion actions for this file. If not deleted on the server, then the file isn't deleted locally either.
+            let entry = try DirectoryEntry(db: db, fileUUID: fileUUID, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, fileVersion:  nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, goneReason: nil)
             try entry.insert()
             return entry
         }
+    }
+    
+    // It is an error for one of the uploadables to not be in the DirectoryEntry's
+    static func lookupFor<UPL: UploadableFile>(uploadables: Set<UPL>, db: Connection) throws -> [DirectoryEntry] {
+        var result = [DirectoryEntry]()
+        
+        for uploadable in uploadables {
+            guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where: DirectoryEntry.fileUUIDField.description == uploadable.uuid) else {
+                throw DatabaseModelError.notExactlyOneRow
+            }
+            
+            result += [entry]
+        }
+        
+        return result
     }
 }

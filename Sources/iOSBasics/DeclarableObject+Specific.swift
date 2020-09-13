@@ -38,7 +38,7 @@ public struct FileDeclaration: DeclarableFile {
     }
 }
 
-public struct ObjectDeclaration: DeclarableObject {
+public struct ObjectDeclaration: DeclarableObject, Equatable {
     // An id for this SyncedObject. This is required because we're organizing SyncObject's around these UUID's. AKA, syncObjectId
     public let fileGroupUUID: UUID
     
@@ -63,4 +63,14 @@ struct ObjectBasics: DeclarableObjectBasics {
     let fileGroupUUID: UUID
     let objectType: String?
     let sharingGroupUUID: UUID
+}
+
+public struct FileDownload: DownloadableFile {
+    public let uuid: UUID
+    public let fileVersion: FileVersionInt
+    
+    public init(uuid: UUID, fileVersion: FileVersionInt) {
+        self.uuid = uuid
+        self.fileVersion = fileVersion
+    }
 }

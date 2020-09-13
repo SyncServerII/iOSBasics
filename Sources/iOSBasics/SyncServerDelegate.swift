@@ -1,5 +1,6 @@
 import Foundation
 import iOSSignIn
+import ServerShared
 
 public enum UUIDCollisionType {
     case file
@@ -17,8 +18,11 @@ public protocol SyncServerCredentials: AnyObject {
 public protocol SyncServerDelegate: AnyObject {
     func error(_ syncServer: SyncServer, error: Error?)
     
-    // After the `sync` method is called, if a sharingGroupUUID was given, this method will be called if that server request was successful.
+    // Called after the `sync` method is successful, and a nil sharingGroupUUID was given.
     func syncCompleted(_ syncServer: SyncServer)
+    
+    // After the `sync` method is successful, if a sharingGroupUUID was given, this gives the resulting file index for that sharing group.
+    func syncCompleted(_ syncServer: SyncServer, sharingGroupUUID: UUID, index: [FileInfo])
     
     func downloadCompleted(_ syncServer: SyncServer, declObjectId: UUID)
     

@@ -7,6 +7,7 @@
 
 import Foundation
 import SQLite
+import ServerShared
 
 // DeclaredObject's (see DeclaredObjectModel for the declared files).
 
@@ -39,6 +40,23 @@ class DeclaredObjectModel: DatabaseModel, DeclarableObjectBasics, Equatable {
         return lhs.id == rhs.id && lhs.compare(to: rhs)
     }
     
+    // Returns true iff the static or invariants parts of `self` and the fileInfo are the same.
+    func sameInvariants(fileInfo: FileInfo) -> Bool {
+        guard fileGroupUUID.uuidString == fileInfo.fileGroupUUID else {
+            return false
+        }
+        
+        guard objectType == fileInfo.objectType else {
+            return false
+        }
+
+        guard sharingGroupUUID.uuidString == fileInfo.sharingGroupUUID else {
+            return false
+        }
+        
+        return true
+    }
+    
     static func createTable(db: Connection) throws {
         try startCreateTable(db: db) { t in
             t.column(idField.description, primaryKey: true)
@@ -67,7 +85,7 @@ class DeclaredObjectModel: DatabaseModel, DeclarableObjectBasics, Equatable {
 }
 
 extension DeclaredObjectModel {
-    // Get a DeclarableObject to represent the DeclaredObjectModel and its component declared files. throws DatabaseModelError.noObject if no object found for declObjectId.
+    // Get a DeclarableObject to represent the DeclaredObjectModel and its component declared files. throws DatabaseModelError.noObject if no object found for declObjectId (i.e., fileGroupUUID).
     static func lookupDeclarableObject(declObjectId: UUID, db: Connection) throws -> some DeclarableObject {
         let models:[DeclaredObjectModel] = try DeclaredObjectModel.fetch(db: db, where: declObjectId == DeclaredObjectModel.fileGroupUUIDField.description)
         
