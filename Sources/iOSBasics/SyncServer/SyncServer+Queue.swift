@@ -39,6 +39,12 @@ extension SyncServer {
         switch declaredObjects.count {
         case 0:
             newFiles = true
+            
+            // New, locally created, declarations must have a non-nil object type.
+            guard let _ = declaration.objectType else {
+                throw SyncServerError.noObjectTypeForNewDeclaration
+            }
+            
             try DeclaredObjectModel.createModels(from: declaration, db: db)
             try DirectoryEntry.createEntries(for: declaration.declaredFiles, db: db)
             

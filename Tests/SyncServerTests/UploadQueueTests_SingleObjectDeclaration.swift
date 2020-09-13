@@ -532,6 +532,59 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         
         waitForUploadsToComplete(numberUploads: 1)
     }
+
+    func runQueueTest(withObjectType: Bool) throws {
+        let fileUUID1 = UUID()
+        
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+
+        let declarations = Set<FileDeclaration>([declaration1])
+        
+        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
+        let uploadables = Set<FileUpload>([uploadable1])
+        
+        var objectType: String?
+        if withObjectType {
+            objectType = "Foo"
+        }
+
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: objectType, sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
+        
+        do {
+            try syncServer.queue(declaration: testObject, uploads: uploadables)
+        } catch let error {
+            if withObjectType {
+                XCTFail("\(error)")
+            }
+            return
+        }
+        
+        if !withObjectType {
+            XCTFail()
+            return
+        }
+        
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == 0)
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == 0)
+        
+        guard let fileVersion = try DirectoryEntry.fileVersion(fileUUID: fileUUID1, db: database) else {
+            XCTFail()
+            return
+        }
+        XCTAssert(fileVersion == 0)
+    }
+    
+    func testQueueWithObjectTypeWorks() throws {
+        try runQueueTest(withObjectType: true)
+    }
+    
+    func testQueueWithoutObjectTypeFails() throws {
+        try runQueueTest(withObjectType: false)
+    }
 }
 
 extension UploadQueueTests_SingleObjectDeclaration: SyncServerCredentials {

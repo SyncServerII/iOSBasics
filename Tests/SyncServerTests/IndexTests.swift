@@ -83,7 +83,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
         }
         
         error = { _, error in
-            XCTFail()
+            XCTFail("\(String(describing: error))")
             exp.fulfill()
         }
         

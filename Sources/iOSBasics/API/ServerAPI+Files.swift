@@ -43,12 +43,17 @@ extension ServerAPI {
     
     struct File {
         enum Version {
+            struct FileGroup {
+                let fileGroupUUID: UUID
+                let objectType: String
+            }
+            
             case v0(
                 url:URL,
                 mimeType:MimeType,
                 checkSum:String,
                 changeResolverName: String?,
-                fileGroupUUID:String?,
+                fileGroup: FileGroup?,
                 appMetaData:AppMetaData?
             )
             
@@ -84,11 +89,12 @@ extension ServerAPI {
         let url:URL
         
         switch file.version {
-        case .v0(url: let v0URL, mimeType: let mimeType, checkSum: let checkSum, changeResolverName: let changeResolver, fileGroupUUID: let fileGroupUUID, appMetaData: let appMetaData):
-        
+        case .v0(url: let v0URL, mimeType: let mimeType, checkSum: let checkSum, changeResolverName: let changeResolver, fileGroup: let fileGroup, appMetaData: let appMetaData):
+                    
             url = v0URL
             uploadRequest.checkSum = checkSum
-            uploadRequest.fileGroupUUID = fileGroupUUID
+            uploadRequest.fileGroupUUID = fileGroup?.fileGroupUUID.uuidString
+            uploadRequest.objectType = fileGroup?.objectType
             uploadRequest.mimeType = mimeType.rawValue
             uploadRequest.changeResolverName = changeResolver
             uploadRequest.appMetaData = appMetaData

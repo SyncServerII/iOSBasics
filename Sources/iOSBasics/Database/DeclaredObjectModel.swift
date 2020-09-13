@@ -18,7 +18,7 @@ class DeclaredObjectModel: DatabaseModel, DeclarableObjectBasics, Equatable {
     var fileGroupUUID: UUID
     
     static let objectTypeField = Field("objectType", \M.objectType)
-    var objectType: String
+    var objectType: String?
     
     static let sharingGroupUUIDField = Field("sharingGroupUUID", \M.sharingGroupUUID)
     var sharingGroupUUID: UUID
@@ -26,7 +26,7 @@ class DeclaredObjectModel: DatabaseModel, DeclarableObjectBasics, Equatable {
     init(db: Connection,
         id: Int64! = nil,
         fileGroupUUID: UUID,
-        objectType: String,
+        objectType: String?,
         sharingGroupUUID: UUID) throws {
         self.db = db
         self.id = id

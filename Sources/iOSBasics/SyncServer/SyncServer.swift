@@ -53,7 +53,6 @@ public class SyncServer {
     let hashingManager: HashingManager
     private(set) var api:ServerAPI!
     let delegateDispatchQueue: DispatchQueue
-    let block = Synchronized()
     var _sharingGroups = [ServerShared.SharingGroup]()
 
     // `delegateDispatchQueue` is used to call `SyncServerDelegate` methods. (`SyncServerCredentials` methods may be called on any queue.)
@@ -84,9 +83,7 @@ public class SyncServer {
     // In this last regard, it is a best practice to do a v0 upload for all files in a declared object in it's first `queue` call. This way, having both v0 and vN files in the same queued batch *cannot* occur.
     public func queue<DECL: DeclarableObject, UPL:UploadableFile>
         (declaration: DECL, uploads: Set<UPL>) throws {
-        try block.sync {
-            try queueObject(declaration: declaration, uploads: uploads)
-        }
+        try queueObject(declaration: declaration, uploads: uploads)
     }
     
     /* This performs a variety of actions:
@@ -97,9 +94,7 @@ public class SyncServer {
         b) the `filesNeedingDownload` method can be called to determine any files needing downloading for the sharing group.
     */
     public func sync(sharingGroupUUID: UUID? = nil) throws {
-        try block.sync {
-            try syncHelper(sharingGroupUUID: sharingGroupUUID)
-        }
+        try syncHelper(sharingGroupUUID: sharingGroupUUID)
     }
     
     public func delete<DECL: DeclarableObject>(object: DECL) throws {

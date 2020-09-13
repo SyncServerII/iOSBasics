@@ -25,14 +25,10 @@ extension SyncServer: ServerAPIDelegate {
     }
     
     func uploadCompleted(_ delegated: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
-        block.sync {
-            uploadCompletedHelper(delegated, result: result)
-        }
+        uploadCompletedHelper(delegated, result: result)
     }
     
     func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
-        block.sync {
-            downloadCompletedHelper(delegated, result: result)
-        }
+        downloadCompletedHelper(delegated, result: result)
     }
 }

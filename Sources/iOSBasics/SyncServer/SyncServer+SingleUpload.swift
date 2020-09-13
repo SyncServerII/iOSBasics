@@ -31,7 +31,12 @@ extension SyncServer {
                 appMetaData = AppMetaData(contents: appMetaDataContents)
             }
             
-            fileVersion = .v0(url: localURL, mimeType: declaredFile.mimeType, checkSum: checkSum, changeResolverName: declaredFile.changeResolverName, fileGroupUUID: declaration.fileGroupUUID.uuidString, appMetaData: appMetaData)
+            guard let objectType = declaration.objectType else {
+                throw SyncServerError.internalError("No object type in v0 upload")
+            }
+            
+            let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: declaration.fileGroupUUID, objectType: objectType)
+            fileVersion = .v0(url: localURL, mimeType: declaredFile.mimeType, checkSum: checkSum, changeResolverName: declaredFile.changeResolverName, fileGroup: fileGroup, appMetaData: appMetaData)
         }
         else {
             fileVersion = .vN(url: localURL)

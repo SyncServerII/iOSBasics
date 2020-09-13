@@ -118,7 +118,7 @@ public protocol DeclarableObjectBasics {
     
     // The type of object that this collection of files is representing.
     // E.g., a Neebla image or Neebla URL as above.
-    var objectType: String { get }
+    var objectType: String? { get }
 
     // An id for the group of users that have access to this Object
     var sharingGroupUUID: UUID { get }

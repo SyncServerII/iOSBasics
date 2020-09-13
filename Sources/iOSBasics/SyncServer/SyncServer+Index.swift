@@ -52,7 +52,12 @@ extension SyncServer {
         }
     }
     
+    // No effect of calling if no elements in `fileIndex`.
     func upsert(fileIndex: [FileInfo], sharingGroupUUID: UUID) throws {
+        guard fileIndex.count > 0 else {
+            return
+        }
+        
         let fileGroups = Partition.array(fileIndex, using: \.fileGroupUUID)
         
         for fileGroup in fileGroups {
