@@ -26,8 +26,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
     var uploadStarted: ((SyncServer, _ deferredUploadId:Int64) -> ())?
     var uploadCompleted: ((SyncServer, UploadFileResult) -> ())?
     var error:((SyncServer, Error?) -> ())?
-    var deferredUploadsCompleted: ((SyncServer, _ count: Int)-> ())?
-    
+    var deferredCompleted: ((SyncServer, DeferredOperation, _ numberCompleted: Int) -> ())?
     var user: TestUser!
     var database: Connection!
     var config:Configuration!
@@ -133,7 +132,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         try syncServer.sync()
 
         let exp = expectation(description: "exp")
-        deferredUploadsCompleted = { _, _ in
+        deferredCompleted = { _, operation, count in
             exp.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -264,7 +263,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         try syncServer.sync()
 
         let exp = expectation(description: "exp")
-        deferredUploadsCompleted = { _, _ in
+        deferredCompleted = { _, operation, count in
             exp.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -349,7 +348,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         try syncServer.sync()
 
         let exp = expectation(description: "exp")
-        deferredUploadsCompleted = { _, _ in
+        deferredCompleted = { _, operation, count in
             exp.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -365,7 +364,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         try syncServer.sync()
 
         let exp2 = expectation(description: "exp2")
-        deferredUploadsCompleted = { _, _ in
+        deferredCompleted = { _, operation, count in
             exp2.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -449,10 +448,7 @@ extension UploadQueueTests_Sync: SyncServerDelegate {
         self.error?(syncServer, error)
     }
 
-    func syncCompleted(_ syncServer: SyncServer) {
-    }
-    
-    func syncCompleted(_ syncServer: SyncServer, sharingGroupUUID: UUID, index: [FileInfo]) {
+    func syncCompleted(_ syncServer: SyncServer, result: SyncResult) {
     }
     
     func downloadCompleted(_ syncServer: SyncServer, declObjectId: UUID) {
@@ -474,7 +470,10 @@ extension UploadQueueTests_Sync: SyncServerDelegate {
         uploadCompleted?(syncServer, result)
     }
     
-    func deferredUploadsCompleted(_ syncServer: SyncServer, numberCompleted: Int) {
-        deferredUploadsCompleted?(syncServer, numberCompleted)
+    func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int) {
+        deferredCompleted?(syncServer, operation, numberCompleted)
+    }
+    
+    func deletionCompleted(_ syncServer: SyncServer) {
     }
 }

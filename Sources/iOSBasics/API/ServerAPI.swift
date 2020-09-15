@@ -24,6 +24,7 @@ class ServerAPI {
         case networkingHashMismatch
         case badUploadIndex
         case badURLParameters
+        case badUUID
     }
     
     let networking: Networking

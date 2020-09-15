@@ -14,15 +14,22 @@ public protocol SyncServerCredentials: AnyObject {
     func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials
 }
 
+public enum SyncResult {
+    case noIndex
+    case index(sharingGroupUUID: UUID, index: [FileInfo])
+}
+
+public enum DeferredOperation {
+    case upload
+    case deletion
+}
+
 // These methods are all called on the `delegateDispatchQueue` passed to the SyncServer constructor.
 public protocol SyncServerDelegate: AnyObject {
     func error(_ syncServer: SyncServer, error: Error?)
     
-    // Called after the `sync` method is successful, and a nil sharingGroupUUID was given.
-    func syncCompleted(_ syncServer: SyncServer)
-    
-    // After the `sync` method is successful, if a sharingGroupUUID was given, this gives the resulting file index for that sharing group.
-    func syncCompleted(_ syncServer: SyncServer, sharingGroupUUID: UUID, index: [FileInfo])
+    // Called after the `sync` method is successful. If nil sharing group was given, the result is .noResult. If non-nil sharing group, the index is given.
+    func syncCompleted(_ syncServer: SyncServer, result: SyncResult)
     
     func downloadCompleted(_ syncServer: SyncServer, declObjectId: UUID)
     
@@ -37,9 +44,12 @@ public protocol SyncServerDelegate: AnyObject {
     // Upload started successfully. Request was sent to server.
     func uploadStarted(_ syncServer: SyncServer, deferredUploadId:Int64)
     
-    // Request to server for upload completed successfully.
+    // Request to server for an upload completed successfully.
     func uploadCompleted(_ syncServer: SyncServer, result: UploadFileResult)
     
-    // Called when vN deferred upload(s), successfully completed, is/are detected.
-    func deferredUploadsCompleted(_ syncServer: SyncServer, numberCompleted: Int)
+    // Called when vN deferred upload(s), or deferred deletions, successfully completed, is/are detected.
+    func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int)
+
+    // Request to server for upload deletion completed successfully.
+    func deletionCompleted(_ syncServer: SyncServer)
 }

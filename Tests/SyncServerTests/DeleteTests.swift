@@ -1,8 +1,8 @@
 //
-//  IndexTests.swift
+//  DeleteTests.swift
 //  SyncServerTests
 //
-//  Created by Christopher G Prince on 9/11/20.
+//  Created by Christopher G Prince on 9/13/20.
 //
 
 import XCTest
@@ -13,7 +13,7 @@ import iOSShared
 import iOSSignIn
 import ChangeResolvers
 
-class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
+class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
     var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
@@ -26,6 +26,9 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
     var uploadCompleted: ((SyncServer, UploadFileResult) -> ())?
     var error:((SyncServer, Error?) -> ())?
     var syncCompleted: ((SyncServer, SyncResult) -> ())?
+    var deletionCompleted: ((SyncServer) -> ())?
+    var deferredCompleted: ((SyncServer, DeferredOperation, _ numberCompleted: Int) -> ())?
+
     var user: TestUser!
     var database: Connection!
     var config:Configuration!
@@ -66,148 +69,120 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
         XCTAssert(filePaths.count == 0, "\(filePaths.count)")
     }
 
-    func testIndexCalledDirectly() throws {
-        let sharingGroupUUID = try getSharingGroupUUID()
-
-        let exp = expectation(description: "exp")
-        
-        syncCompleted = { _, result in
-            guard case .index(let uuid, let index) = result else {
-                XCTFail()
-                exp.fulfill()
-                return
-            }
-            
-            XCTAssert(sharingGroupUUID == uuid)
-            XCTAssert(index.count == 0)
-            guard let result = try? SharingEntry.fetchSingleRow(db: self.database, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID) else {
-                XCTFail()
-                exp.fulfill()
-                return
-            }
-            
-            XCTAssert(result.sharingGroupUUID == sharingGroupUUID)
-            exp.fulfill()
-        }
-        
-        error = { _, error in
-            XCTFail("\(String(describing: error))")
-            exp.fulfill()
-        }
-        
-        syncServer.getIndex(sharingGroupUUID: sharingGroupUUID)
-
-        waitForExpectations(timeout: 10, handler: nil)
-    }
-    
-    func testIndexCalledFromSyncServer() throws {
-        let sharingGroupUUID = try getSharingGroupUUID()
-
-        let exp = expectation(description: "exp")
-        
-        syncCompleted = { _, result in
-            guard case .index(let uuid, let index) = result else {
-                XCTFail()
-                exp.fulfill()
-                return
-            }
-            
-            XCTAssert(sharingGroupUUID == uuid)
-            XCTAssert(index.count == 0)
-            guard let result = try? SharingEntry.fetchSingleRow(db: self.database, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID) else {
-                XCTFail()
-                exp.fulfill()
-                return
-            }
-            
-            XCTAssert(result.sharingGroupUUID == sharingGroupUUID)
-            exp.fulfill()
-        }
-        
-        error = { _, error in
-            XCTFail()
-            exp.fulfill()
-        }
-        
-        try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
-
-        waitForExpectations(timeout: 10, handler: nil)
-    }
-    
-    func uploadExampleTextFile(sharingGroupUUID: UUID) throws -> ObjectDeclaration {
+    func testDeletionWithUnknownDeclaredObjectFails() throws {
         let fileUUID1 = UUID()
-        
+        let sharingGroupUUID = UUID()
+
         let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration1])
+        
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
+        
+        do {
+            try syncServer.delete(object: testObject)
+        } catch {
+            return
+        }
+        XCTFail()
+    }
+    
+    func runDeletion(withKnownDeclaredObjectButAllUnknownDeclaredFiles: Bool) throws {
+        let fileUUID1 = UUID()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declarations = Set<FileDeclaration>([declaration1])
+        
+        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
 
         let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
         let uploadables = Set<FileUpload>([uploadable1])
-
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         try syncServer.queue(declaration: testObject, uploads: uploadables)
-        
         waitForUploadsToComplete(numberUploads: 1)
+
+        let declaration2 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declarations2 = Set<FileDeclaration>([declaration2])
         
-        return testObject
-    }
-    
-    func testIndexCalledFromSyncServerWithOneFile() throws {
-        let sharingGroupUUID = try getSharingGroupUUID()
+        let testObject2 = ObjectDeclaration(fileGroupUUID: testObject.fileGroupUUID, objectType: testObject.objectType, sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations2)
         
-        let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
-        guard declaration.declaredFiles.count == 1,
-            let declaredFile = declaration.declaredFiles.first else {
+        let object: ObjectDeclaration
+        if withKnownDeclaredObjectButAllUnknownDeclaredFiles {
+            object = testObject2
+        }
+        else {
+            object = testObject
+        }
+        
+        do {
+            try syncServer.delete(object: object)
+        } catch let error {
+            if !withKnownDeclaredObjectButAllUnknownDeclaredFiles {
+                XCTFail("\(error)")
+            }
+            return
+        }
+        
+        if withKnownDeclaredObjectButAllUnknownDeclaredFiles {
             XCTFail()
             return
         }
 
         let exp = expectation(description: "exp")
-        
-        syncCompleted = { _, result in
-            guard case .index(let uuid, let index) = result else {
-                XCTFail()
-                exp.fulfill()
-                return
-            }
-            
-            XCTAssert(sharingGroupUUID == uuid)
-            guard index.count == 1 else {
-                XCTFail()
-                exp.fulfill()
-                return
-            }
-            
-            XCTAssert(declaredFile.uuid.uuidString == index[0].fileUUID)
-            
-            guard let result = try? SharingEntry.fetchSingleRow(db: self.database, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID) else {
-                XCTFail()
-                exp.fulfill()
-                return
-            }
-            
-            XCTAssert(result.sharingGroupUUID == sharingGroupUUID)
+        deletionCompleted = { _ in
             exp.fulfill()
         }
-        
-        error = { _, error in
-            XCTFail()
-            exp.fulfill()
-        }
-        
-        try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
-
         waitForExpectations(timeout: 10, handler: nil)
+        
+        // Wait for some period of time for the deferred deletion to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+
+        let exp2 = expectation(description: "exp2")
+        deferredCompleted = { _, operation, count in
+            XCTAssert(operation == .deletion)
+            XCTAssert(count == 1)
+            exp2.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Ensure that the DirectoryEntry for the file is marked as deleted.
+        guard let entry = try DirectoryEntry.fetchSingleRow(db: database, where: DirectoryEntry.fileUUIDField.description == fileUUID1) else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(entry.deletedLocally)
+        XCTAssert(entry.deletedOnServer)
+    }
+    
+    func testDeletionWithKnownDeclaredObjectButAllUnknownDeclaredFilesFails() throws {
+        try runDeletion(withKnownDeclaredObjectButAllUnknownDeclaredFiles: true)
+    }
+    
+    func testDeletionWithKnownDeclaredObjectWorks() throws {
+        try runDeletion(withKnownDeclaredObjectButAllUnknownDeclaredFiles: false)
+    }
+    
+    func testDeletionWithKnownDeclaredObjectButFewerDeclaredFilesFails() {
+    }
+    
+    func testDeletionWithKnownDeclaredObjectButAdditionalDeclaredFilesFails() {
+    }
+    
+    func testDeletionOfAlreadyDeletedFails() {
     }
 }
 
-extension IndexTests: SyncServerCredentials {
+extension DeleteTests: SyncServerCredentials {
     func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials {
         return user.credentials
     }
 }
 
-extension IndexTests: SyncServerDelegate {
+extension DeleteTests: SyncServerDelegate {
     func error(_ syncServer: SyncServer, error: Error?) {
         XCTFail("\(String(describing: error))")
         self.error?(syncServer, error)
@@ -237,8 +212,10 @@ extension IndexTests: SyncServerDelegate {
     }
     
     func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int) {
+        deferredCompleted?(syncServer, operation, numberCompleted)
     }
     
     func deletionCompleted(_ syncServer: SyncServer) {
+        deletionCompleted?(syncServer)
     }
 }

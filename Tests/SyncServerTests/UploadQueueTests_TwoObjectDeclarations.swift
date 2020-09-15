@@ -17,7 +17,7 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
     var uploadQueued: ((SyncServer, _ syncObjectId: UUID) -> ())?
     var uploadStarted: ((SyncServer, _ deferredUploadId:Int64) -> ())?
     var uploadCompleted: ((SyncServer, UploadFileResult) -> ())?
-    var deferredUploadsCompleted: ((SyncServer, _ count: Int)-> ())?
+    var deferredCompleted: ((SyncServer, DeferredOperation, _ numberCompleted: Int) -> ())?
     var error:((SyncServer, Error?) -> ())?
     var downloadCompleted: ((SyncServer, _ declObjectId: UUID) -> ())?
     var user: TestUser!
@@ -188,7 +188,8 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
         try syncServer.sync()
 
         let exp = expectation(description: "exp")
-        deferredUploadsCompleted = { _, numberCompleted in
+        deferredCompleted = { _, operation, numberCompleted in
+            XCTAssert(operation == .upload)
             XCTAssert(numberCompleted == 2)
             exp.fulfill()
         }
@@ -299,7 +300,8 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
         try syncServer.sync()
 
         let exp = expectation(description: "exp")
-        deferredUploadsCompleted = { _, numberCompleted in
+        deferredCompleted = { _, operation, numberCompleted in
+            XCTAssert(operation == .upload)
             XCTAssert(numberCompleted == 1)
             exp.fulfill()
         }
@@ -331,10 +333,7 @@ extension UploadQueueTests_TwoObjectDeclarations: SyncServerDelegate {
         self.error?(syncServer, error)
     }
 
-    func syncCompleted(_ syncServer: SyncServer) {
-    }
-    
-    func syncCompleted(_ syncServer: SyncServer, sharingGroupUUID: UUID, index: [FileInfo]) {
+    func syncCompleted(_ syncServer: SyncServer, result: SyncResult) {
     }
     
     func downloadCompleted(_ syncServer: SyncServer, declObjectId: UUID) {
@@ -357,7 +356,10 @@ extension UploadQueueTests_TwoObjectDeclarations: SyncServerDelegate {
         uploadCompleted?(syncServer, result)
     }
     
-    func deferredUploadsCompleted(_ syncServer: SyncServer, numberCompleted: Int) {
-        deferredUploadsCompleted?(syncServer, numberCompleted)
+    func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int) {
+        deferredCompleted?(syncServer, operation, numberCompleted)
+    }
+    
+    func deletionCompleted(_ syncServer: SyncServer) {
     }
 }

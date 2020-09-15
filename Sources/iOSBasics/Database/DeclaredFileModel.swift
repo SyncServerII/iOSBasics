@@ -69,8 +69,14 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
         guard cloudStorageType.rawValue == fileInfo.cloudStorageType else {
             return false
         }
-
-        #warning("Should have comparisons for appMetaData and for changeResolverName")
+        
+        guard appMetaData == fileInfo.appMetaData else {
+            return false
+        }
+        
+        guard changeResolverName == fileInfo.changeResolverName else {
+            return false
+        }
         
         return true
     }
@@ -164,8 +170,7 @@ extension DeclaredFileModel {
             return entry
         }
         else {
-            #warning("TODO: Need to add in appMetaData and changeResolverName once those are in FileInfo.")
-            let entry = try DeclaredFileModel(db: db, fileGroupUUID: fileGroupUUID, uuid: fileUUID, mimeType: mimeType, cloudStorageType: cloudStorageType, appMetaData: nil, changeResolverName: nil)
+            let entry = try DeclaredFileModel(db: db, fileGroupUUID: fileGroupUUID, uuid: fileUUID, mimeType: mimeType, cloudStorageType: cloudStorageType, appMetaData: fileInfo.appMetaData, changeResolverName: fileInfo.changeResolverName)
             try entry.insert()
             return entry
         }

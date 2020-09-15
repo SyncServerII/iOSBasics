@@ -42,7 +42,7 @@ protocol APITests: ServerAPIDelegator {
     var error:((SyncServer, Error?) -> ())? { get set }
     var uploadCompleted: ((SyncServer, UploadFileResult) -> ())? { get set }
 }
-
+    
 extension APITests where Self: XCTestCase {
     // Credentials/users
     
@@ -192,16 +192,28 @@ extension APITests where Self: XCTestCase {
         return sharingGroupUUID
     }
     
-    func waitForUploadsToComplete(numberUploads: Int, v0Upload: Bool = true) {
+    func waitForUploadsToComplete(numberUploads: Int, gone: Bool = false, v0Upload: Bool = true) {
         var count = 0
         let exp = expectation(description: "exp")
+        
         uploadCompleted = { _, result in
             count += 1
-
+            
             switch result {
             case .gone:
-                XCTFail()
+                guard gone else {
+                    XCTFail()
+                    exp.fulfill()
+                    return
+                }
+                
             case .success(_, let uploadResult):
+                guard !gone else {
+                    XCTFail()
+                    exp.fulfill()
+                    return
+                }
+                
                 if count == numberUploads {
                     if v0Upload {
                         XCTAssert(uploadResult.uploadsFinished == .v0UploadsFinished, "\(uploadResult.uploadsFinished)")
@@ -222,6 +234,7 @@ extension APITests where Self: XCTestCase {
                 exp.fulfill()
             }
         }
+        
         error = { _, result in
             XCTFail()
             exp.fulfill()

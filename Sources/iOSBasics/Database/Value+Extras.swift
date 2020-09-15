@@ -81,6 +81,34 @@ extension UploadFileTracker.Status: Value {
     }
 }
 
+extension UploadDeletionTracker.Status: Value {
+    public static var declaredDatatype: String {
+        return "TEXT"
+    }
+    
+    public static func fromDatatypeValue(_ value: String) -> UploadDeletionTracker.Status {
+        return UploadDeletionTracker.Status(rawValue: value)!
+    }
+    
+    public var datatypeValue: String {
+        return self.rawValue
+    }
+}
+
+extension UploadDeletionTracker.DeletionType: Value {
+    public static var declaredDatatype: String {
+        return "TEXT"
+    }
+    
+    public static func fromDatatypeValue(_ value: String) -> UploadDeletionTracker.DeletionType {
+        return UploadDeletionTracker.DeletionType(rawValue: value)!
+    }
+    
+    public var datatypeValue: String {
+        return self.rawValue
+    }
+}
+
 extension UUID: Value {
     public static var declaredDatatype: String {
         return "TEXT"

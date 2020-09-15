@@ -599,10 +599,7 @@ extension UploadQueueTests_SingleObjectDeclaration: SyncServerDelegate {
         self.error?(syncServer, error)
     }
 
-    func syncCompleted(_ syncServer: SyncServer) {
-    }
-    
-    func syncCompleted(_ syncServer: SyncServer, sharingGroupUUID: UUID, index: [FileInfo]) {
+    func syncCompleted(_ syncServer: SyncServer, result: SyncResult) {
     }
     
     func downloadCompleted(_ syncServer: SyncServer, declObjectId: UUID) {
@@ -624,6 +621,9 @@ extension UploadQueueTests_SingleObjectDeclaration: SyncServerDelegate {
         uploadCompleted?(syncServer, result)
     }
     
-    func deferredUploadsCompleted(_ syncServer: SyncServer, numberCompleted: Int) {
+    func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int) {
+    }
+    
+    func deletionCompleted(_ syncServer: SyncServer) {
     }
 }

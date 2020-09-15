@@ -39,6 +39,7 @@ public extension DeclarableFile {
             self.changeResolverName == other.changeResolverName
     }
     
+    // Returns true iff objects are the same.
     static func compare<FILE1: DeclarableFile, FILE2: DeclarableFile>(
         first: Set<FILE1>, second: Set<FILE2>) -> Bool {
         let firstUUIDs = Set<UUID>(first.map { $0.uuid })
@@ -124,7 +125,8 @@ public protocol DeclarableObjectBasics {
     var sharingGroupUUID: UUID { get }
 }
 
-extension DeclarableObjectBasics {
+public extension DeclarableObjectBasics {
+    // Returns true iff objects are the same.
     func compare<BASICS: DeclarableObjectBasics>(to other: BASICS) -> Bool {
         return self.fileGroupUUID == other.fileGroupUUID &&
             self.objectType == other.objectType &&
@@ -149,6 +151,7 @@ extension DeclarableObject {
         return fileGroupUUID
     }
     
+    // Returns true iff objects are the same.
     func declCompare<OBJ: DeclarableObject>(to other: OBJ) -> Bool {
         return self.compare(to: other) &&
             DeclaredFile.compare(first: self.declaredFiles, second: other.declaredFiles)

@@ -16,6 +16,8 @@ enum SyncServerError: Error {
     case noObjectTypeForNewDeclaration
     case unknownSharingGroup
     case attemptToQueueAFileThatHasNotBeenDownloaded
+    case attemptToDeleteObjectWithInvalidDeclaration
+    case attemptToDeleteAnAlreadyDeletedFile
     
     static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
@@ -99,6 +101,18 @@ enum SyncServerError: Error {
             
         case attemptToQueueAFileThatHasNotBeenDownloaded:
             guard case .attemptToQueueAFileThatHasNotBeenDownloaded = rhs else {
+                return false
+            }
+            return true
+
+        case attemptToDeleteObjectWithInvalidDeclaration:
+            guard case .attemptToDeleteObjectWithInvalidDeclaration = rhs else {
+                return false
+            }
+            return true
+
+        case attemptToDeleteAnAlreadyDeletedFile:
+            guard case .attemptToDeleteAnAlreadyDeletedFile = rhs else {
                 return false
             }
             return true

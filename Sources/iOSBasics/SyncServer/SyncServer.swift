@@ -93,27 +93,14 @@ public class SyncServer {
         a) the `sharingGroups` property has been updated
         b) the `filesNeedingDownload` method can be called to determine any files needing downloading for the sharing group.
     4) If a nil sharingGroupUUID is given, this fetches all sharing groups for this user from the server.
+    Each call to this method does make at least one request (an `index` request) to the server. Therefore, client app developers should not make a call to this method too often. For example, calling it when a client app transitions to the foreground, and/or when a user refreshes a sharing group in their UI.
     */
     public func sync(sharingGroupUUID: UUID? = nil) throws {
         try syncHelper(sharingGroupUUID: sharingGroupUUID)
     }
     
     public func delete<DECL: DeclarableObject>(object: DECL) throws {
-    }
-    
-    // MARK: Unqueued requests-- these will fail if they involve a file or other object currently queued for upload.
-    
-    public func uploadAppMetaData(file: UUID) {
-    }
-
-    public func createSharingGroup(sharingGroup: UUID, sharingGroupName: String? = nil) {
-    }
-    
-    public func updateSharingGroup(sharingGroup: UUID, newSharingGroupName: String) {
-    }
-    
-    // Remove the current user from the sharing group.
-    public func removeFromSharingGroup(sharingGroup: UUID) {
+        try deleteHelper(object: object)
     }
     
     // MARK: Download
@@ -133,10 +120,22 @@ public class SyncServer {
     }
     
     // MARK: Sharing
-
+    
     // The sharing groups in which the signed in user is a member.
     public var sharingGroups: [ServerShared.SharingGroup] {
         return _sharingGroups
+    }
+    
+    // MARK: Unqueued requests-- these will fail if they involve a file or other object currently queued for upload or deletion. They will also fail if the network is offline.
+
+    public func createSharingGroup(sharingGroup: UUID, sharingGroupName: String? = nil) {
+    }
+    
+    public func updateSharingGroup(sharingGroup: UUID, newSharingGroupName: String) {
+    }
+    
+    // Remove the current user from the sharing group.
+    public func removeFromSharingGroup(sharingGroup: UUID) {
     }
     
     public func createSharingInvitation(withPermission permission:ServerShared.Permission, sharingGroupUUID: String, numberAcceptors: UInt, allowSharingAcceptance: Bool = true, completion:((_ invitationCode:String?, Error?)->(Void))?) {

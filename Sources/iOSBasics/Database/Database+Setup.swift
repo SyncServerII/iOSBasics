@@ -19,5 +19,6 @@ extension Database {
         try UploadObjectTracker.createTable(db: db)
         try WorkingParameters.createTable(db: db)
         try WorkingParameters.setup(db: db)
+        try UploadDeletionTracker.createTable(db: db)
     }
 }

@@ -226,9 +226,9 @@ extension DirectoryEntry {
         return true
     }
     
-    static func anyFileIsDeleted(declaredModels: [DeclaredFileModel], db: Connection) throws -> Bool {
-        for file in declaredModels {
-            guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where: file.uuid == DirectoryEntry.fileUUIDField.description) else {
+    static func anyFileIsDeleted(fileUUIDs: [UUID], db: Connection) throws -> Bool {
+        for fileUUID in fileUUIDs {
+            guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where: fileUUID == DirectoryEntry.fileUUIDField.description) else {
                 throw DatabaseModelError.noObject
             }
             
@@ -260,7 +260,6 @@ extension DirectoryEntry {
         }
         else {
             // Creation of a DirectoryEntry for a file not yet known to the local client.
-            
             guard let sharingGroupUUIDString = fileInfo.sharingGroupUUID,
                 let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString) else {
                 throw DatabaseModelError.invalidUUID

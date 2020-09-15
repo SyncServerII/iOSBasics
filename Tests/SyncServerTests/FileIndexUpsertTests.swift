@@ -113,7 +113,8 @@ class FileIndexUpsertTests: XCTestCase {
         XCTAssert(declaredFile.mimeType.rawValue == fileInfo.mimeType)
         XCTAssert(declaredFile.cloudStorageType.rawValue == fileInfo.cloudStorageType)
         XCTAssert(declaredFile.fileGroupUUID == fileGroupUUID)
-        #warning("TODO: Add expectations about changeResolverName and appMetaData once these are coming back from the server.")
+        XCTAssert(declaredFile.changeResolverName == fileInfo.changeResolverName)
+        XCTAssert(declaredFile.appMetaData == fileInfo.appMetaData)
 
         guard let declaredObject = try DeclaredObjectModel.fetchSingleRow(db: database, where: DeclaredObjectModel.fileGroupUUIDField.description == fileGroupUUID) else {
             XCTFail()

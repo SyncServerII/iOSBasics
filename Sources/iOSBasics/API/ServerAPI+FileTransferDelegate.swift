@@ -96,7 +96,14 @@ extension ServerAPI: FileTransferDelegate {
         if statusCode == HTTPStatus.gone.rawValue,
             let goneReasonRaw = responseBody?[GoneReason.goneReasonKey] as? String,
             let goneReason = GoneReason(rawValue: goneReasonRaw) {
-            delegate.uploadCompleted(self, result: .success(UploadFileResult.gone(goneReason)))
+            
+            guard let fileUUIDString = file.fileUUID,
+                let fileUUID = UUID(uuidString: fileUUIDString) else {
+                delegate.uploadCompleted(self, result: .failure(ServerAPIError.badUUID))
+                return
+            }
+            
+            delegate.uploadCompleted(self, result: .success(UploadFileResult.gone(fileUUID: fileUUID, uploadObjectTrackerId: file.trackerId, goneReason)))
             return
         }
 

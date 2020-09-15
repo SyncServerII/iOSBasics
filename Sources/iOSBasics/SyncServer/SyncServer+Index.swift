@@ -26,7 +26,7 @@ extension SyncServer {
                 guard let sharingGroupUUID = sharingGroupUUID else {
                     self.delegator { [weak self] delegate in
                         guard let self = self else { return }
-                        delegate.syncCompleted(self)
+                        delegate.syncCompleted(self, result: .noIndex)
                     }
                     return
                 }
@@ -51,7 +51,7 @@ extension SyncServer {
 
                 self.delegator { [weak self] delegate in
                     guard let self = self else { return }
-                    delegate.syncCompleted(self, sharingGroupUUID: sharingGroupUUID, index: fileIndex)
+                    delegate.syncCompleted(self, result: .index(sharingGroupUUID: sharingGroupUUID, index: fileIndex))
                 }
                 
             case .failure(let error):

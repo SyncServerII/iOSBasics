@@ -14,14 +14,22 @@ extension SyncServer {
         
         try triggerUploads()
 
-        // `checkOnDeferredUploads` does networking calls *synchronously*. So run it asynchronously as to not block the caller for a long period of time.
+        // `checkOnDeferredUploads` and `checkOnDeferredDeletions` do networking calls *synchronously*. So run them asynchronously as to not block the caller for a long period of time.
         DispatchQueue.global().async {
             do {
-                let count = try self.checkOnDeferredUploads()
-                if count > 0 {
+                let count1 = try self.checkOnDeferredUploads()
+                if count1 > 0 {
                     self.delegator { [weak self] delegate in
                         guard let self = self else { return }
-                        delegate.deferredUploadsCompleted(self, numberCompleted: count)
+                        delegate.deferredCompleted(self, operation: .upload, numberCompleted: count1)
+                    }
+                }
+                
+                let count2 = try self.checkOnDeferredDeletions()
+                if count2 > 0 {
+                    self.delegator { [weak self] delegate in
+                        guard let self = self else { return }
+                        delegate.deferredCompleted(self, operation: .deletion, numberCompleted: count2)
                     }
                 }
             } catch let error {

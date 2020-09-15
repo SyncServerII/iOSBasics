@@ -69,7 +69,8 @@ extension SyncServer {
                         "DirectoryEntry missing.")
             }
             
-            guard !(try DirectoryEntry.anyFileIsDeleted(declaredModels: declaredFilesInDatabase, db: db)) else {
+            let fileUUIDs = declaredFilesInDatabase.map { $0.uuid }
+            guard !(try DirectoryEntry.anyFileIsDeleted(fileUUIDs: fileUUIDs, db: db)) else {
                 throw SyncServerError.attemptToQueueADeletedFile
             }
             
