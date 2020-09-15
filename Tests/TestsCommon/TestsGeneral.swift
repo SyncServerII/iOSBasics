@@ -40,7 +40,7 @@ extension TestFiles {
 protocol APITests: ServerAPIDelegator {
     var api:ServerAPI! { get }
     var error:((SyncServer, Error?) -> ())? { get set }
-    var uploadCompleted: ((SyncServer, UploadFileResult) -> ())? { get set }
+    var uploadCompleted: ((SyncServer, UploadResult) -> ())? { get set }
 }
     
 extension APITests where Self: XCTestCase {
@@ -199,7 +199,7 @@ extension APITests where Self: XCTestCase {
         uploadCompleted = { _, result in
             count += 1
             
-            switch result {
+            switch result.uploadType {
             case .gone:
                 guard gone else {
                     XCTFail()
@@ -207,26 +207,11 @@ extension APITests where Self: XCTestCase {
                     return
                 }
                 
-            case .success(_, let uploadResult):
+            case .success:
                 guard !gone else {
                     XCTFail()
                     exp.fulfill()
                     return
-                }
-                
-                if count == numberUploads {
-                    if v0Upload {
-                        XCTAssert(uploadResult.uploadsFinished == .v0UploadsFinished, "\(uploadResult.uploadsFinished)")
-                    }
-                    else {
-                        XCTAssert(uploadResult.uploadsFinished == .vNUploadsTransferPending, "\(uploadResult.uploadsFinished)")
-                        XCTAssertNotNil(uploadResult.deferredUploadId)
-                    }
-                }
-
-                if v0Upload {
-                    XCTAssertNotNil(uploadResult.creationDate)
-                    XCTAssertNil(uploadResult.deferredUploadId)
                 }
             }
             
@@ -239,6 +224,7 @@ extension APITests where Self: XCTestCase {
             XCTFail()
             exp.fulfill()
         }
+        
         waitForExpectations(timeout: 10, handler: nil)
     }
 }

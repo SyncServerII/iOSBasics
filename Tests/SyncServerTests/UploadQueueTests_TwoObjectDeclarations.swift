@@ -16,7 +16,7 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
     var syncServer: SyncServer!
     var uploadQueued: ((SyncServer, _ syncObjectId: UUID) -> ())?
     var uploadStarted: ((SyncServer, _ deferredUploadId:Int64) -> ())?
-    var uploadCompleted: ((SyncServer, UploadFileResult) -> ())?
+    var uploadCompleted: ((SyncServer, UploadResult) -> ())?
     var deferredCompleted: ((SyncServer, DeferredOperation, _ numberCompleted: Int) -> ())?
     var error:((SyncServer, Error?) -> ())?
     var downloadCompleted: ((SyncServer, _ declObjectId: UUID) -> ())?
@@ -352,7 +352,7 @@ extension UploadQueueTests_TwoObjectDeclarations: SyncServerDelegate {
         uploadStarted?(syncServer, deferredUploadId)
     }
     
-    func uploadCompleted(_ syncServer: SyncServer, result: UploadFileResult) {
+    func uploadCompleted(_ syncServer: SyncServer, result: UploadResult) {
         uploadCompleted?(syncServer, result)
     }
     

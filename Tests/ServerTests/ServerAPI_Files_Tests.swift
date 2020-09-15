@@ -22,7 +22,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
     var user: TestUser!
     var database: Connection!
     var error:((SyncServer, Error?) -> ())?
-    var uploadCompleted: ((SyncServer, UploadFileResult) -> ())?
+    var uploadCompleted: ((SyncServer, UploadResult) -> ())?
     
     override func setUpWithError() throws {
         try super.setUpWithError()

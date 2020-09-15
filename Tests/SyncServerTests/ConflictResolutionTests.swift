@@ -23,7 +23,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
     var syncServer: SyncServer!
     var uploadQueued: ((SyncServer, _ syncObjectId: UUID) -> ())?
     var uploadStarted: ((SyncServer, _ deferredUploadId:Int64) -> ())?
-    var uploadCompleted: ((SyncServer, UploadFileResult) -> ())?
+    var uploadCompleted: ((SyncServer, UploadResult) -> ())?
     var error:((SyncServer, Error?) -> ())?
     var syncCompleted: ((SyncServer, SyncResult) -> ())?
     var deletionCompleted: ((SyncServer) -> ())?
@@ -233,7 +233,7 @@ extension ConflictResolutionTests: SyncServerDelegate {
         uploadStarted?(syncServer, deferredUploadId)
     }
     
-    func uploadCompleted(_ syncServer: SyncServer, result: UploadFileResult) {
+    func uploadCompleted(_ syncServer: SyncServer, result: UploadResult) {
         uploadCompleted?(syncServer, result)
     }
     

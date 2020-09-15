@@ -15,7 +15,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
     var syncServer: SyncServer!
     var uploadQueued: ((SyncServer, _ syncObjectId: UUID) -> ())?
     var uploadStarted: ((SyncServer, _ deferredUploadId:Int64) -> ())?
-    var uploadCompleted: ((SyncServer, UploadFileResult) -> ())?
+    var uploadCompleted: ((SyncServer, UploadResult) -> ())?
     var error:((SyncServer, Error?) -> ())?
     var user: TestUser!
     var database: Connection!
@@ -617,7 +617,7 @@ extension UploadQueueTests_SingleObjectDeclaration: SyncServerDelegate {
         uploadStarted?(syncServer, deferredUploadId)
     }
     
-    func uploadCompleted(_ syncServer: SyncServer, result: UploadFileResult) {
+    func uploadCompleted(_ syncServer: SyncServer, result: UploadResult) {
         uploadCompleted?(syncServer, result)
     }
     

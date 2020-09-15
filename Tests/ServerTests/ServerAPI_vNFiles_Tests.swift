@@ -20,7 +20,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
     var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
     var api: ServerAPI!
     var error:((SyncServer, Error?) -> ())?
-    var uploadCompleted: ((SyncServer, UploadFileResult) -> ())?
+    var uploadCompleted: ((SyncServer, UploadResult) -> ())?
     var deviceUUID: UUID!
     var user: TestUser!
     var database: Connection!

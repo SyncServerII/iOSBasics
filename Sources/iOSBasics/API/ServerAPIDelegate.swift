@@ -3,7 +3,7 @@ import Foundation
 import iOSShared
 import ServerShared
 
-public enum UploadFileResult {
+enum UploadFileResult {
     public struct Upload {
         let fileUUID: UUID
         
@@ -20,7 +20,7 @@ public enum UploadFileResult {
     case gone(fileUUID: UUID, uploadObjectTrackerId: Int64, GoneReason)
 }
 
-public enum DownloadFileResult {
+enum DownloadFileResult {
     case success(url: URL, appMetaData:AppMetaData?, checkSum:String, cloudStorageType:CloudStorageType, contentsChangedOnServer: Bool)
     
     // The GoneReason should never be userRemoved-- because when a user is removed, their files are marked as deleted in the FileIndex, and thus the files are generally not downloadable.

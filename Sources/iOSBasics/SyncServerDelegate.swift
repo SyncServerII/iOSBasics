@@ -24,6 +24,21 @@ public enum DeferredOperation {
     case deletion
 }
 
+public struct UploadResult {
+    public enum UploadType {
+        case gone
+        case success
+    }
+    
+    let fileUUID: UUID
+    let uploadType: UploadType
+    
+    public init(fileUUID: UUID, uploadType: UploadType) {
+        self.fileUUID = fileUUID
+        self.uploadType = uploadType
+    }
+}
+
 // These methods are all called on the `delegateDispatchQueue` passed to the SyncServer constructor.
 public protocol SyncServerDelegate: AnyObject {
     func error(_ syncServer: SyncServer, error: Error?)
@@ -45,7 +60,7 @@ public protocol SyncServerDelegate: AnyObject {
     func uploadStarted(_ syncServer: SyncServer, deferredUploadId:Int64)
     
     // Request to server for an upload completed successfully.
-    func uploadCompleted(_ syncServer: SyncServer, result: UploadFileResult)
+    func uploadCompleted(_ syncServer: SyncServer, result: UploadResult)
     
     // Called when vN deferred upload(s), or deferred deletions, successfully completed, is/are detected.
     func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int)

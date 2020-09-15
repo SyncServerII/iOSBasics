@@ -49,7 +49,8 @@ extension SyncServer {
                 
                 delegator { [weak self] delegate in
                     guard let self = self else { return }
-                    delegate.uploadCompleted(self, result: uploadFileResult)
+                    let result = UploadResult(fileUUID: fileUUID, uploadType: .gone)
+                    delegate.uploadCompleted(self, result: result)
                 }
                 
             case .success(let trackerId, let uploadResult):
@@ -87,7 +88,8 @@ extension SyncServer {
                 
                 delegator { [weak self] delegate in
                     guard let self = self else { return }
-                    delegate.uploadCompleted(self, result: uploadFileResult)
+                    let result = UploadResult(fileUUID: uploadResult.fileUUID, uploadType: .success)
+                    delegate.uploadCompleted(self, result: result)
                 }
             }
         }
