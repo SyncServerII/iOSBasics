@@ -160,12 +160,220 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         try runDeletion(withKnownDeclaredObjectButAllUnknownDeclaredFiles: false)
     }
     
-    func testDeletionWithKnownDeclaredObjectButFewerDeclaredFilesFails() {
+    func runDeletionWithKnownDeclaredObject(fewerDeclaredFiles: Bool) throws {
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+
+        let sharingGroupUUID = try getSharingGroupUUID()
+        let fileGroupUUID = UUID()
+        
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+
+        let object1 = ObjectDeclaration(fileGroupUUID: fileGroupUUID, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: Set<FileDeclaration>([declaration1, declaration2]))
+
+        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
+        let uploadables = Set<FileUpload>([uploadable1])
+        
+        try syncServer.queue(uploads: uploadables, declaration: object1)
+        waitForUploadsToComplete(numberUploads: 1)
+
+        let object2 = ObjectDeclaration(fileGroupUUID: fileGroupUUID, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: Set<FileDeclaration>([declaration1]))
+        
+        let object: ObjectDeclaration
+        if fewerDeclaredFiles {
+            object = object2
+        }
+        else {
+            object = object1
+        }
+        
+        do {
+            try syncServer.delete(object: object)
+        } catch let error {
+            if !fewerDeclaredFiles {
+                XCTFail("\(error)")
+            }
+            return
+        }
+        
+        if fewerDeclaredFiles {
+            XCTFail()
+            return
+        }
+
+        let exp = expectation(description: "exp")
+        handlers.deletionCompleted = { _ in
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Wait for some period of time for the deferred deletion to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+
+        let exp2 = expectation(description: "exp2")
+        handlers.deferredCompleted = { _, operation, count in
+            XCTAssert(operation == .deletion)
+            XCTAssert(count == 1)
+            exp2.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Ensure that the DirectoryEntry for the file is marked as deleted.
+        guard let entry = try DirectoryEntry.fetchSingleRow(db: database, where: DirectoryEntry.fileUUIDField.description == fileUUID1) else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(entry.deletedLocally)
+        XCTAssert(entry.deletedOnServer)
     }
     
-    func testDeletionWithKnownDeclaredObjectButAdditionalDeclaredFilesFails() {
+    func testRunDeletionWithKnownDeclaredObjectFewerDeclaredFilesFails() throws {
+        try runDeletionWithKnownDeclaredObject(fewerDeclaredFiles: true)
     }
     
-    func testDeletionOfAlreadyDeletedFails() {
+    func testRunDeletionWithKnownDeclaredObjectSameDeclaredFilesWorks() throws {
+        try runDeletionWithKnownDeclaredObject(fewerDeclaredFiles: false)
+    }
+    
+    func runDeletionWithKnownDeclaredObject(moreDeclaredFiles: Bool) throws {
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+
+        let sharingGroupUUID = try getSharingGroupUUID()
+        let fileGroupUUID = UUID()
+        
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+
+        let object1 = ObjectDeclaration(fileGroupUUID: fileGroupUUID, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: Set<FileDeclaration>([declaration1]))
+
+        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
+        let uploadables = Set<FileUpload>([uploadable1])
+        
+        try syncServer.queue(uploads: uploadables, declaration: object1)
+        waitForUploadsToComplete(numberUploads: 1)
+
+        let object2 = ObjectDeclaration(fileGroupUUID: fileGroupUUID, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: Set<FileDeclaration>([declaration1, declaration2]))
+        
+        let object: ObjectDeclaration
+        if moreDeclaredFiles {
+            object = object2
+        }
+        else {
+            object = object1
+        }
+        
+        do {
+            try syncServer.delete(object: object)
+        } catch let error {
+            if !moreDeclaredFiles {
+                XCTFail("\(error)")
+            }
+            return
+        }
+        
+        if moreDeclaredFiles {
+            XCTFail()
+            return
+        }
+
+        let exp = expectation(description: "exp")
+        handlers.deletionCompleted = { _ in
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Wait for some period of time for the deferred deletion to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+
+        let exp2 = expectation(description: "exp2")
+        handlers.deferredCompleted = { _, operation, count in
+            XCTAssert(operation == .deletion)
+            XCTAssert(count == 1)
+            exp2.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Ensure that the DirectoryEntry for the file is marked as deleted.
+        guard let entry = try DirectoryEntry.fetchSingleRow(db: database, where: DirectoryEntry.fileUUIDField.description == fileUUID1) else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(entry.deletedLocally)
+        XCTAssert(entry.deletedOnServer)
+    }
+    
+    func testRunDeletionWithKnownDeclaredObjectMoreDeclaredFilesFails() throws {
+        try runDeletionWithKnownDeclaredObject(moreDeclaredFiles: true)
+    }
+    
+    func testRunDeletionWithKnownDeclaredObjectSameDeclaredFilesWorks2() throws {
+        try runDeletionWithKnownDeclaredObject(moreDeclaredFiles: false)
+    }
+    
+    func runDeletion(alreadyDeleted: Bool) throws {
+        let fileUUID1 = UUID()
+
+        let sharingGroupUUID = try getSharingGroupUUID()
+        let fileGroupUUID = UUID()
+        
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+
+        let object1 = ObjectDeclaration(fileGroupUUID: fileGroupUUID, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: Set<FileDeclaration>([declaration1]))
+
+        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
+        let uploadables = Set<FileUpload>([uploadable1])
+        
+        try syncServer.queue(uploads: uploadables, declaration: object1)
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        try syncServer.delete(object: object1)
+
+        let exp = expectation(description: "exp")
+        handlers.deletionCompleted = { _ in
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Wait for some period of time for the deferred deletion to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+
+        let exp2 = expectation(description: "exp2")
+        handlers.deferredCompleted = { _, operation, count in
+            XCTAssert(operation == .deletion)
+            XCTAssert(count == 1)
+            exp2.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        if alreadyDeleted {
+            do {
+                try syncServer.delete(object: object1)
+            } catch {
+                return
+            }
+            
+            XCTFail()
+        }
+    }
+    
+    func testDeletionAlreadyDeleted() throws {
+        try runDeletion(alreadyDeleted: true)
+    }
+    
+    func testDeletionNotAlreadyDeleted() throws {
+        try runDeletion(alreadyDeleted: false)
     }
 }
