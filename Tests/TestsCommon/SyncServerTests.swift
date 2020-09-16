@@ -26,7 +26,7 @@ extension SyncServerTests where Self: XCTestCase {
 
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
-        try syncServer.queue(declaration: testObject, uploads: uploadables)
+        try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         
         waitForUploadsToComplete(numberUploads: 1)
         

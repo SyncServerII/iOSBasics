@@ -91,7 +91,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         do {
-            try syncServer.queue(declaration: testObject, uploads: uploadables)
+            try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         } catch let error {
             if withDeclaredFiles {
                 XCTFail("\(error)")
@@ -142,7 +142,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         do {
-            try syncServer.queue(declaration: testObject, uploads: uploadables)
+            try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         } catch let error {
             if withUploads {
                 XCTFail("\(error)")
@@ -194,7 +194,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         do {
-            try syncServer.queue(declaration: testObject, uploads: uploadables)
+            try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         } catch {
             if withDistinctUUIDsInUploads {
                 XCTFail()
@@ -246,7 +246,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         do {
-            try syncServer.queue(declaration: testObject, uploads: uploadables)
+            try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         } catch {
             if withDistinctUUIDsInDeclarations {
                 XCTFail()
@@ -284,7 +284,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         let uploadables = Set<FileUpload>([uploadable])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
-        try syncServer.queue(declaration: testObject, uploads: uploadables)
+        try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         
         let obj = try DeclaredObjectModel.lookupDeclarableObject(declObjectId: testObject.declObjectId, db: database)
         XCTAssert(obj.declCompare(to: testObject))
@@ -315,7 +315,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         let uploadables = Set<FileUpload>([uploadable])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
-        try syncServer.queue(declaration: testObject, uploads: uploadables)
+        try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         
         waitForUploadsToComplete(numberUploads: 1)
 
@@ -349,11 +349,11 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         let uploadables = Set<FileUpload>([uploadable])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
-        try syncServer.queue(declaration: testObject, uploads: uploadables)
+        try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         XCTAssert(queuedCount == 0)
 
         // This second one should work also-- but not trigger an upload-- because its for the same file group as the immediately prior `queue`. i.e., the active upload.
-        try syncServer.queue(declaration: testObject, uploads: uploadables)
+        try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         // Can't do this yet because of async delegate calls.
         // XCTAssert(queuedCount == 1)
 
@@ -398,7 +398,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         do {
-            try syncServer.queue(declaration: testObject, uploads: uploadables)
+            try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         } catch {
             if !differentFromDeclaredFile {
                 XCTFail()
@@ -443,13 +443,13 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
 
-        try syncServer.queue(declaration: testObject, uploads: uploadables1)
+        try syncServer.queueUploads(declaration: testObject, uploads: uploadables1)
 
         let uploadable2 = FileUpload(uuid: fileUUID2, dataSource: .copy(exampleTextFileURL))
         let uploadables2 = Set<FileUpload>([uploadable2])
         
         do {
-            try syncServer.queue(declaration: testObject, uploads: uploadables2)
+            try syncServer.queueUploads(declaration: testObject, uploads: uploadables2)
         } catch {
             if !differentFromDeclaredFile {
                 XCTFail()
@@ -493,10 +493,10 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
 
-        try syncServer.queue(declaration: testObject, uploads: uploadables)
+        try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         XCTAssert(count == 0, "\(count)")
         
-        try syncServer.queue(declaration: testObject, uploads: uploadables)
+        try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         
         // Can't do this yet because of asynchronous delegate callbacks
         // XCTAssert(count == 1, "\(count)")
@@ -528,7 +528,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
 
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
-        try syncServer.queue(declaration: testObject, uploads: uploadables)
+        try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         
         waitForUploadsToComplete(numberUploads: 1)
     }
@@ -553,7 +553,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: objectType, sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         do {
-            try syncServer.queue(declaration: testObject, uploads: uploadables)
+            try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         } catch let error {
             if withObjectType {
                 XCTFail("\(error)")

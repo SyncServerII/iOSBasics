@@ -131,7 +131,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
 
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
-        try syncServer.queue(declaration: testObject, uploads: uploadables)
+        try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         waitForUploadsToComplete(numberUploads: 1)
 
         // Reset the database show a state *as if* another client instance had done the upload-- and show the upload as ready for download.
@@ -182,7 +182,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
 
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
-        try syncServer.queue(declaration: testObject, uploads: uploadables)
+        try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
         waitForUploadsToComplete(numberUploads: 2)
         
         // Reset the database to a state *as if* another client instance had done the upload-- and show the upload as ready for download.
@@ -235,7 +235,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
 
             let testObject = ObjectDeclaration(fileGroupUUID: fileGroupUUID, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
             
-            try syncServer.queue(declaration: testObject, uploads: uploadables)
+            try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
             waitForUploadsToComplete(numberUploads: 1)
             
             return fileUUID1
