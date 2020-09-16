@@ -19,15 +19,13 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
     var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
     var api: ServerAPI!
     var deviceUUID: UUID!
-    var user: TestUser!
     var database: Connection!
-    var error:((SyncServer, Error?) -> ())?
-    var uploadCompleted: ((SyncServer, UploadResult) -> ())?
+    let handlers = DelegateHandlers()
     
     override func setUpWithError() throws {
         try super.setUpWithError()
         uploadCompletedHandler = nil
-        user = try dropboxUser()
+        handlers.user = try dropboxUser()
         deviceUUID = UUID()
         let database = try Connection(.inMemory)
         try NetworkCache.createTable(db: database)
@@ -35,8 +33,8 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         hashingManager = HashingManager()
         try? hashingManager.add(hashing: DropboxHashing())
         api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
-        _ = user.removeUser()
-        XCTAssert(user.addUser())
+        _ = handlers.user.removeUser()
+        XCTAssert(handlers.user.addUser())
     }
 
     override func tearDownWithError() throws {
@@ -60,7 +58,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
 
         let fileURL = exampleTextFileURL
         
-        let checkSum = try hashingManager.hashFor(cloudStorageType: user.cloudStorageType).hash(forURL: fileURL)
+        let checkSum = try hashingManager.hashFor(cloudStorageType: handlers.user.cloudStorageType).hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
@@ -111,7 +109,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
 
         let fileURL = exampleTextFileURL
         
-        let checkSum = try hashingManager.hashFor(cloudStorageType: user.cloudStorageType).hash(forURL: fileURL)
+        let checkSum = try hashingManager.hashFor(cloudStorageType: handlers.user.cloudStorageType).hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
@@ -162,7 +160,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         let fileUUID = UUID()
         let fileURL = exampleTextFileURL
         
-        let checkSum = try hashingManager.hashFor(cloudStorageType: user.cloudStorageType).hash(forURL: fileURL)
+        let checkSum = try hashingManager.hashFor(cloudStorageType: handlers.user.cloudStorageType).hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
@@ -247,7 +245,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         let fileUUID = UUID()
         let fileURL = exampleTextFileURL
         
-        let checkSum = try hashingManager.hashFor(cloudStorageType: user.cloudStorageType).hash(forURL: fileURL)
+        let checkSum = try hashingManager.hashFor(cloudStorageType: handlers.user.cloudStorageType).hash(forURL: fileURL)
         
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,

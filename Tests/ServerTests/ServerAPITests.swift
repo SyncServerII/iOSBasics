@@ -19,16 +19,14 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
     var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
     var api: ServerAPI!
     var deviceUUID: UUID!
-    var user: TestUser!
     var database: Connection!
     let config = Configuration.defaultTemporaryFiles
-    var error:((SyncServer, Error?) -> ())?
-    var uploadCompleted: ((SyncServer, UploadResult) -> ())?
+    let handlers = DelegateHandlers()
     
     override func setUpWithError() throws {
         try super.setUpWithError()
         uploadCompletedHandler = nil
-        user = try dropboxUser()
+        handlers.user = try dropboxUser()
         deviceUUID = UUID()
         let database = try Connection(.inMemory)
         try NetworkCache.createTable(db: database)
@@ -36,8 +34,8 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
         hashingManager = HashingManager()
         try? hashingManager.add(hashing: DropboxHashing())
         api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
-        _ = user.removeUser()
-        XCTAssert(user.addUser())
+        _ = handlers.user.removeUser()
+        XCTAssert(handlers.user.addUser())
     }
 
     override func tearDownWithError() throws {
@@ -60,13 +58,13 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
     }
     
     func testAddUser() {
-        _ = user.removeUser()
-        XCTAssert(user.addUser())
+        _ = handlers.user.removeUser()
+        XCTAssert(handlers.user.addUser())
     }
     
     func testCheckCredsWithAUser() {
-        _ = user.removeUser()
-        XCTAssert(user.addUser())
+        _ = handlers.user.removeUser()
+        XCTAssert(handlers.user.addUser())
         
         let result = checkCreds()
         
@@ -80,7 +78,7 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
     
     func testCheckCredsWithNoUser() {
         // Get ready for test.
-        guard user.removeUser() else {
+        guard handlers.user.removeUser() else {
             XCTFail()
             return
         }
@@ -96,8 +94,8 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
     }
     
     func testIndexWithNoContentsExpectation() {
-        _ = user.removeUser()
-        XCTAssert(user.addUser())
+        _ = handlers.user.removeUser()
+        XCTAssert(handlers.user.addUser())
         
         guard let result = getIndex(sharingGroupUUID: nil) else {
             XCTFail()
@@ -109,8 +107,8 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
     }
     
     func testIndexWithFile() throws {
-        _ = user.removeUser()
-        XCTAssert(user.addUser())
+        _ = handlers.user.removeUser()
+        XCTAssert(handlers.user.addUser())
         
         let fileUUID = UUID()
         let fileURL = exampleTextFileURL
@@ -162,8 +160,8 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
     }
     
     func testGetUploadsResultsGivesNilStatusWhenUnknownDeferredIdGiven() throws {
-        _ = user.removeUser()
-        XCTAssert(user.addUser())
+        _ = handlers.user.removeUser()
+        XCTAssert(handlers.user.addUser())
         
         let result = getUploadsResults(deferredUploadId: 0)
         guard case .success(let status) = result else {

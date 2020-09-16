@@ -39,8 +39,7 @@ extension TestFiles {
 
 protocol APITests: ServerAPIDelegator {
     var api:ServerAPI! { get }
-    var error:((SyncServer, Error?) -> ())? { get set }
-    var uploadCompleted: ((SyncServer, UploadResult) -> ())? { get set }
+    var handlers: DelegateHandlers { get }
 }
     
 extension APITests where Self: XCTestCase {
@@ -50,7 +49,7 @@ extension APITests where Self: XCTestCase {
         let exp = expectation(description: "exp")
         var returnResult: ServerAPI.CheckCredsResult?
         
-        api.checkCreds(user.credentials) { result in
+        api.checkCreds(handlers.user.credentials) { result in
             switch result {
             case .success(let result):
                 returnResult = result
@@ -196,7 +195,7 @@ extension APITests where Self: XCTestCase {
         var count = 0
         let exp = expectation(description: "exp")
         
-        uploadCompleted = { _, result in
+        handlers.uploadCompleted = { _, result in
             count += 1
             
             switch result.uploadType {
@@ -220,7 +219,7 @@ extension APITests where Self: XCTestCase {
             }
         }
         
-        error = { _, result in
+        handlers.error = { _, result in
             XCTFail()
             exp.fulfill()
         }

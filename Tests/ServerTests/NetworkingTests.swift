@@ -19,9 +19,9 @@ class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
     var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
     var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
     var api: ServerAPI!
-    var user: TestUser!
     var networking: Networking!
-
+    let handlers = DelegateHandlers()
+    
     override func setUpWithError() throws {
         try super.setUpWithError()
         deviceUUID = UUID()
@@ -31,7 +31,7 @@ class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
         hashingManager = HashingManager()
         try? hashingManager.add(hashing: DropboxHashing())
         api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
-        user = try dropboxUser()
+        handlers.user = try dropboxUser()
     }
 
     override func tearDownWithError() throws {
@@ -61,7 +61,7 @@ class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
         
         let exp = expectation(description: "exp")
         
-        let configuration = Networking.RequestConfiguration(credentials: user.credentials)
+        let configuration = Networking.RequestConfiguration(credentials: handlers.user.credentials)
 
         networking.sendRequestTo(serverURL, method: endpoint.method, configuration: configuration) { response, httpStatus, error in
 

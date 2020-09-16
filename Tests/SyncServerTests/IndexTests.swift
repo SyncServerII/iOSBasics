@@ -13,7 +13,7 @@ import iOSShared
 import iOSSignIn
 import ChangeResolvers
 
-class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
+class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
     var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
@@ -21,33 +21,29 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
     
     var api: ServerAPI!
     var syncServer: SyncServer!
-    var uploadQueued: ((SyncServer, _ syncObjectId: UUID) -> ())?
-    var uploadStarted: ((SyncServer, _ deferredUploadId:Int64) -> ())?
-    var uploadCompleted: ((SyncServer, UploadResult) -> ())?
-    var error:((SyncServer, Error?) -> ())?
-    var syncCompleted: ((SyncServer, SyncResult) -> ())?
-    var deletionCompleted: ((SyncServer) -> ())?
-    var user: TestUser!
+
+    var handlers = DelegateHandlers()
+
     var database: Connection!
     var config:Configuration!
     
     override func setUpWithError() throws {
         try super.setUpWithError()
-        user = try dropboxUser()
+        handlers = DelegateHandlers()
+        handlers.user = try dropboxUser()
         deviceUUID = UUID()
         database = try Connection(.inMemory)
         hashingManager = HashingManager()
-        try hashingManager.add(hashing: user.hashing)
+        try hashingManager.add(hashing: handlers.user.hashing)
         let serverURL = URL(string: Self.baseURL())!
         config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
         api = syncServer.api
-        uploadQueued = nil
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
         
-        _ = user.removeUser()
-        guard user.addUser() else {
+        _ = handlers.user.removeUser()
+        guard handlers.user.addUser() else {
             throw SyncServerError.internalError("Could not add user")
         }
         
@@ -72,7 +68,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
 
         let exp = expectation(description: "exp")
         
-        syncCompleted = { _, result in
+        handlers.syncCompleted = { _, result in
             guard case .index(let uuid, let index) = result else {
                 XCTFail()
                 exp.fulfill()
@@ -91,7 +87,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
             exp.fulfill()
         }
         
-        error = { _, error in
+        handlers.error = { _, error in
             XCTFail("\(String(describing: error))")
             exp.fulfill()
         }
@@ -106,7 +102,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
 
         let exp = expectation(description: "exp")
         
-        syncCompleted = { _, result in
+        handlers.syncCompleted = { _, result in
             guard case .index(let uuid, let index) = result else {
                 XCTFail()
                 exp.fulfill()
@@ -125,7 +121,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
             exp.fulfill()
         }
         
-        error = { _, error in
+        handlers.error = { _, error in
             XCTFail()
             exp.fulfill()
         }
@@ -165,7 +161,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
 
         let exp = expectation(description: "exp")
         
-        syncCompleted = { _, result in
+        handlers.syncCompleted = { _, result in
             guard case .index(let uuid, let index) = result else {
                 XCTFail()
                 exp.fulfill()
@@ -191,7 +187,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
             exp.fulfill()
         }
         
-        error = { _, error in
+        handlers.error = { _, error in
             XCTFail()
             exp.fulfill()
         }
@@ -211,7 +207,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
         }
         
         let exp = expectation(description: "exp")
-        deletionCompleted = { _ in
+        handlers.deletionCompleted = { _ in
             exp.fulfill()
         }
         
@@ -225,7 +221,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
         syncServer.credentialsDelegate = self
         
         let exp2 = expectation(description: "exp2")
-        syncCompleted = { _,_ in
+        handlers.syncCompleted = { _,_ in
             exp2.fulfill()
         }
         
@@ -260,7 +256,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
         }
 
         let exp = expectation(description: "exp")
-        deletionCompleted = { _ in
+        handlers.deletionCompleted = { _ in
             exp.fulfill()
         }
         
@@ -274,7 +270,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
         syncServer.credentialsDelegate = self
         
         let exp2 = expectation(description: "exp2")
-        syncCompleted = { _,_ in
+        handlers.syncCompleted = { _,_ in
             exp2.fulfill()
         }
         
@@ -311,7 +307,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
         }
 
         let exp = expectation(description: "exp")
-        deletionCompleted = { _ in
+        handlers.deletionCompleted = { _ in
             exp.fulfill()
         }
         
@@ -329,7 +325,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
             DirectoryEntry.deletedOnServerField.description <- false)
         
         let exp2 = expectation(description: "exp2")
-        syncCompleted = { _,_ in
+        handlers.syncCompleted = { _,_ in
             exp2.fulfill()
         }
         
@@ -345,51 +341,5 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
         
         XCTAssert(!entry2.deletedLocally)
         XCTAssert(entry2.deletedOnServer)
-    }
-}
-
-extension IndexTests: SyncServerCredentials {
-    func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials {
-        return user.credentials
-    }
-}
-
-extension IndexTests: SyncServerDelegate {
-    func error(_ syncServer: SyncServer, error: Error?) {
-        XCTFail("\(String(describing: error))")
-        self.error?(syncServer, error)
-    }
-
-    func syncCompleted(_ syncServer: SyncServer, result: SyncResult) {
-        syncCompleted?(syncServer, result)
-    }
-    
-    func downloadCompleted(_ syncServer: SyncServer, declObjectId: UUID) {
-    }
-    
-    // A uuid that was initially generated on the client
-    func uuidCollision(_ syncServer: SyncServer, type: UUIDCollisionType, from: UUID, to: UUID) {
-    }
-    
-    func uploadQueued(_ syncServer: SyncServer, declObjectId: UUID) {
-        self.uploadQueued?(syncServer, declObjectId)
-    }
-    
-    func uploadStarted(_ syncServer: SyncServer, deferredUploadId:Int64) {
-        uploadStarted?(syncServer, deferredUploadId)
-    }
-    
-    func uploadCompleted(_ syncServer: SyncServer, result: UploadResult) {
-        uploadCompleted?(syncServer, result)
-    }
-    
-    func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int) {
-    }
-    
-    func deletionCompleted(_ syncServer: SyncServer) {
-        deletionCompleted?(syncServer)
-    }
-    
-    func downloadDeletion(_ syncServer: SyncServer, details: DownloadDeletion) {
     }
 }

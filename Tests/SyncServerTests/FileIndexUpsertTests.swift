@@ -6,7 +6,9 @@ import SQLite
 import ServerShared
 import iOSShared
 
-class FileIndexUpsertTests: XCTestCase {
+class FileIndexUpsertTests: XCTestCase, Delegate {
+    var handlers = DelegateHandlers()
+    
     var deviceUUID: UUID!
     var syncServer: SyncServer!
     var database: Connection!
@@ -14,12 +16,15 @@ class FileIndexUpsertTests: XCTestCase {
     
     override func setUpWithError() throws {
         try super.setUpWithError()
+        handlers = DelegateHandlers()
         deviceUUID = UUID()
         database = try Connection(.inMemory)
         let hashingManager = HashingManager()
         let serverURL = URL(string: "http://fake.com")!
         config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: "Fake", deviceUUID: deviceUUID, packageTests: true)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
+        syncServer.delegate = self
+        syncServer.credentialsDelegate = self
     }
 
     override func tearDownWithError() throws {

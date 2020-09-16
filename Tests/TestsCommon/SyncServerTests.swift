@@ -11,7 +11,7 @@ import ServerShared
 
 protocol SyncServerTests: TestFiles, APITests {
     var syncServer:SyncServer! { get }
-    var syncCompleted: ((SyncServer, SyncResult) -> ())? { get set }
+    var handlers: DelegateHandlers { get }
 }
 
 extension SyncServerTests where Self: XCTestCase {
@@ -35,7 +35,7 @@ extension SyncServerTests where Self: XCTestCase {
     
     func sync(withSharingGroupUUID sharingGroupUUID: UUID? = nil) throws {
         let exp = expectation(description: "exp")
-        syncCompleted = { _, _ in
+        handlers.syncCompleted = { _, _ in
             exp.fulfill()
         }
         

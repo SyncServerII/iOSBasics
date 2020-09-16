@@ -15,7 +15,7 @@ import SQLite
 import iOSDropbox
 
 protocol ServerAPIDelegator: ServerAPIDelegate {
-    var user: TestUser! {get set}
+    var handlers: DelegateHandlers {get}
     var deviceUUID: UUID! {get}
     var hashingManager: HashingManager! {get}
     var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())? {get set}
@@ -40,7 +40,7 @@ extension ServerAPIDelegator {
     }
     
     func credentialsForNetworkRequests(_ delegated: AnyObject) throws -> GenericCredentials {
-        return user.credentials
+        return handlers.user.credentials
     }
     
     func deviceUUID(_ delegated: AnyObject) -> UUID {

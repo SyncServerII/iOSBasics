@@ -5,7 +5,7 @@ import ServerShared
 import iOSShared
 import iOSSignIn
 
-class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
+class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
     var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
@@ -13,31 +13,29 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
     
     var api: ServerAPI!
     var syncServer: SyncServer!
-    var uploadQueued: ((SyncServer, _ syncObjectId: UUID) -> ())?
-    var uploadStarted: ((SyncServer, _ deferredUploadId:Int64) -> ())?
-    var uploadCompleted: ((SyncServer, UploadResult) -> ())?
-    var error:((SyncServer, Error?) -> ())?
-    var user: TestUser!
+    
+    var handlers = DelegateHandlers()
+    
     var database: Connection!
     var config:Configuration!
     
     override func setUpWithError() throws {
         try super.setUpWithError()
-        user = try dropboxUser()
+        handlers = DelegateHandlers()
+        handlers.user = try dropboxUser()
         deviceUUID = UUID()
         database = try Connection(.inMemory)
         hashingManager = HashingManager()
-        try hashingManager.add(hashing: user.hashing)
+        try hashingManager.add(hashing: handlers.user.hashing)
         let serverURL = URL(string: Self.baseURL())!
         config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
         api = syncServer.api
-        uploadQueued = nil
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
         
-        _ = user.removeUser()
-        guard user.addUser() else {
+        _ = handlers.user.removeUser()
+        guard handlers.user.addUser() else {
             throw SyncServerError.internalError("Could not add user")
         }
         
@@ -338,7 +336,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         let sharingGroupUUID = try getSharingGroupUUID()
         
         var queuedCount = 0
-        uploadQueued = { _, syncObjectId in
+        handlers.uploadQueued = { _, syncObjectId in
             queuedCount += 1
         }
 
@@ -478,7 +476,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
     func testQueueWithExistingDeferredUpload() throws {
         var count = 0
         
-        uploadQueued = { syncServer, objectId in
+        handlers.uploadQueued = { syncServer, objectId in
             count += 1
         }
         
@@ -584,49 +582,5 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
     
     func testQueueWithoutObjectTypeFails() throws {
         try runQueueTest(withObjectType: false)
-    }
-}
-
-extension UploadQueueTests_SingleObjectDeclaration: SyncServerCredentials {
-    func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials {
-        return user.credentials
-    }
-}
-
-extension UploadQueueTests_SingleObjectDeclaration: SyncServerDelegate {
-    func error(_ syncServer: SyncServer, error: Error?) {
-        XCTFail("\(String(describing: error))")
-        self.error?(syncServer, error)
-    }
-
-    func syncCompleted(_ syncServer: SyncServer, result: SyncResult) {
-    }
-    
-    func downloadCompleted(_ syncServer: SyncServer, declObjectId: UUID) {
-    }
-    
-    // A uuid that was initially generated on the client
-    func uuidCollision(_ syncServer: SyncServer, type: UUIDCollisionType, from: UUID, to: UUID) {
-    }
-    
-    func uploadQueued(_ syncServer: SyncServer, declObjectId: UUID) {
-        self.uploadQueued?(syncServer, declObjectId)
-    }
-    
-    func uploadStarted(_ syncServer: SyncServer, deferredUploadId:Int64) {
-        uploadStarted?(syncServer, deferredUploadId)
-    }
-    
-    func uploadCompleted(_ syncServer: SyncServer, result: UploadResult) {
-        uploadCompleted?(syncServer, result)
-    }
-    
-    func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int) {
-    }
-    
-    func deletionCompleted(_ syncServer: SyncServer) {
-    }
-    
-    func downloadDeletion(_ syncServer: SyncServer, details: DownloadDeletion) {
     }
 }

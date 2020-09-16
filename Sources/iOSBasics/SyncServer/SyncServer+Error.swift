@@ -5,7 +5,7 @@ enum SyncServerError: Error {
     case declarationDifferentThanSyncedObject(String)
     case tooManyObjects
     case noObject
-    case uploadNotInDeclaredFiles
+    case fileNotDeclared
     case uploadsDoNotHaveDistinctUUIDs
     case declaredFilesDoNotHaveDistinctUUIDs
     case noUploads
@@ -39,8 +39,8 @@ enum SyncServerError: Error {
             }
             return true
             
-        case uploadNotInDeclaredFiles:
-            guard case .uploadNotInDeclaredFiles = rhs else {
+        case fileNotDeclared:
+            guard case .fileNotDeclared = rhs else {
                 return false
             }
             return true

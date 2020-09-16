@@ -13,7 +13,7 @@ import iOSShared
 import iOSSignIn
 import ChangeResolvers
 
-class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
+class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
     var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
@@ -21,35 +21,28 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
     
     var api: ServerAPI!
     var syncServer: SyncServer!
-    var uploadQueued: ((SyncServer, _ syncObjectId: UUID) -> ())?
-    var uploadStarted: ((SyncServer, _ deferredUploadId:Int64) -> ())?
-    var uploadCompleted: ((SyncServer, UploadResult) -> ())?
-    var error:((SyncServer, Error?) -> ())?
-    var syncCompleted: ((SyncServer, SyncResult) -> ())?
-    var deletionCompleted: ((SyncServer) -> ())?
-    var deferredCompleted: ((SyncServer, DeferredOperation, _ numberCompleted: Int) -> ())?
 
-    var user: TestUser!
     var database: Connection!
     var config:Configuration!
+    var handlers = DelegateHandlers()
     
     override func setUpWithError() throws {
+        handlers = DelegateHandlers()
         try super.setUpWithError()
-        user = try dropboxUser()
+        handlers.user = try dropboxUser()
         deviceUUID = UUID()
         database = try Connection(.inMemory)
         hashingManager = HashingManager()
-        try hashingManager.add(hashing: user.hashing)
+        try hashingManager.add(hashing: handlers.user.hashing)
         let serverURL = URL(string: Self.baseURL())!
         config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
         api = syncServer.api
-        uploadQueued = nil
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
         
-        _ = user.removeUser()
-        guard user.addUser() else {
+        _ = handlers.user.removeUser()
+        guard handlers.user.addUser() else {
             throw SyncServerError.internalError("Could not add user")
         }
         
@@ -89,7 +82,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         try syncServer.delete(object: object)
 
         let exp = expectation(description: "exp")
-        deletionCompleted = { _ in
+        handlers.deletionCompleted = { _ in
             exp.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -101,7 +94,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         try syncServer.sync()
 
         let exp2 = expectation(description: "exp2")
-        deferredCompleted = { _, operation, count in
+        handlers.deferredCompleted = { _, operation, count in
             XCTAssert(operation == .deletion)
             XCTAssert(count == 1)
             exp2.fulfill()
@@ -120,7 +113,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
             DirectoryEntry.deletedOnServerField.description <- false)
 
         let exp3 = expectation(description: "exp")
-        deletionCompleted = { _ in
+        handlers.deletionCompleted = { _ in
             exp3.fulfill()
         }
         
@@ -167,7 +160,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         try syncServer.delete(object: testObject)
 
         let exp = expectation(description: "exp")
-        deletionCompleted = { _ in
+        handlers.deletionCompleted = { _ in
             exp.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -179,7 +172,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         try syncServer.sync()
 
         let exp2 = expectation(description: "exp2")
-        deferredCompleted = { _, operation, count in
+        handlers.deferredCompleted = { _, operation, count in
             XCTAssert(operation == .deletion)
             XCTAssert(count == 1)
             exp2.fulfill()
@@ -199,52 +192,5 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
 
         try object1(v0: false)
         waitForUploadsToComplete(numberUploads: 1, gone: true)
-    }
-}
-
-extension ConflictResolutionTests: SyncServerCredentials {
-    func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials {
-        return user.credentials
-    }
-}
-
-extension ConflictResolutionTests: SyncServerDelegate {
-    func error(_ syncServer: SyncServer, error: Error?) {
-        XCTFail("\(String(describing: error))")
-        self.error?(syncServer, error)
-    }
-
-    func syncCompleted(_ syncServer: SyncServer, result: SyncResult) {
-        syncCompleted?(syncServer, result)
-    }
-    
-    func downloadCompleted(_ syncServer: SyncServer, declObjectId: UUID) {
-    }
-    
-    // A uuid that was initially generated on the client
-    func uuidCollision(_ syncServer: SyncServer, type: UUIDCollisionType, from: UUID, to: UUID) {
-    }
-    
-    func uploadQueued(_ syncServer: SyncServer, declObjectId: UUID) {
-        self.uploadQueued?(syncServer, declObjectId)
-    }
-    
-    func uploadStarted(_ syncServer: SyncServer, deferredUploadId:Int64) {
-        uploadStarted?(syncServer, deferredUploadId)
-    }
-    
-    func uploadCompleted(_ syncServer: SyncServer, result: UploadResult) {
-        uploadCompleted?(syncServer, result)
-    }
-    
-    func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int) {
-        deferredCompleted?(syncServer, operation, numberCompleted)
-    }
-    
-    func deletionCompleted(_ syncServer: SyncServer) {
-        deletionCompleted?(syncServer)
-    }
-    
-    func downloadDeletion(_ syncServer: SyncServer, details: DownloadDeletion) {
     }
 }

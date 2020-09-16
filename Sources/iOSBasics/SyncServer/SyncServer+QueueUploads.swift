@@ -27,7 +27,7 @@ extension SyncServer {
         for upload in uploads {
             let declaredFiles = declaration.declaredFiles.filter {$0.uuid == upload.uuid}
             guard declaredFiles.count == 1 else {
-                throw SyncServerError.uploadNotInDeclaredFiles
+                throw SyncServerError.fileNotDeclared
             }
         }
         
@@ -56,23 +56,7 @@ extension SyncServer {
 
             // Already have registered the DeclarableObject
             // Need to compare this one against the one in the database.
-
-            guard declaredObject.compare(to: declaration) else {
-                throw SyncServerError.declarationDifferentThanSyncedObject("Declared object differs from given one.")
-            }
-            
-            // Lookup and compare declared files against the `DeclaredFileModel`'s in the database.
-            let declaredFilesInDatabase = try DeclaredFileModel.lookupModels(for: declaration.declaredFiles, inFileGroupUUID: declaration.fileGroupUUID, db: db)
-            
-            guard try DirectoryEntry.isOneEntryForEach(declaredModels: declaredFilesInDatabase, db: db) else {
-                throw SyncServerError.declarationDifferentThanSyncedObject(
-                        "DirectoryEntry missing.")
-            }
-            
-            let fileUUIDs = declaredFilesInDatabase.map { $0.uuid }
-            guard !(try DirectoryEntry.anyFileIsDeleted(fileUUIDs: fileUUIDs, db: db)) else {
-                throw SyncServerError.attemptToQueueADeletedFile
-            }
+            try declaredObjectCanBeQueued(declaration: declaration, declaredObject:declaredObject)
             
             // We should never try to upload a file that has an index (db info) from the server, but hasn't yet been downloaded. This doesn't seem to reflect a valid state: How can a user request an upload for a file they haven't yet seen?
             let entriesForUploads = try DirectoryEntry.lookupFor(uploadables: uploads, db: db)

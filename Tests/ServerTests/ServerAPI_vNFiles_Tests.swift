@@ -19,17 +19,15 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
     var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
     var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
     var api: ServerAPI!
-    var error:((SyncServer, Error?) -> ())?
-    var uploadCompleted: ((SyncServer, UploadResult) -> ())?
+    let handlers = DelegateHandlers()
     var deviceUUID: UUID!
-    var user: TestUser!
     var database: Connection!
     let config = Configuration.defaultTemporaryFiles
 
     override func setUpWithError() throws {
         try super.setUpWithError()
         uploadCompletedHandler = nil
-        user = try dropboxUser()
+        handlers.user = try dropboxUser()
         deviceUUID = UUID()
         let database = try Connection(.inMemory)
         try NetworkCache.createTable(db: database)
@@ -37,8 +35,8 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         hashingManager = HashingManager()
         try? hashingManager.add(hashing: DropboxHashing())
         api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
-        _ = user.removeUser()
-        XCTAssert(user.addUser())
+        _ = handlers.user.removeUser()
+        XCTAssert(handlers.user.addUser())
     }
     
     @discardableResult
