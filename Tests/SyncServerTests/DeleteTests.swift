@@ -98,7 +98,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
         let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
         let uploadables = Set<FileUpload>([uploadable1])
         
-        try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
+        try syncServer.queue(uploads: uploadables, declaration: testObject)
         waitForUploadsToComplete(numberUploads: 1)
 
         let declaration2 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)

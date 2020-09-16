@@ -146,7 +146,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
 
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
-        try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
+        try syncServer.queue(uploads: uploadables, declaration: testObject)
         
         waitForUploadsToComplete(numberUploads: 1)
         
@@ -286,7 +286,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
 
         // This is as if another client attempts an upload of a file after a sync where it learned about the deleted file for the first time.
         do {
-            try syncServer.queueUploads(declaration: declaration, uploads: [uploadable1])
+            try syncServer.queue(uploads: [uploadable1], declaration: declaration)
         } catch let error {
             guard let syncServerError = error as? SyncServerError else {
                 XCTFail()

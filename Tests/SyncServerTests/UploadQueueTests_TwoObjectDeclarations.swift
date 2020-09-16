@@ -75,7 +75,7 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
 
         let testObject1 = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations1)
         
-        try syncServer.queueUploads(declaration: testObject1, uploads: uploadables1)
+        try syncServer.queue(uploads: uploadables1, declaration: testObject1)
         
         // Second object
         let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
@@ -86,7 +86,7 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
 
         let testObject2 = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations2)
         
-        try syncServer.queueUploads(declaration: testObject2, uploads: uploadables2)
+        try syncServer.queue(uploads: uploadables2, declaration: testObject2)
 
         waitForUploadsToComplete(numberUploads: 2)
         
@@ -134,7 +134,7 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
                 uploadables = Set<FileUpload>([uploadable])
             }
 
-            try syncServer.queueUploads(declaration: testObject1, uploads: uploadables)
+            try syncServer.queue(uploads: uploadables, declaration: testObject1)
         }
         
         // Object2
@@ -158,7 +158,7 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
                 uploadables = Set<FileUpload>([uploadable])
             }
 
-            try syncServer.queueUploads(declaration: testObject2, uploads: uploadables)
+            try syncServer.queue(uploads: uploadables, declaration: testObject2)
         }
         
         var count = 0
@@ -237,7 +237,7 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
             let uploadable = FileUpload(uuid: fileUUID1, dataSource: .data(commentFileData))
             uploadables = Set<FileUpload>([uploadable])
 
-            try syncServer.queueUploads(declaration: testObject1, uploads: uploadables)
+            try syncServer.queue(uploads: uploadables, declaration: testObject1)
         }
         
         // Object2
@@ -251,7 +251,7 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
             let commentFileData = try commentFile.getData()
             let uploadable = FileUpload(uuid: fileUUID2, dataSource: .data(commentFileData))
             let uploadables = Set<FileUpload>([uploadable])
-            try syncServer.queueUploads(declaration: testObject2, uploads: uploadables)
+            try syncServer.queue(uploads: uploadables, declaration: testObject2)
         }
         
         try object1v0()
@@ -275,7 +275,7 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
         let uploadables = Set<FileUpload>([uploadable])
         
         do {
-            try syncServer.queueUploads(declaration: testObject2, uploads: uploadables)
+            try syncServer.queue(uploads: uploadables, declaration: testObject2)
         } catch let error {
             logger.debug("\(error)")
             if !usingFileFromOtherDeclarationFails {

@@ -83,7 +83,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
         let uploadables = Set<FileUpload>([uploadable1])
         
-        try syncServer.queueUploads(declaration: object, uploads: uploadables)
+        try syncServer.queue(uploads: uploadables, declaration: object)
         waitForUploadsToComplete(numberUploads: 1)
         
         try syncServer.delete(object: object)
@@ -154,7 +154,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
                 uploadables = Set<FileUpload>([uploadable])
             }
 
-            try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
+            try syncServer.queue(uploads: uploadables, declaration: testObject)
         }
         
         try object1(v0: true)

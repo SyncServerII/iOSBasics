@@ -4,8 +4,8 @@ import ServerShared
 import iOSShared
 
 extension SyncServer {    
-    func queueObject<DECL: DeclarableObject, UPL:UploadableFile>
-        (declaration: DECL, uploads: Set<UPL>) throws {
+    func queueHelper<DECL: DeclarableObject, UPL:UploadableFile>
+        (uploads: Set<UPL>, declaration: DECL) throws {
         guard uploads.count > 0 else {
             throw SyncServerError.noUploads
         }

@@ -97,7 +97,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
                 uploadables = Set<FileUpload>([uploadable])
             }
 
-            try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
+            try syncServer.queue(uploads: uploadables, declaration: testObject)
         }
         
         var count = 0
@@ -157,13 +157,13 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
 
-        try syncServer.queueUploads(declaration: testObject, uploads: uploadables1)
+        try syncServer.queue(uploads: uploadables1, declaration: testObject)
 
         let uploadable2 = FileUpload(uuid: fileUUID2, dataSource: .copy(exampleTextFileURL))
         let uploadables2 = Set<FileUpload>([uploadable2])
         
         do {
-            try syncServer.queueUploads(declaration: testObject, uploads: uploadables2)
+            try syncServer.queue(uploads: uploadables2, declaration: testObject)
         } catch {
             XCTFail()
             return
@@ -209,7 +209,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
                 uploadables = Set<FileUpload>([uploadable])
             }
 
-            try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
+            try syncServer.queue(uploads: uploadables, declaration: testObject)
         }
         
         var count = 0
@@ -312,7 +312,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
                 uploadables = Set<FileUpload>([uploadable])
             }
 
-            try syncServer.queueUploads(declaration: testObject, uploads: uploadables)
+            try syncServer.queue(uploads: uploadables, declaration: testObject)
         }
         
         var count = 0
@@ -396,7 +396,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         let commentFileData = try commentFile.getData()
         let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .data(commentFileData))
         let uploadables1 = Set<FileUpload>([uploadable1])
-        try syncServer.queueUploads(declaration: testObject, uploads: uploadables1)
+        try syncServer.queue(uploads: uploadables1, declaration: testObject)
 
         waitForUploadsToComplete(numberUploads: 1)
                 
@@ -412,7 +412,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         
         // Fails because we're not allowing uploads of v0 and vN together within the same `queue` for the same file group.
         do {
-            try syncServer.queueUploads(declaration: testObject, uploads: uploadables2)
+            try syncServer.queue(uploads: uploadables2, declaration: testObject)
         } catch {
             // Need to remove both of the url's for the failed uploads or the test will fail in the cleanup.
             guard let fileTracker1 = try UploadFileTracker.fetchSingleRow(db: database, where: fileUUID1 == UploadFileTracker.fileUUIDField.description),

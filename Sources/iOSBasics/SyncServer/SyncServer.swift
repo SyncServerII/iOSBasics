@@ -59,13 +59,13 @@ public class SyncServer {
     // All files that end up being uploaded in the same queued batch must either be v0 (their first upload) or vN (not their first upload). It is an error to attempt to upload v0 and vN files together in the same batch. This issue may not always be detected (i.e., an error thrown by this call). An error might instead be thrown on a subsequent call to `sync`.
     // In this last regard, it is a best practice to do a v0 upload for all files in a declared object in it's first `queue` call. This way, having both v0 and vN files in the same queued batch *cannot* occur.
     // Uploads are done on a background networking URLSession.
-    public func queueUploads<DECL: DeclarableObject, UPL:UploadableFile>
-        (declaration: DECL, uploads: Set<UPL>) throws {
-        try queueObject(declaration: declaration, uploads: uploads)
+    public func queue<DECL: DeclarableObject, UPL:UploadableFile>
+        (uploads: Set<UPL>, declaration: DECL) throws {
+        try queueHelper(uploads: uploads, declaration: declaration)
     }
     
     /* This performs a variety of actions:
-    1) It triggers any next pending uploads. In general, after a set of uploads queued by your call(s) to the SyncServer `queueUploads` method, further uploads are not automatically initiated. It's up to the caller of this interface to call `sync` periodically to drive that. It's likely best that `sync` only be called while the app is in the foreground-- to avoid penalties (e.g., increased latencies) incurred by initating network requests, from other networking requests, while the app is in the background. Uploads are carried out using a background URLSession and so can run while the app is in the background.
+    1) It triggers any next pending uploads. In general, after a set of uploads queued by your call(s) to the SyncServer `queue` uploads method, further uploads are not automatically initiated. It's up to the caller of this interface to call `sync` periodically to drive that. It's likely best that `sync` only be called while the app is in the foreground-- to avoid penalties (e.g., increased latencies) incurred by initating network requests, from other networking requests, while the app is in the background. Uploads are carried out using a background URLSession and so can run while the app is in the background.
     2) It checks if vN deferred uploads server requests have completed.
     3) If a non-nil sharingGroupUUID is given, this fetches the index for all files in that sharing group from the server. If successful, the syncCompleted delegate method is called, and:
         a) the `sharingGroups` property has been updated
@@ -103,7 +103,8 @@ public class SyncServer {
     }
     
     // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.
-    func startDownloads<DECL: DeclarableObject, DWL: DownloadableFile>(declaration: DECL, files: Set<DWL>) throws {
+    func queue<DECL: DeclarableObject, DWL: DownloadableFile>(downloads: Set<DWL>, declaration: DECL) throws {
+        try queueHelper(downloads: downloads, declaration: declaration)
     }
     
     // MARK: Sharing
