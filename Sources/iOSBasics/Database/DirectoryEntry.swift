@@ -242,7 +242,12 @@ extension DirectoryEntry {
     
     // The `fileInfo` is assumed to come from the server.
     @discardableResult
-    static func upsert(fileInfo: FileInfo, db: Connection) throws -> DirectoryEntry {
+    static func upsert(fileInfo: FileInfo, db: Connection) throws ->
+        (DirectoryEntry, markedForDeletion: Bool) {
+        
+        let resultEntry:DirectoryEntry
+        var markedForDeletion = false
+        
         guard let fileUUIDString = fileInfo.fileUUID,
             let fileUUID = UUID(uuidString: fileUUIDString) else {
             throw DatabaseModelError.invalidUUID
@@ -255,8 +260,9 @@ extension DirectoryEntry {
                 try entry.update(setters:
                     DirectoryEntry.deletedOnServerField.description <- true
                 )
+                markedForDeletion = true
             }
-            return entry
+            resultEntry = entry
         }
         else {
             // Creation of a DirectoryEntry for a file not yet known to the local client.
@@ -273,8 +279,10 @@ extension DirectoryEntry {
             // `deletedLocally` is set to the same state as `deletedOnServer` because this is a file not yet known the local client. This just indicates that, if deleted on server already, the local client doesn't have to take any deletion actions for this file. If not deleted on the server, then the file isn't deleted locally either.
             let entry = try DirectoryEntry(db: db, fileUUID: fileUUID, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, fileVersion:  nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, goneReason: nil)
             try entry.insert()
-            return entry
+            resultEntry = entry
         }
+        
+        return (resultEntry, markedForDeletion)
     }
     
     // It is an error for one of the uploadables to not be in the DirectoryEntry's

@@ -118,9 +118,29 @@ extension SyncServer {
             let objectBasics = ObjectBasics(fileGroupUUID: fileGroupUUID, objectType: objectType, sharingGroupUUID: sharingGroupUUID)
             let object = try DeclaredObjectModel.upsert(object: objectBasics, db: db)
             
+            var deletedCount = 0
+            
             for file in fileGroup {
                 try DeclaredFileModel.upsert(fileInfo: file, object: object, db: db)
-                try DirectoryEntry.upsert(fileInfo: file, db: db)
+                let (entry, deleted) = try DirectoryEntry.upsert(fileInfo: file, db: db)
+                if deleted {
+                    deletedCount += 1
+                    delegator { [weak self] delegate in
+                        guard let self = self else { return }
+                        delegate.downloadDeletion(self, details: .file(entry.fileUUID))
+                    }
+                }
+            }
+            
+            guard deletedCount == 0 || deletedCount == fileGroup.count else {
+                throw SyncServerError.internalError("Some but not all of file group deleted.")
+            }
+            
+            if deletedCount > 0 {
+                delegator { [weak self] delegate in
+                    guard let self = self else { return }
+                    delegate.downloadDeletion(self, details: .fileGroup(fileGroupUUID))
+                }
             }
         }
     }

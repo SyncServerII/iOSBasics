@@ -157,6 +157,7 @@ extension SyncServer {
         let entries = try DirectoryEntry.fetch(db: db, where:
             DirectoryEntry.fileGroupUUIDField.description == deletion.uuid)
         for entry in entries {
+            // Deletion commanded locally-- mark both flags as true.
             try entry.update(setters:
                 DirectoryEntry.deletedLocallyField.description <- true,
                 DirectoryEntry.deletedOnServerField.description <- true)

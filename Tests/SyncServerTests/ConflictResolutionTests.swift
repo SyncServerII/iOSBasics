@@ -244,4 +244,7 @@ extension ConflictResolutionTests: SyncServerDelegate {
     func deletionCompleted(_ syncServer: SyncServer) {
         deletionCompleted?(syncServer)
     }
+    
+    func downloadDeletion(_ syncServer: SyncServer, details: DownloadDeletion) {
+    }
 }

@@ -124,13 +124,13 @@ final class DirectoryEntryTableTests: XCTestCase {
         fileInfo1.fileUUID = entry.fileUUID.uuidString
         let entry1 = try DirectoryEntry.upsert(fileInfo: fileInfo1, db: database)
         // These match because the search is done on the basis of fileUUID, and no update is done.
-        XCTAssert(entry == entry1)
+        XCTAssert(entry == entry1.0)
         
         let fileInfo2 = FileInfo()
         fileInfo2.fileUUID = UUID().uuidString
         fileInfo2.sharingGroupUUID = UUID().uuidString
         fileInfo2.fileGroupUUID = UUID().uuidString
         let entry2 = try DirectoryEntry.upsert(fileInfo: fileInfo2, db: database)
-        XCTAssert(entry2 != entry)
+        XCTAssert(entry2.0 != entry)
     }
 }

@@ -36,9 +36,14 @@ extension SyncServer {
                         return
                     }
                     
+                    // Specifically *not* changing `deletedLocallyField` because the difference between these two (i.e., deletedLocally false, and deletedOnServer true) will be used to drive local deletion for the client.
                     try entry.update(setters:
-                        DirectoryEntry.deletedLocallyField.description <- true,
                         DirectoryEntry.deletedOnServerField.description <- true)
+
+                    delegator { [weak self] delegate in
+                        guard let self = self else { return }
+                        delegate.downloadDeletion(self, details: .file(fileUUID))
+                    }
                     
                 } catch let error {
                     delegator { [weak self] delegate in
@@ -171,6 +176,11 @@ extension SyncServer {
             
             if remainingUploads.count == 0 {
                 try deleteTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
+            }
+            
+            delegator { [weak self] delegate in
+                guard let self = self else { return }
+                delegate.downloadDeletion(self, details: .fileGroup(objectTracker.fileGroupUUID))
             }
         }
     }

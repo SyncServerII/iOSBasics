@@ -362,4 +362,7 @@ extension UploadQueueTests_TwoObjectDeclarations: SyncServerDelegate {
     
     func deletionCompleted(_ syncServer: SyncServer) {
     }
+    
+    func downloadDeletion(_ syncServer: SyncServer, details: DownloadDeletion) {
+    }
 }

@@ -103,6 +103,15 @@ public class SyncServer {
         try deleteHelper(object: object)
     }
     
+    // Returns the same information as from the `downloadDeletion` delegate method-- other clients have removed these files.
+    public func filesNeedingDeletion() -> [ObjectDeclaration] {
+        return []
+    }
+    
+    // Clients need to call this method to indicate they have deleted files returned from either the deletion delegates or from `filesNeedingDeletion`.
+    public func deletedFiles<DECL: DeclarableObject>(object: DECL) {
+    }
+    
     // MARK: Download
     
     // The list of files returned here survive app relaunch. A given object declaration will appear at most once in the returned list.

@@ -26,6 +26,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
     var uploadCompleted: ((SyncServer, UploadResult) -> ())?
     var error:((SyncServer, Error?) -> ())?
     var syncCompleted: ((SyncServer, SyncResult) -> ())?
+    var deletionCompleted: ((SyncServer) -> ())?
     var user: TestUser!
     var database: Connection!
     var config:Configuration!
@@ -199,6 +200,152 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests {
 
         waitForExpectations(timeout: 10, handler: nil)
     }
+    
+    func testMakeSureIndexUpdateForDeletedObjectHasDeletionFail() throws {
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
+        guard declaration.declaredFiles.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        let exp = expectation(description: "exp")
+        deletionCompleted = { _ in
+            exp.fulfill()
+        }
+        
+        try syncServer.delete(object: declaration)
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Reset the database show a state *as if* another client instance had done the upload/deleteion.
+        database = try Connection(.inMemory)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
+        syncServer.delegate = self
+        syncServer.credentialsDelegate = self
+        
+        let exp2 = expectation(description: "exp2")
+        syncCompleted = { _,_ in
+            exp2.fulfill()
+        }
+        
+        // Fetch the database state again.
+        try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // This is as if another client attempts a deletion of a file after a sync where it learned about the deleted file for the first time.
+        do {
+            try syncServer.delete(object: declaration)
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssert(syncServerError == SyncServerError.attemptToDeleteAnAlreadyDeletedFile)
+            return
+        }
+        
+        XCTFail()
+    }
+    
+    func testMakeSureIndexUpdateForDeletedObjectHasUploadFail() throws {
+       let sharingGroupUUID = try getSharingGroupUUID()
+
+        let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
+        guard declaration.declaredFiles.count == 1,
+            let declaredFile = declaration.declaredFiles.first else {
+            XCTFail()
+            return
+        }
+
+        let exp = expectation(description: "exp")
+        deletionCompleted = { _ in
+            exp.fulfill()
+        }
+        
+        try syncServer.delete(object: declaration)
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Reset the database show a state *as if* another client instance had done the upload/deleteion.
+        database = try Connection(.inMemory)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
+        syncServer.delegate = self
+        syncServer.credentialsDelegate = self
+        
+        let exp2 = expectation(description: "exp2")
+        syncCompleted = { _,_ in
+            exp2.fulfill()
+        }
+        
+        // Fetch the database state again.
+        try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        let uploadable1 = FileUpload(uuid: declaredFile.uuid, dataSource: .copy(exampleTextFileURL))
+
+        // This is as if another client attempts an upload of a file after a sync where it learned about the deleted file for the first time.
+        do {
+            try syncServer.queue(declaration: declaration, uploads: [uploadable1])
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssert(syncServerError == SyncServerError.attemptToQueueADeletedFile)
+            return
+        }
+        
+        XCTFail()
+    }
+    
+    func testMakeSureIndexWithDeletedFileMarksAsDeleted() throws {
+       let sharingGroupUUID = try getSharingGroupUUID()
+
+        let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
+        guard declaration.declaredFiles.count == 1,
+            let declaredFile = declaration.declaredFiles.first else {
+            XCTFail()
+            return
+        }
+
+        let exp = expectation(description: "exp")
+        deletionCompleted = { _ in
+            exp.fulfill()
+        }
+        
+        try syncServer.delete(object: declaration)
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Reset the deleted state of the file.
+        guard let entry = try DirectoryEntry.fetchSingleRow(db: database, where: DirectoryEntry.fileUUIDField.description == declaredFile.uuid) else {
+            XCTFail()
+            return
+        }
+        
+        try entry.update(setters:
+            DirectoryEntry.deletedLocallyField.description <- false,
+            DirectoryEntry.deletedOnServerField.description <- false)
+        
+        let exp2 = expectation(description: "exp2")
+        syncCompleted = { _,_ in
+            exp2.fulfill()
+        }
+        
+        // Fetch the database state again.
+        try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // The deleted state of the file should have been updated.
+        guard let entry2 = try DirectoryEntry.fetchSingleRow(db: database, where: DirectoryEntry.fileUUIDField.description == declaredFile.uuid) else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(!entry2.deletedLocally)
+        XCTAssert(entry2.deletedOnServer)
+    }
 }
 
 extension IndexTests: SyncServerCredentials {
@@ -240,5 +387,9 @@ extension IndexTests: SyncServerDelegate {
     }
     
     func deletionCompleted(_ syncServer: SyncServer) {
+        deletionCompleted?(syncServer)
+    }
+    
+    func downloadDeletion(_ syncServer: SyncServer, details: DownloadDeletion) {
     }
 }

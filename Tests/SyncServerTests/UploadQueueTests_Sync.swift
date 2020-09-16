@@ -476,4 +476,7 @@ extension UploadQueueTests_Sync: SyncServerDelegate {
     
     func deletionCompleted(_ syncServer: SyncServer) {
     }
+    
+    func downloadDeletion(_ syncServer: SyncServer, details: DownloadDeletion) {
+    }
 }

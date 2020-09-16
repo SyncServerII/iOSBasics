@@ -39,6 +39,11 @@ public struct UploadResult {
     }
 }
 
+public enum DownloadDeletion {
+    case file(UUID)
+    case fileGroup(UUID)
+}
+
 // These methods are all called on the `delegateDispatchQueue` passed to the SyncServer constructor.
 public protocol SyncServerDelegate: AnyObject {
     func error(_ syncServer: SyncServer, error: Error?)
@@ -57,6 +62,7 @@ public protocol SyncServerDelegate: AnyObject {
     func uploadQueued(_ syncServer: SyncServer, declObjectId: UUID)
 
     // Upload started successfully. Request was sent to server.
+    #warning("Get rid of deferredUploadId-- leaking internal ids.")
     func uploadStarted(_ syncServer: SyncServer, deferredUploadId:Int64)
     
     // Request to server for an upload completed successfully.
@@ -67,4 +73,9 @@ public protocol SyncServerDelegate: AnyObject {
 
     // Request to server for upload deletion completed successfully.
     func deletionCompleted(_ syncServer: SyncServer)
+    
+    // Another client deleted a file/file group.
+    func downloadDeletion(_ syncServer: SyncServer, details: DownloadDeletion)
 }
+
+
