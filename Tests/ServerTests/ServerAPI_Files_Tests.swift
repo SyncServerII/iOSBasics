@@ -200,7 +200,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
             returnResult = downloadResult
             
             switch downloadResult {
-            case .success(let result):
+            case .success(_, let result):
                 XCTAssert(!result.contentsChangedOnServer)
 
                 let data1 = try Data(contentsOf: fileURL)
@@ -231,7 +231,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         }
         
         switch result {
-        case .success(let result):
+        case .success(_, let result):
             XCTAssert(result.appMetaData == appMetaData)
         default:
             XCTFail()

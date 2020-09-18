@@ -89,27 +89,22 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         }
 
         let exp = expectation(description: "exp")
-        handlers.downloadQueue = { _, result in
-            switch result {
-            case .completed(let result):
+        handlers.extras.downloadCompleted = { _, result in
             switch result.downloadType {
-                case .gone:
-                    XCTFail()
-                    
-                case .success(let url):
-                    do {
-                        let data1 = try Data(contentsOf: localFile)
-                        let data2 = try Data(contentsOf: url)
-                        XCTAssert(data1 == data2)
-                        try FileManager.default.removeItem(at: url)
-                    } catch {
-                        XCTFail()
-                    }
-                }
-            case .queued:
+            case .gone:
                 XCTFail()
+                
+            case .success(let url):
+                do {
+                    let data1 = try Data(contentsOf: localFile)
+                    let data2 = try Data(contentsOf: url)
+                    XCTAssert(data1 == data2)
+                    try FileManager.default.removeItem(at: url)
+                } catch {
+                    XCTFail()
+                }
             }
-
+            
             exp.fulfill()
         }
         
@@ -246,11 +241,75 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
             XCTAssert(syncServerError == SyncServerError.noObject)
         }
     }
+        
+    func testDownloadCurrentlyDownloadingFileIsQueued() throws {
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let localFile = Self.exampleTextFileURL
+        
+        let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        guard declaration.declaredFiles.count == 1,
+            let declaredFile = declaration.declaredFiles.first else {
+            XCTFail()
+            return
+        }
+        
+        let downloadable1 = FileDownload(uuid: declaredFile.uuid, fileVersion: 0)
+        let downloadables = Set<FileDownload>([downloadable1])
+        
+        let exp1 = expectation(description: "downloadCompleted")
+        handlers.extras.downloadCompleted = { _, result in
+            switch result.downloadType {
+            case .gone:
+                XCTFail()
+                
+            case .success(let url):
+                do {
+                    let data1 = try Data(contentsOf: localFile)
+                    let data2 = try Data(contentsOf: url)
+                    XCTAssert(data1 == data2)
+                    try FileManager.default.removeItem(at: url)
+                } catch {
+                    XCTFail()
+                }
+            }
+
+            exp1.fulfill()
+        }
+        
+        let exp2 = expectation(description: "downloadQueued")
+        handlers.extras.downloadQueued = { _ in
+            exp2.fulfill()
+        }
+        
+        try syncServer.queue(downloads: downloadables, declaration: declaration)
+        try syncServer.queue(downloads: downloadables, declaration: declaration)
+
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Don't have sync ready yet. Will just delete the trackers for the second download.
+        guard let fileTracker1 = try DownloadFileTracker.fetchSingleRow(db: database, where: DownloadFileTracker.fileUUIDField.description == downloadable1.uuid) else {
+            XCTFail()
+            return
+        }
+        try fileTracker1.delete()
+        
+        guard let fileTracker2 = try DownloadObjectTracker.fetchSingleRow(db: database, where: DownloadObjectTracker.fileGroupUUIDField.description == declaration.fileGroupUUID) else {
+            XCTFail()
+            return
+        }
+        try fileTracker2.delete()
+        
+        let count1 = try DownloadFileTracker.numberRows(db: database)
+        XCTAssert(count1 == 0, "\(count1)")
+        
+        let count2 = try DownloadObjectTracker.numberRows(db: database)
+        XCTAssert(count2 == 0, "\(count2)")
+        
+        // Second download has been queued, but not downloaded.
+    }
     
     #warning("Need to write these tests")
-    
-    func testDownloadCurrentlyDownloadingFileIsQueued() {
-    }
     
     func testDownloadTwoFilesInSameObjects() {
     }

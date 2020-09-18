@@ -10,6 +10,9 @@ class DelegateHandlers {
         var uploadQueued:((SyncServer) -> ())?
         var uploadCompleted:((SyncServer, UploadResult) -> ())?
         var uploadStarted:((SyncServer) -> ())?
+         
+        var downloadQueued:((SyncServer) -> ())?
+        var downloadCompleted:((SyncServer, DownloadResult) -> ())?
     }
     let extras = Extras()
 
@@ -27,10 +30,8 @@ class DelegateHandlers {
     var deletionCompleted: ((SyncServer) -> ())?
     var downloadDeletion: ((SyncServer, DownloadDeletion) -> ())?
     
-    var downloadQueue: ((SyncServer, DownloadEvent) -> ())?
-    
-    // Extras to make handling easier
-    
+    // Use Extras
+    // var downloadQueue: ((SyncServer, DownloadEvent) -> ())?
 }
 
 protocol Delegate: SyncServerDelegate, SyncServerCredentials {
@@ -54,7 +55,12 @@ extension Delegate {
     }
     
     func downloadQueue(_ syncServer: SyncServer, event: DownloadEvent) {
-        handlers.downloadQueue?(syncServer, event)
+        switch event {
+        case .queued:
+            handlers.extras.downloadQueued?(syncServer)
+        case .completed(let result):
+            handlers.extras.downloadCompleted?(syncServer, result)
+        }
     }
     
     // A uuid that was initially generated on the client

@@ -66,11 +66,12 @@ public class SyncServer {
     
     /* This performs a variety of actions:
     1) It triggers any next pending uploads. In general, after a set of uploads queued by your call(s) to the SyncServer `queue` uploads method, further uploads are not automatically initiated. It's up to the caller of this interface to call `sync` periodically to drive that. It's likely best that `sync` only be called while the app is in the foreground-- to avoid penalties (e.g., increased latencies) incurred by initating network requests, from other networking requests, while the app is in the background. Uploads are carried out using a background URLSession and so can run while the app is in the background.
-    2) It checks if vN deferred uploads server requests have completed.
-    3) If a non-nil sharingGroupUUID is given, this fetches the index for all files in that sharing group from the server. If successful, the syncCompleted delegate method is called, and:
+    2) Triggers any next pending downloads.
+    3) It checks if vN deferred uploads server requests have completed.
+    4) If a non-nil sharingGroupUUID is given, this fetches the index for all files in that sharing group from the server. If successful, the syncCompleted delegate method is called, and:
         a) the `sharingGroups` property has been updated
         b) the `filesNeedingDownload` method can be called to determine any files needing downloading for the sharing group.
-    4) If a nil sharingGroupUUID is given, this fetches all sharing groups for this user from the server.
+    5) If a nil sharingGroupUUID is given, this fetches all sharing groups for this user from the server.
     Each call to this method does make at least one request (an `index` request) to the server. Therefore, client app developers should not make a call to this method too often. For example, calling it when a client app transitions to the foreground, and/or when a user refreshes a sharing group in their UI.
     */
     public func sync(sharingGroupUUID: UUID? = nil) throws {

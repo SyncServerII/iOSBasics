@@ -80,9 +80,9 @@ extension SyncServer {
         switch result {
         case .success(let downloadResult):
             switch downloadResult {
-            case .gone(let fileUUID, _):
+            case .gone(let objectTrackerId, let fileUUID, _):
                 do {
-                    try cleanupAfterDownloadCompleted(fileUUID: fileUUID)
+                    try cleanupAfterDownloadCompleted(fileUUID: fileUUID, objectTrackerId: objectTrackerId)
                 } catch let error {
                     delegator { [weak self] delegate in
                         guard let self = self else { return }
@@ -98,9 +98,9 @@ extension SyncServer {
                     delegate.downloadQueue(self, event: .completed(result))
                 }
                 
-            case .success(let result):
+            case .success(let objectTrackerId, let result):
                 do {
-                    try cleanupAfterDownloadCompleted(fileUUID: result.fileUUID)
+                    try cleanupAfterDownloadCompleted(fileUUID: result.fileUUID, objectTrackerId: objectTrackerId)
                 } catch let error {
                     delegator { [weak self] delegate in
                         guard let self = self else { return }
@@ -133,8 +133,10 @@ extension SyncServer {
         try objectTracker.delete()
     }
     
-    func cleanupAfterDownloadCompleted(fileUUID:UUID) throws {
-        guard let fileTracker = try DownloadFileTracker.fetchSingleRow(db: db, where: fileUUID == DownloadFileTracker.fileUUIDField.description) else {
+    func cleanupAfterDownloadCompleted(fileUUID:UUID, objectTrackerId: Int64) throws {
+        // There can be more than one row in DownloadFileTracker with the same fileUUID here because we can queue the same download multiple times. Therefore, need to also search by objectTrackerId.
+        guard let fileTracker = try DownloadFileTracker.fetchSingleRow(db: db, where: fileUUID == DownloadFileTracker.fileUUIDField.description &&
+            objectTrackerId == DownloadFileTracker.downloadObjectTrackerIdField.description) else {
             throw SyncServerError.internalError("Problem in fetchSingleRow for DownloadFileTracker")
         }
 

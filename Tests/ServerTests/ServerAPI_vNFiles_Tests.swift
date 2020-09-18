@@ -137,7 +137,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         
         let downloadedURL: URL
         switch downloadResult {
-        case .success(let result):
+        case .success(_, let result):
             downloadedURL = result.url
         default:
             XCTFail()

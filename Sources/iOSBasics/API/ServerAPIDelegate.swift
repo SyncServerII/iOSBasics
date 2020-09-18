@@ -29,10 +29,10 @@ enum DownloadFileResult {
         let appMetaData: String?
     }
     
-    case success(Download)
+    case success(objectTrackerId: Int64, Download)
     
     // The GoneReason should never be userRemoved-- because when a user is removed, their files are marked as deleted in the FileIndex, and thus the files are generally not downloadable.
-    case gone(fileUUID: UUID, GoneReason)
+    case gone(objectTrackerId: Int64, fileUUID: UUID, GoneReason)
 }
 
 protocol ServerAPIDelegate: NetworkingDelegate {

@@ -38,12 +38,6 @@ extension SyncServer {
         
         // And that it matches the one we have stored.
         try declaredObjectCanBeQueued(declaration: declaration, declaredObject:declaredObject)
-        
-        // Make sure the file(s) we're trying to download are not being downloaded.
-        let result = try DownloadObjectTracker.fetch(db: db, where: DownloadObjectTracker.fileGroupUUIDField.description == declaration.fileGroupUUID)
-        guard result.count == 0 else {
-            throw SyncServerError.downloadingObjectAlreadyBeingDownloaded
-        }
                 
         // If there is an active download for this fileGroupUUID, then this download will be locally queued for later processing. If there is not one, we'll trigger the download now.
         let activeDownloadsForThisFileGroup = try DownloadObjectTracker.anyDownloadsWith(status: .downloading, fileGroupUUID: declaration.fileGroupUUID, db: db)

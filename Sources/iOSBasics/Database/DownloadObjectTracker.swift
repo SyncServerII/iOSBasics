@@ -26,7 +26,9 @@ class DownloadObjectTracker: DatabaseModel {
     static func createTable(db: Connection) throws {
         try startCreateTable(db: db) { t in
             t.column(idField.description, primaryKey: true)
-            t.column(fileGroupUUIDField.description, unique: true)
+            
+            // Not making this unique because we're allowing queueing of downloads with the same file group. They won't dowload in parallel though.
+            t.column(fileGroupUUIDField.description)
         }
     }
     

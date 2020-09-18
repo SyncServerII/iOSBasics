@@ -58,8 +58,8 @@ class DownloadFileTracker: DatabaseModel {
             t.column(downloadObjectTrackerIdField.description)
             t.column(statusField.description)
             
-            // Only allowing same file queued once.
-            t.column(fileUUIDField.description, unique: true)
+            // Not making this unique because allowing queueing (but not parallel downloading) of the same file group.
+            t.column(fileUUIDField.description)
             
             t.column(fileVersionField.description)
             t.column(localURLField.description)
