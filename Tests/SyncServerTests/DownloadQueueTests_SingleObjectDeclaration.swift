@@ -127,24 +127,129 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         try runDownload(withFiles: true)
     }
     
-    #warning("Need to write these tests")
+    func testNonDistinctFileUUIDsInDeclarationFails() throws {
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let localFile = Self.exampleTextFileURL
+        
+        let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        guard declaration.declaredFiles.count == 1,
+            let declaredFile = declaration.declaredFiles.first else {
+            XCTFail()
+            return
+        }
+        
+        let downloadable1 = FileDownload(uuid: declaredFile.uuid, fileVersion: 0)
+        
+        let downloadables = Set<FileDownload>([downloadable1])
+        
+        var declaredFiles = declaration.declaredFiles
+        let newDeclaredFile = FileDeclaration(uuid: declaredFile.uuid, mimeType: declaredFile.mimeType, cloudStorageType: declaredFile.cloudStorageType, appMetaData: UUID().uuidString, changeResolverName: nil)
+        declaredFiles.insert(newDeclaredFile)
 
-    func testNotDistinctFileUUIDsInDeclaration() {
+        let newDeclaration = ObjectDeclaration(fileGroupUUID: declaration.fileGroupUUID, objectType: declaration.objectType, sharingGroupUUID: declaration.sharingGroupUUID, declaredFiles: declaredFiles)
+        
+        do {
+            try syncServer.queue(downloads: downloadables, declaration: newDeclaration)
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssert(syncServerError == SyncServerError.declaredFilesDoNotHaveDistinctUUIDs)
+        }
     }
     
-    func testNotDistinctFileUUIDsInDownloadFiles() {
+    func testNonDistinctFileUUIDsInDownloadFilesFails() throws {
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let localFile = Self.exampleTextFileURL
+        
+        let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        guard declaration.declaredFiles.count == 1,
+            let declaredFile = declaration.declaredFiles.first else {
+            XCTFail()
+            return
+        }
+        
+        let downloadable1 = FileDownload(uuid: declaredFile.uuid, fileVersion: 0)
+        let downloadable2 = FileDownload(uuid: declaredFile.uuid, fileVersion: 1)
+
+        let downloadables = Set<FileDownload>([downloadable1, downloadable2])
+        
+        do {
+            try syncServer.queue(downloads: downloadables, declaration: declaration)
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssert(syncServerError == SyncServerError.downloadsDoNotHaveDistinctUUIDs)
+        }
     }
     
-    func testSomeFilesInDownloadNotInDeclarationFails() {
+    func testFileInDownloadNotInDeclarationFails() throws {
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let localFile = Self.exampleTextFileURL
+        
+        let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        guard declaration.declaredFiles.count == 1,
+            let declaredFile = declaration.declaredFiles.first else {
+            XCTFail()
+            return
+        }
+        
+        let downloadable1 = FileDownload(uuid: declaredFile.uuid, fileVersion: 0)
+        let downloadable2 = FileDownload(uuid: UUID(), fileVersion: 0)
+
+        let downloadables = Set<FileDownload>([downloadable1, downloadable2])
+        
+        do {
+            try syncServer.queue(downloads: downloadables, declaration: declaration)
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssert(syncServerError == SyncServerError.fileNotDeclared)
+        }
     }
     
-    func testUndeclaredObjectFails() {
+    func testUndeclaredObjectFails() throws {
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let localFile = Self.exampleTextFileURL
+        
+        let _ = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        
+        let fileUUID1 = UUID()
+        let declaration2 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declarations2 = Set<FileDeclaration>([declaration2])
+
+        let object2 = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations2)
+        
+        let downloadable1 = FileDownload(uuid: fileUUID1, fileVersion: 0)
+        let downloadables = Set<FileDownload>([downloadable1])
+        
+        do {
+            try syncServer.queue(downloads: downloadables, declaration: object2)
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssert(syncServerError == SyncServerError.noObject)
+        }
     }
     
-    func testDeclaredObjectDoesNotMatchThatUsedFails() {
-    }
+    #warning("Need to write these tests")
     
-    func testDownloadCurrentlyDownloadingFileFails() {
+    func testDownloadCurrentlyDownloadingFileIsQueued() {
     }
     
     func testDownloadTwoFilesInSameObjects() {

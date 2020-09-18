@@ -20,6 +20,7 @@ enum SyncServerError: Error {
     case attemptToDeleteObjectWithInvalidDeclaration
     case attemptToDeleteAnAlreadyDeletedFile
     case downloadingObjectAlreadyBeingDownloaded
+    case downloadsDoNotHaveDistinctUUIDs
     
     static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
@@ -127,6 +128,12 @@ enum SyncServerError: Error {
 
         case downloadingObjectAlreadyBeingDownloaded:
             guard case .downloadingObjectAlreadyBeingDownloaded = rhs else {
+                return false
+            }
+            return true
+
+        case downloadsDoNotHaveDistinctUUIDs:
+            guard case .downloadsDoNotHaveDistinctUUIDs = rhs else {
                 return false
             }
             return true

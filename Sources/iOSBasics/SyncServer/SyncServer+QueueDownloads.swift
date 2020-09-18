@@ -15,7 +15,7 @@ extension SyncServer {
         
         // Make sure all files in the downloads and declarations have distinct uuid's
         guard DWL.hasDistinctUUIDs(in: downloads) else {
-            throw SyncServerError.uploadsDoNotHaveDistinctUUIDs
+            throw SyncServerError.downloadsDoNotHaveDistinctUUIDs
         }
         
         guard DECL.DeclaredFile.hasDistinctUUIDs(in: declaration.declaredFiles) else {
