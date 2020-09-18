@@ -5,6 +5,7 @@ enum SyncServerError: Error {
     case declarationDifferentThanSyncedObject(String)
     case tooManyObjects
     case noObject
+    case noObjectId
     case fileNotDeclared
     case uploadsDoNotHaveDistinctUUIDs
     case declaredFilesDoNotHaveDistinctUUIDs
@@ -18,6 +19,7 @@ enum SyncServerError: Error {
     case attemptToQueueAFileThatHasNotBeenDownloaded
     case attemptToDeleteObjectWithInvalidDeclaration
     case attemptToDeleteAnAlreadyDeletedFile
+    case downloadingObjectAlreadyBeingDownloaded
     
     static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
@@ -35,6 +37,12 @@ enum SyncServerError: Error {
             
         case noObject:
             guard case .noObject = rhs else {
+                return false
+            }
+            return true
+            
+        case noObjectId:
+            guard case .noObjectId = rhs else {
                 return false
             }
             return true
@@ -113,6 +121,12 @@ enum SyncServerError: Error {
 
         case attemptToDeleteAnAlreadyDeletedFile:
             guard case .attemptToDeleteAnAlreadyDeletedFile = rhs else {
+                return false
+            }
+            return true
+
+        case downloadingObjectAlreadyBeingDownloaded:
+            guard case .downloadingObjectAlreadyBeingDownloaded = rhs else {
                 return false
             }
             return true

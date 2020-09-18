@@ -336,7 +336,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         let sharingGroupUUID = try getSharingGroupUUID()
         
         var queuedCount = 0
-        handlers.uploadQueued = { _, syncObjectId in
+        handlers.extras.uploadQueued = { _ in
             queuedCount += 1
         }
 
@@ -353,18 +353,18 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         // This second one should work also-- but not trigger an upload-- because its for the same file group as the immediately prior `queue`. i.e., the active upload.
         try syncServer.queue(uploads: uploadables, declaration: testObject)
         // Can't do this yet because of async delegate calls.
-        // XCTAssert(queuedCount == 1)
+        // XCTAssert(queuedCount == 1, "\(queuedCount)")
 
         let count = try DeclaredObjectModel.numberRows(db: database,
             where: testObject.declObjectId == DeclaredObjectModel.fileGroupUUIDField.description)
         XCTAssert(count == 1)
-        
+
         let count2 = try DeclaredFileModel.numberRows(db: database, where: testObject.declObjectId == DeclaredFileModel.fileGroupUUIDField.description)
         XCTAssert(count2 == 1)
         
         waitForUploadsToComplete(numberUploads: 1)
-        XCTAssert(queuedCount == 1)
-        
+        XCTAssert(queuedCount == 1, "\(queuedCount)")
+
         // Until I get the second tier queued uploads working, need to remove the remaining non-uploaded file to not get a test failure.
         guard let tracker = try UploadFileTracker.fetchSingleRow(db: database, where: fileUUID == UploadFileTracker.fileUUIDField.description),
             let url = tracker.localURL else {
@@ -476,11 +476,12 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
     func testQueueWithExistingDeferredUpload() throws {
         var count = 0
         
-        handlers.uploadQueued = { syncServer, objectId in
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        handlers.extras.uploadQueued = { _ in
             count += 1
         }
         
-        let sharingGroupUUID = try getSharingGroupUUID()
         let fileUUID = UUID()
         
         let declaration = FileDeclaration(uuid: fileUUID, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
@@ -496,13 +497,9 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         
         try syncServer.queue(uploads: uploadables, declaration: testObject)
         
-        // Can't do this yet because of asynchronous delegate callbacks
-        // XCTAssert(count == 1, "\(count)")
-        
         waitForUploadsToComplete(numberUploads: 1)
-        
         XCTAssert(count == 1, "\(count)")
-        
+
         // Until I get the second tier queued uploads working, need to remove the remaining non-uploaded file to not get a test failure.
         guard let tracker = try UploadFileTracker.fetchSingleRow(db: database, where: fileUUID == UploadFileTracker.fileUUIDField.description),
             let url = tracker.localURL else {

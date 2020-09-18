@@ -46,9 +46,15 @@ extension ServerAPI: FileTransferDelegate {
             appMetaData = AppMetaData(contents: contents)
         }
 
+        guard let fileUUIDString = file.fileUUID,
+            let fileUUID = UUID(uuidString: fileUUIDString) else {
+            delegate.downloadCompleted(self, result: .failure(ServerAPIError.badUUID))
+            return
+        }
+            
         if let goneRaw = downloadFileResponse.gone,
             let gone = GoneReason(rawValue: goneRaw) {
-            let result = DownloadFileResult.gone(appMetaData: appMetaData, cloudStorageType: cloudStorageType, gone)
+            let result = DownloadFileResult.gone(fileUUID: fileUUID, gone)
             delegate.downloadCompleted(self, result: .success(result))
             return
         }
@@ -79,8 +85,8 @@ extension ServerAPI: FileTransferDelegate {
                 return
             }
             
-            let result = DownloadFileResult.success(url: url, appMetaData: appMetaData, checkSum: checkSum, cloudStorageType: cloudStorageType, contentsChangedOnServer: contentsChanged)
-            delegate.downloadCompleted(self, result: .success(result))
+            let result = DownloadFileResult.Download(fileUUID: fileUUID, url: url, checkSum: checkSum, contentsChangedOnServer: contentsChanged, appMetaData: appMetaData?.contents)
+            delegate.downloadCompleted(self, result: .success(.success(result)))
         }
         else {
             delegate.downloadCompleted(self, result: .failure(ServerAPIError.noExpectedResultKey))

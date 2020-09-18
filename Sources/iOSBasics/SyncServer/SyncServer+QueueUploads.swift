@@ -80,7 +80,7 @@ extension SyncServer {
             // There are active uploads for this file group.
             delegator { [weak self] delegate in
                 guard let self = self else { return }
-                delegate.uploadQueued(self, declObjectId: declaration.declObjectId)
+                delegate.uploadQueue(self, event: .queued(fileGroupUUID: declaration.fileGroupUUID))
             }
             return
         }

@@ -137,8 +137,8 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         
         let downloadedURL: URL
         switch downloadResult {
-        case .success(url: let url, appMetaData: _, checkSum: _, cloudStorageType: _, contentsChangedOnServer: _):
-            downloadedURL = url
+        case .success(let result):
+            downloadedURL = result.url
         default:
             XCTFail()
             return

@@ -5,20 +5,32 @@ import iOSSignIn
 import XCTest
 
 class DelegateHandlers {
+    class Extras {
+        init() {}
+        var uploadQueued:((SyncServer) -> ())?
+        var uploadCompleted:((SyncServer, UploadResult) -> ())?
+        var uploadStarted:((SyncServer) -> ())?
+    }
+    let extras = Extras()
+
     var user:TestUser!
     
     var error:((SyncServer, Error?) -> ())?
     
     var syncCompleted: ((SyncServer, SyncResult) -> ())?
     
-    var uploadQueued: ((SyncServer, _ syncObjectId: UUID) -> ())?
-    var uploadStarted: ((SyncServer, _ deferredUploadId:Int64) -> ())?
-    var uploadCompleted: ((SyncServer, UploadResult) -> ())?
+    // Use extras.
+    // var uploadQueue:((SyncServer, UploadEvent) -> ())?
+
     var deferredCompleted: ((SyncServer, DeferredOperation, _ numberCompleted: Int) -> ())?
         
     var deletionCompleted: ((SyncServer) -> ())?
     var downloadDeletion: ((SyncServer, DownloadDeletion) -> ())?
-    var downloadCompleted: ((SyncServer, _ declObjectId: UUID) -> ())?
+    
+    var downloadQueue: ((SyncServer, DownloadEvent) -> ())?
+    
+    // Extras to make handling easier
+    
 }
 
 protocol Delegate: SyncServerDelegate, SyncServerCredentials {
@@ -41,24 +53,25 @@ extension Delegate {
         handlers.syncCompleted?(syncServer, result)
     }
     
-    func downloadCompleted(_ syncServer: SyncServer, declObjectId: UUID) {
-        handlers.downloadCompleted?(syncServer, declObjectId)
+    func downloadQueue(_ syncServer: SyncServer, event: DownloadEvent) {
+        handlers.downloadQueue?(syncServer, event)
     }
     
     // A uuid that was initially generated on the client
     func uuidCollision(_ syncServer: SyncServer, type: UUIDCollisionType, from: UUID, to: UUID) {
     }
     
-    func uploadQueued(_ syncServer: SyncServer, declObjectId: UUID) {
-        handlers.uploadQueued?(syncServer, declObjectId)
-    }
-    
-    func uploadStarted(_ syncServer: SyncServer, deferredUploadId:Int64) {
-        handlers.uploadStarted?(syncServer, deferredUploadId)
-    }
-    
-    func uploadCompleted(_ syncServer: SyncServer, result: UploadResult) {
-        handlers.uploadCompleted?(syncServer, result)
+    func uploadQueue(_ syncServer: SyncServer, event: UploadEvent) {
+        switch event {
+        case .queued:
+            handlers.extras.uploadQueued?(syncServer)
+            
+        case .started:
+            handlers.extras.uploadStarted?(syncServer)
+            
+        case .completed(let result):
+            handlers.extras.uploadCompleted?(syncServer, result)
+        }
     }
     
     func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int) {

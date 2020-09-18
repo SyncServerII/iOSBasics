@@ -26,36 +26,12 @@ extension SyncServer {
                     }
                 }
                 
-                do {
-                    guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where:
-                        fileUUID == DirectoryEntry.fileUUIDField.description) else {
-                        delegator { [weak self] delegate in
-                            guard let self = self else { return }
-                            delegate.error(self, error: SyncServerError.internalError("Could not find DirectoryEntry"))
-                        }
-                        return
-                    }
-                    
-                    // Specifically *not* changing `deletedLocallyField` because the difference between these two (i.e., deletedLocally false, and deletedOnServer true) will be used to drive local deletion for the client.
-                    try entry.update(setters:
-                        DirectoryEntry.deletedOnServerField.description <- true)
-
-                    delegator { [weak self] delegate in
-                        guard let self = self else { return }
-                        delegate.downloadDeletion(self, details: .file(fileUUID))
-                    }
-                    
-                } catch let error {
-                    delegator { [weak self] delegate in
-                        guard let self = self else { return }
-                        delegate.error(self, error: error)
-                    }
-                }
+                goneDeleted(fileUUID: fileUUID)
                 
                 delegator { [weak self] delegate in
                     guard let self = self else { return }
                     let result = UploadResult(fileUUID: fileUUID, uploadType: .gone)
-                    delegate.uploadCompleted(self, result: result)
+                    delegate.uploadQueue(self, event: .completed(result))
                 }
                 
             case .success(let trackerId, let uploadResult):
@@ -94,7 +70,7 @@ extension SyncServer {
                 delegator { [weak self] delegate in
                     guard let self = self else { return }
                     let result = UploadResult(fileUUID: uploadResult.fileUUID, uploadType: .success)
-                    delegate.uploadCompleted(self, result: result)
+                    delegate.uploadQueue(self, event: .completed(result))
                 }
             }
         }
@@ -104,15 +80,41 @@ extension SyncServer {
         switch result {
         case .success(let downloadResult):
             switch downloadResult {
-            case .gone:
-                assert(false)
-            case .success:
+            case .gone(let fileUUID, _):
+                do {
+                    try cleanupAfterDownloadCompleted(fileUUID: fileUUID)
+                } catch let error {
+                    delegator { [weak self] delegate in
+                        guard let self = self else { return }
+                        delegate.error(self, error: error)
+                    }
+                }
+                
+                goneDeleted(fileUUID: fileUUID)
+                
                 delegator { [weak self] delegate in
                     guard let self = self else { return }
-                    delegate.downloadCompleted(self, declObjectId: UUID())
+                    let result = DownloadResult(fileUUID: fileUUID, downloadType: .gone)
+                    delegate.downloadQueue(self, event: .completed(result))
+                }
+                
+            case .success(let result):
+                do {
+                    try cleanupAfterDownloadCompleted(fileUUID: result.fileUUID)
+                } catch let error {
+                    delegator { [weak self] delegate in
+                        guard let self = self else { return }
+                        delegate.error(self, error: error)
+                    }
+                }
+                
+                delegator { [weak self] delegate in
+                    guard let self = self else { return }
+                    let result = DownloadResult(fileUUID: result.fileUUID, downloadType: .success(localFile: result.url))
+                    delegate.downloadQueue(self, event: .completed(result))
                 }
             }
-            break
+
         case .failure(let error):
             delegator { [weak self] delegate in
                 guard let self = self else { return }
@@ -123,6 +125,35 @@ extension SyncServer {
 }
 
 extension SyncServer {
+    func deleteDownloadTrackers(fileTrackers: [DownloadFileTracker], objectTracker: DownloadObjectTracker) throws {
+        for fileTracker in fileTrackers {
+            try fileTracker.delete()
+        }
+        
+        try objectTracker.delete()
+    }
+    
+    func cleanupAfterDownloadCompleted(fileUUID:UUID) throws {
+        guard let fileTracker = try DownloadFileTracker.fetchSingleRow(db: db, where: fileUUID == DownloadFileTracker.fileUUIDField.description) else {
+            throw SyncServerError.internalError("Problem in fetchSingleRow for DownloadFileTracker")
+        }
+
+        guard let objectTracker = try DownloadObjectTracker.fetchSingleRow(db: db, where: fileTracker.downloadObjectTrackerId  == DownloadObjectTracker.idField.description) else {
+            throw SyncServerError.internalError("Problem in fetchSingleRow for DownloadObjectTracker")
+        }
+
+        try fileTracker.update(setters:
+            DownloadFileTracker.statusField.description <- .downloaded)
+            
+        // Have all downloads successfully completed? If so, can delete all trackers, including those for files and the overall object.
+        let fileTrackers = try objectTracker.dependentFileTrackers()
+        let remainingUploads = fileTrackers.filter {$0.status != .downloaded}
+        
+        if remainingUploads.count == 0 {
+            try deleteDownloadTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
+        }
+    }
+    
     // For v0 uploads: Only mark the upload as done for the file tracker. Wait until *all* files have been uploaded until cleanup.
     // For vN uploads: Wait until the deferred upload completion to cleanup.
     // For Gone-- result will be nil.
@@ -152,7 +183,7 @@ extension SyncServer {
                 let remainingUploads = fileTrackers.filter {$0.status != .uploaded}
                 
                 if remainingUploads.count == 0 {
-                    try deleteTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
+                    try deleteUploadTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
                     
                     guard result.uploadsFinished == .v0UploadsFinished else {
                         throw SyncServerError.internalError("Did not get v0UploadsFinished when expected.")
@@ -175,7 +206,7 @@ extension SyncServer {
             let remainingUploads = fileTrackers.filter {$0.status != .uploaded}
             
             if remainingUploads.count == 0 {
-                try deleteTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
+                try deleteUploadTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
             }
             
             delegator { [weak self] delegate in
@@ -185,7 +216,7 @@ extension SyncServer {
         }
     }
     
-    func deleteTrackers(fileTrackers: [UploadFileTracker], objectTracker: UploadObjectTracker) throws {
+    func deleteUploadTrackers(fileTrackers: [UploadFileTracker], objectTracker: UploadObjectTracker) throws {
         for fileTracker in fileTrackers {
             if fileTracker.uploadCopy {
                 guard let url = fileTracker.localURL else {
@@ -205,6 +236,35 @@ extension SyncServer {
         }
         
         let fileTrackers = try objectTracker.dependentFileTrackers()
-        try deleteTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
+        try deleteUploadTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
+    }
+    
+    func goneDeleted(fileUUID: UUID) {
+        do {
+            guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where:
+                fileUUID == DirectoryEntry.fileUUIDField.description) else {
+                delegator { [weak self] delegate in
+                    guard let self = self else { return }
+                    delegate.error(self, error: SyncServerError.internalError("Could not find DirectoryEntry"))
+                }
+                return
+            }
+            
+            // Specifically *not* changing `deletedLocallyField` because the difference between these two (i.e., deletedLocally false, and deletedOnServer true) will be used to drive local deletion for the client.
+            try entry.update(setters:
+                DirectoryEntry.deletedOnServerField.description <- true)
+
+            delegator { [weak self] delegate in
+                guard let self = self else { return }
+                #warning("Not sure why I have this as downloadDeletion here.")
+                delegate.downloadDeletion(self, details: .file(fileUUID))
+            }
+            
+        } catch let error {
+            delegator { [weak self] delegate in
+                guard let self = self else { return }
+                delegate.error(self, error: error)
+            }
+        }
     }
 }

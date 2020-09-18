@@ -23,17 +23,25 @@ protocol TestFiles {
 }
 
 extension TestFiles {
-    var exampleTextFile:String { return "Example.txt" }
-    var exampleImageFile:String { return "Cat.jpg" }
+    static var exampleTextFile:String { return "Example.txt" }
+    static var exampleImageFile:String { return "Cat.jpg" }
 
-    var exampleTextFileURL: URL {
+    static var exampleTextFileURL: URL {
         let directory = TestingFile.directoryOfFile(#file)
         return directory.appendingPathComponent(exampleTextFile)
     }
     
-    var exampleImageFileURL: URL {
+    var exampleTextFileURL: URL {
+        return Self.exampleTextFileURL
+    }
+    
+    static var exampleImageFileURL: URL {
         let directory = TestingFile.directoryOfFile(#file)
         return directory.appendingPathComponent(exampleImageFile)
+    }
+
+    var exampleImageFileURL: URL {
+        return Self.exampleImageFileURL
     }
 }
 
@@ -195,7 +203,7 @@ extension APITests where Self: XCTestCase {
         var count = 0
         let exp = expectation(description: "exp")
         
-        handlers.uploadCompleted = { _, result in
+        handlers.extras.uploadCompleted = { _, result in
             count += 1
             
             switch result.uploadType {

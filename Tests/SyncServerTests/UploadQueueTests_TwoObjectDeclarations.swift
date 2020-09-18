@@ -15,12 +15,13 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
     
     var api: ServerAPI!
     var syncServer: SyncServer!
-    let handlers = DelegateHandlers()
+    var handlers = DelegateHandlers()
     var database: Connection!
     var config:Configuration!
     
     override func setUpWithError() throws {
         try super.setUpWithError()
+        handlers = DelegateHandlers()
         handlers.user = try dropboxUser()
         deviceUUID = UUID()
         database = try Connection(.inMemory)
@@ -30,7 +31,6 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
         config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
         api = syncServer.api
-        handlers.uploadQueued = nil
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
         
@@ -157,7 +157,7 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
         }
         
         var count = 0
-        handlers.uploadQueued = { _, _ in
+        handlers.extras.uploadQueued = { _ in
             count += 1
         }
         

@@ -20,5 +20,7 @@ extension Database {
         try WorkingParameters.createTable(db: db)
         try WorkingParameters.setup(db: db)
         try UploadDeletionTracker.createTable(db: db)
+        try DownloadObjectTracker.createTable(db: db)
+        try DownloadFileTracker.createTable(db: db)
     }
 }

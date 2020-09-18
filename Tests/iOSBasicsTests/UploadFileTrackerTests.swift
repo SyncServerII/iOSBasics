@@ -2,7 +2,6 @@ import XCTest
 @testable import iOSBasics
 import SQLite
 import ServerShared
-// @testable import TestsCommon
 
 class UploadFileTrackerTests: XCTestCase {
     var database: Connection!

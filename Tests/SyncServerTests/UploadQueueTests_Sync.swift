@@ -67,11 +67,6 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         let fileUUID1 = UUID()
         let fileGroupUUID1 = UUID()
         let sharingGroupUUID = try getSharingGroupUUID()
-
-        var queuedCount = 0
-        handlers.uploadQueued = { _, syncObjectId in
-            queuedCount += 1
-        }
         
         let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
         let declarations = Set<FileDeclaration>([declaration])
@@ -97,7 +92,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         }
         
         var count = 0
-        handlers.uploadQueued = { _, _ in
+        handlers.extras.uploadQueued = { _ in
             count += 1
         }
         
@@ -115,11 +110,10 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
 
         waitForUploadsToComplete(numberUploads: 1)
         XCTAssert(count == 1)
-                
+
         // Trigger the second upload instance.
         try syncServer.sync()
         waitForUploadsToComplete(numberUploads: 1, v0Upload: false)
-        XCTAssert(count == 1)
 
         // Wait for some period of time for the deferred upload to complete.
         Thread.sleep(forTimeInterval: 5)
@@ -127,9 +121,9 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         // This `sync` is to trigger the check for the deferred upload completion.
         try syncServer.sync()
 
-        let exp = expectation(description: "exp")
+        let exp2 = expectation(description: "exp")
         handlers.deferredCompleted = { _, operation, count in
-            exp.fulfill()
+            exp2.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
 
@@ -179,11 +173,6 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         let fileUUID1 = UUID()
         let fileGroupUUID1 = UUID()
         let sharingGroupUUID = try getSharingGroupUUID()
-
-        var queuedCount = 0
-        handlers.uploadQueued = { _, syncObjectId in
-            queuedCount += 1
-        }
         
         let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
         let declarations = Set<FileDeclaration>([declaration])
@@ -209,7 +198,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         }
         
         var count = 0
-        handlers.uploadQueued = { _, _ in
+        handlers.extras.uploadQueued = { _ in
             count += 1
         }
         
@@ -246,11 +235,10 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
 
         waitForUploadsToComplete(numberUploads: 1)
         XCTAssert(count == 1)
-                
+
         // Trigger the second upload instance.
         try syncServer.sync()
         waitForUploadsToComplete(numberUploads: 1, v0Upload: false)
-        XCTAssert(count == 1)
 
         // Wait for some period of time for the deferred upload to complete.
         Thread.sleep(forTimeInterval: 5)
@@ -258,9 +246,9 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         // This `sync` is to trigger the check for the deferred upload completion.
         try syncServer.sync()
 
-        let exp = expectation(description: "exp")
+        let exp2 = expectation(description: "exp")
         handlers.deferredCompleted = { _, operation, count in
-            exp.fulfill()
+            exp2.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
 
@@ -282,11 +270,6 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         let fileUUID1 = UUID()
         let fileGroupUUID1 = UUID()
         let sharingGroupUUID = try getSharingGroupUUID()
-
-        var queuedCount = 0
-        handlers.uploadQueued = { _, syncObjectId in
-            queuedCount += 1
-        }
         
         let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
         let declarations = Set<FileDeclaration>([declaration])
@@ -312,7 +295,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         }
         
         var count = 0
-        handlers.uploadQueued = { _, _ in
+        handlers.extras.uploadQueued = { _ in
             count += 1
         }
         
@@ -331,11 +314,10 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
 
         waitForUploadsToComplete(numberUploads: 1)
         XCTAssert(count == 2)
-                
+
         // Trigger the second upload instance.
         try syncServer.sync()
         waitForUploadsToComplete(numberUploads: 1, v0Upload: false)
-        XCTAssert(count == 2)
 
         // Wait for some period of time for the deferred upload to complete.
         Thread.sleep(forTimeInterval: 5)
@@ -343,9 +325,9 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         // This `sync` is to trigger the check for the deferred upload completion.
         try syncServer.sync()
 
-        let exp = expectation(description: "exp")
+        let exp2 = expectation(description: "exp")
         handlers.deferredCompleted = { _, operation, count in
-            exp.fulfill()
+            exp2.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
         
@@ -359,9 +341,9 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         // This `sync` is to trigger the check for the deferred upload completion.
         try syncServer.sync()
 
-        let exp2 = expectation(description: "exp2")
+        let exp3 = expectation(description: "exp2")
         handlers.deferredCompleted = { _, operation, count in
-            exp2.fulfill()
+            exp3.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
 
@@ -376,11 +358,6 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         let fileGroupUUID1 = UUID()
         let sharingGroupUUID = try getSharingGroupUUID()
         let commentFile = CommentFile()
-
-        var queuedCount = 0
-        handlers.uploadQueued = { _, syncObjectId in
-            queuedCount += 1
-        }
         
         let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
         let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)

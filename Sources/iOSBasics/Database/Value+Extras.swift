@@ -81,6 +81,20 @@ extension UploadFileTracker.Status: Value {
     }
 }
 
+extension DownloadFileTracker.Status: Value {
+    public static var declaredDatatype: String {
+        return "TEXT"
+    }
+    
+    public static func fromDatatypeValue(_ value: String) -> DownloadFileTracker.Status {
+        return DownloadFileTracker.Status(rawValue: value)!
+    }
+    
+    public var datatypeValue: String {
+        return self.rawValue
+    }
+}
+
 extension UploadDeletionTracker.Status: Value {
     public static var declaredDatatype: String {
         return "TEXT"

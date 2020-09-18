@@ -21,10 +21,18 @@ enum UploadFileResult {
 }
 
 enum DownloadFileResult {
-    case success(url: URL, appMetaData:AppMetaData?, checkSum:String, cloudStorageType:CloudStorageType, contentsChangedOnServer: Bool)
+    public struct Download {
+        let fileUUID: UUID
+        let url: URL
+        let checkSum:String
+        let contentsChangedOnServer: Bool
+        let appMetaData: String?
+    }
+    
+    case success(Download)
     
     // The GoneReason should never be userRemoved-- because when a user is removed, their files are marked as deleted in the FileIndex, and thus the files are generally not downloadable.
-    case gone(appMetaData:AppMetaData?, cloudStorageType:CloudStorageType, GoneReason)
+    case gone(fileUUID: UUID, GoneReason)
 }
 
 protocol ServerAPIDelegate: NetworkingDelegate {

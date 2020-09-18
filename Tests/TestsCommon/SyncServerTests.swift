@@ -15,13 +15,13 @@ protocol SyncServerTests: TestFiles, APITests {
 }
 
 extension SyncServerTests where Self: XCTestCase {
-    func uploadExampleTextFile(sharingGroupUUID: UUID) throws -> ObjectDeclaration {
+    func uploadExampleTextFile(sharingGroupUUID: UUID, localFile: URL = Self.exampleTextFileURL) throws -> ObjectDeclaration {
         let fileUUID1 = UUID()
         
         let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration1])
 
-        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
+        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(localFile))
         let uploadables = Set<FileUpload>([uploadable1])
 
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)

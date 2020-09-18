@@ -200,14 +200,11 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
             returnResult = downloadResult
             
             switch downloadResult {
-            case .success(url: let url, appMetaData: _, checkSum: let checkSumDownloaded, cloudStorageType: let cloudStorageType, contentsChangedOnServer: let changed):
-            
-                XCTAssert(!changed)
-                XCTAssert(cloudStorageType == .Dropbox)
-                XCTAssert(checkSum == checkSumDownloaded)
-                
+            case .success(let result):
+                XCTAssert(!result.contentsChangedOnServer)
+
                 let data1 = try Data(contentsOf: fileURL)
-                let data2 = try Data(contentsOf: url)
+                let data2 = try Data(contentsOf: result.url)
                 XCTAssert(data1 == data2)
                 
             default:
@@ -234,8 +231,8 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         }
         
         switch result {
-        case .success(url: _, appMetaData: let amd, checkSum: _, cloudStorageType: _, contentsChangedOnServer: _):
-            XCTAssert(appMetaData == amd?.contents)
+        case .success(let result):
+            XCTAssert(result.appMetaData == appMetaData)
         default:
             XCTFail()
         }
