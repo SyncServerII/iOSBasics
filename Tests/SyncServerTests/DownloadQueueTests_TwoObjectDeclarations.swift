@@ -81,12 +81,12 @@ class DownloadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBas
         do {
             try syncServer.queue(downloads: downloadables, declaration: object2)
         } catch let error {
-            guard let syncServerError = error as? SyncServerError else {
+            guard let databaseModelError = error as? DatabaseModelError else {
                 XCTFail()
                 return
             }
             
-            XCTAssert(syncServerError == SyncServerError.noObject)
+            XCTAssert(databaseModelError == DatabaseModelError.noObject)
         }
     }
 
