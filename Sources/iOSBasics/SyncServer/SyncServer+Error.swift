@@ -10,6 +10,7 @@ enum SyncServerError: Error {
     case uploadsDoNotHaveDistinctUUIDs
     case declaredFilesDoNotHaveDistinctUUIDs
     case noUploads
+    case noDownloads
     case noDeclaredFiles
     case internalError(String)
     case attemptToQueueUploadOfVNAndV0Files
@@ -71,7 +72,13 @@ enum SyncServerError: Error {
                 return false
             }
             return true
-            
+
+        case noDownloads:
+            guard case .noDownloads = rhs else {
+                return false
+            }
+            return true
+
         case noDeclaredFiles:
             guard case .noDeclaredFiles = rhs else {
                 return false

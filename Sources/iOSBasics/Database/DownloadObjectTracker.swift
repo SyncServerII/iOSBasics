@@ -60,4 +60,29 @@ extension DownloadObjectTracker {
         
         return false
     }
+    
+    struct DownloadWithStatus {
+        let object: DownloadObjectTracker
+        let files: [DownloadFileTracker]
+    }
+    
+    // Get all download object trackers
+    //  Get their dependent file trackers
+    //    Check the status of *all* of these trackers: Do they match `status`?
+    // Each returned `DownloadWithStatus` will have an `DownloadObjectTracker` with at least one file tracker.
+    static func allDownloadsWith(status: DownloadFileTracker.Status, db: Connection) throws -> [DownloadWithStatus] {
+        var uploads = [DownloadWithStatus]()
+        let objectTrackers = try DownloadObjectTracker.fetch(db: db)
+        for objectTracker in objectTrackers {
+            let fileTrackers = try objectTracker.dependentFileTrackers()
+            let filtered = fileTrackers.filter {$0.status == status}
+            if filtered.count == fileTrackers.count && filtered.count > 0 {
+                uploads += [
+                    DownloadWithStatus(object: objectTracker, files: fileTrackers)
+                ]
+            }
+        }
+        
+        return uploads
+    }
 }

@@ -213,34 +213,6 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
             XCTAssert(syncServerError == SyncServerError.fileNotDeclared)
         }
     }
-    
-    func testUndeclaredObjectFails() throws {
-        let sharingGroupUUID = try getSharingGroupUUID()
-        
-        let localFile = Self.exampleTextFileURL
-        
-        let _ = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
-        
-        let fileUUID1 = UUID()
-        let declaration2 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
-        let declarations2 = Set<FileDeclaration>([declaration2])
-
-        let object2 = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations2)
-        
-        let downloadable1 = FileDownload(uuid: fileUUID1, fileVersion: 0)
-        let downloadables = Set<FileDownload>([downloadable1])
-        
-        do {
-            try syncServer.queue(downloads: downloadables, declaration: object2)
-        } catch let error {
-            guard let syncServerError = error as? SyncServerError else {
-                XCTFail()
-                return
-            }
-            
-            XCTAssert(syncServerError == SyncServerError.noObject)
-        }
-    }
         
     func testDownloadCurrentlyDownloadingFileIsQueued() throws {
         let sharingGroupUUID = try getSharingGroupUUID()
@@ -308,12 +280,102 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         
         // Second download has been queued, but not downloaded.
     }
-    
-    #warning("Need to write these tests")
-    
-    func testDownloadTwoFilesInSameObjects() {
+        
+    func testDownloadTwoFilesInSameObject() throws {
+        let sharingGroupUUID = try getSharingGroupUUID()
+        let localFile = Self.exampleTextFileURL
+        
+        // Upload files & create declaration
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+        
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declarations = Set<FileDeclaration>([declaration1, declaration2])
+
+        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(localFile))
+        let uploadable2 = FileUpload(uuid: fileUUID2, dataSource: .copy(localFile))
+        let uploadables = Set<FileUpload>([uploadable1, uploadable2])
+
+        let object = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
+        
+        try syncServer.queue(uploads: uploadables, declaration: object)
+        
+        waitForUploadsToComplete(numberUploads: 2)
+        
+        // Download files
+
+        var numberDownloads = 0
+        
+        let exp1 = expectation(description: "downloadCompleted")
+        handlers.extras.downloadCompleted = { _, result in
+            numberDownloads += 1
+
+            switch result.downloadType {
+            case .gone:
+                XCTFail()
+
+            case .success(let url):
+                do {
+                    let data1 = try Data(contentsOf: localFile)
+                    let data2 = try Data(contentsOf: url)
+                    XCTAssert(data1 == data2)
+                    try FileManager.default.removeItem(at: url)
+                } catch {
+                    XCTFail()
+                }
+            }
+
+            if numberDownloads == 2 {
+                exp1.fulfill()
+            }
+        }
+
+        let downloadable1 = FileDownload(uuid: fileUUID1, fileVersion: 0)
+        let downloadable2 = FileDownload(uuid: fileUUID2, fileVersion: 0)
+        let downloadables = Set<FileDownload>([downloadable1, downloadable2])
+        
+        try syncServer.queue(downloads: downloadables, declaration: object)
+
+        waitForExpectations(timeout: 10, handler: nil)
+
+        let count1 = try DownloadFileTracker.numberRows(db: database)
+        XCTAssert(count1 == 0, "\(count1)")
+
+        let count2 = try DownloadObjectTracker.numberRows(db: database)
+        XCTAssert(count2 == 0, "\(count2)")
+        
+        // Second download has been queued, but not downloaded.
     }
     
-    func testQueueDownloadsFromDifferentObject() {
+    func testDownloadDeletedFileFails() throws {
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let localFile = Self.exampleTextFileURL
+        
+        let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        guard declaration.declaredFiles.count == 1,
+            let declaredFile = declaration.declaredFiles.first else {
+            XCTFail()
+            return
+        }
+        
+        try delete(object: declaration)
+        
+        let downloadable1 = FileDownload(uuid: declaredFile.uuid, fileVersion: 0)
+        let downloadables = Set<FileDownload>([downloadable1])
+
+        do {
+            try syncServer.queue(downloads: downloadables, declaration: declaration)
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            XCTAssert(SyncServerError.attemptToQueueADeletedFile == syncServerError)
+            return
+        }
+        
+        XCTFail()
     }
 }

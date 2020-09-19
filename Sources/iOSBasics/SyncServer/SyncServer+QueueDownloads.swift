@@ -5,12 +5,18 @@ import iOSShared
 
 extension SyncServer {
     func queueHelper<DECL: DeclarableObject, DWL: DownloadableFile>(downloads: Set<DWL>, declaration: DECL) throws {
+                
         guard downloads.count > 0 else {
-            throw SyncServerError.noUploads
+            throw SyncServerError.noDownloads
         }
         
         guard declaration.declaredFiles.count > 0 else {
             throw SyncServerError.noDeclaredFiles
+        }
+        
+        let declaredFileUUIDs = declaration.declaredFiles.map {$0.uuid}
+        guard !(try DirectoryEntry.anyFileIsDeleted(fileUUIDs: declaredFileUUIDs, db: db)) else {
+            throw SyncServerError.attemptToQueueADeletedFile
         }
         
         // Make sure all files in the downloads and declarations have distinct uuid's
@@ -57,15 +63,7 @@ extension SyncServer {
         
         // Can trigger these downloads.
         for (download, tracker) in zip(downloadsArray, fileTrackers) {
-            let file = FileObject(fileUUID: download.uuid.uuidString, fileVersion: download.fileVersion, trackerId: newObjectTrackerId)
-            
-            if let error = api.downloadFile(file: file, sharingGroupUUID: declaration.sharingGroupUUID.uuidString) {
-                // Going to keep going here despite the error because (a) we might have started downloads, and (b) we can restart these as part of our normal error/restart process.
-                logger.error("\(error)")
-            }
-            else {
-                try tracker.update(setters: DownloadFileTracker.statusField.description <- .downloading)
-            }
+            try singleDownload(fileUUID: download.uuid, fileVersion: download.fileVersion, tracker: tracker, objectTrackerId: newObjectTrackerId, sharingGroupUUID: declaration.sharingGroupUUID)
         }
     }
     

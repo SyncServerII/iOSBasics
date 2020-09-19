@@ -64,6 +64,9 @@ public enum DownloadEvent {
     case queued(fileGroupUUID: UUID)
     
     case completed(DownloadResult)
+    
+    // Called after a successful sync.
+    case sync(numberDownloadsStarted: UInt)
 }
 
 public enum UploadEvent {

@@ -234,4 +234,41 @@ extension APITests where Self: XCTestCase {
         
         waitForExpectations(timeout: 10, handler: nil)
     }
+    
+    func waitForDownloadsToComplete(numberExpected: UInt, expectedResult: URL? = nil) {
+        var count:UInt = 0
+        
+        let exp = expectation(description: "exp")
+        handlers.extras.downloadCompleted = { _, result in
+            count += 1
+            
+            switch result.downloadType {
+            case .gone:
+                XCTFail()
+                
+            case .success(let url):
+                if let expectedResult = expectedResult {
+                    do {
+                        let data1 = try Data(contentsOf: expectedResult)
+                        let data2 = try Data(contentsOf: url)
+                        XCTAssert(data1 == data2)
+                    } catch {
+                        XCTFail()
+                    }
+                }
+                
+                do {
+                    try FileManager.default.removeItem(at: url)
+                } catch {
+                    XCTFail()
+                }
+            }
+            
+            if count >= numberExpected {
+                exp.fulfill()
+            }
+        }
+        
+        waitForExpectations(timeout: 10, handler: nil)
+    }
 }

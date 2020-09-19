@@ -580,4 +580,8 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
     func testQueueWithoutObjectTypeFails() throws {
         try runQueueTest(withObjectType: false)
     }
+    
+    func testUploadDeletedFileFails() {
+        #warning("Make me")
+    }
 }

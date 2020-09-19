@@ -13,6 +13,8 @@ class DelegateHandlers {
          
         var downloadQueued:((SyncServer) -> ())?
         var downloadCompleted:((SyncServer, DownloadResult) -> ())?
+        var downloadSync:((SyncServer, _ numberDownloadsStarted: UInt) -> ())?
+
     }
     let extras = Extras()
 
@@ -60,6 +62,8 @@ extension Delegate {
             handlers.extras.downloadQueued?(syncServer)
         case .completed(let result):
             handlers.extras.downloadCompleted?(syncServer, result)
+        case .sync(let numberDownloadsStarted):
+            handlers.extras.downloadSync?(syncServer, numberDownloadsStarted)
         }
     }
     

@@ -24,6 +24,8 @@ extension SyncServer {
         let tracker = try UploadDeletionTracker(db: db, uuid: object.fileGroupUUID, deletionType: .fileGroupUUID, deferredUploadId: 0, status: .deleting)
         try tracker.insert()
         
+        #warning("This is not designed correctly. It should be queued like a file upload or a file download-- to make retry after error easier/possible in the same style.")
+        
         let file = ServerAPI.DeletionFile.fileGroupUUID(
             object.fileGroupUUID.uuidString)
         api.uploadDeletion(file: file, sharingGroupUUID: object.sharingGroupUUID.uuidString) { [weak self] result in
