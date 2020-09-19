@@ -51,7 +51,7 @@ public class SyncServer {
         api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: configuration)
     }
     
-    // MARK: Persistent queuing for upload
+    // MARK: Persistent queuing for upload, download, and deletion.
     
     // If you upload an object that has a fileGroupUUID which is already queued or in progress of uploading, your request will be queued.
     // The first time you queue a SyncedObject, this call persistently registers the DeclaredObject portion of the object. Subsequent `queue` calls with the same syncObjectId in the object, must exactly match the DeclaredObject.
@@ -62,6 +62,17 @@ public class SyncServer {
     public func queue<DECL: DeclarableObject, UPL:UploadableFile>
         (uploads: Set<UPL>, declaration: DECL) throws {
         try queueHelper(uploads: uploads, declaration: declaration)
+    }
+    
+    // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.
+    // The files must have been uploaded by this client before, or be available because it was seen in `filesNeedingDownload`.
+    // If you queue an object that has a fileGroupUUID which is already queued or in progress of downloading, your request will be queued.
+    func queue<DECL: DeclarableObject, DWL: DownloadableFile>(downloads: Set<DWL>, declaration: DECL) throws {
+        try queueHelper(downloads: downloads, declaration: declaration)
+    }
+    
+    public func queue<DECL: DeclarableObject>(deletion object: DECL) throws {
+        try deleteHelper(object: object)
     }
     
     /* This performs a variety of actions:
@@ -78,10 +89,8 @@ public class SyncServer {
         try syncHelper(sharingGroupUUID: sharingGroupUUID)
     }
     
-    public func queue<DECL: DeclarableObject>(deletion object: DECL) throws {
-        try deleteHelper(object: object)
-    }
-    
+    // MARK: Getting information
+
     // Returns the same information as from the `downloadDeletion` delegate method-- other clients have removed these files.
     public func filesNeedingDeletion() -> [ObjectDeclaration] {
         return []
@@ -90,9 +99,7 @@ public class SyncServer {
     // Clients need to call this method to indicate they have deleted files returned from either the deletion delegates or from `filesNeedingDeletion`.
     public func deletedFiles<DECL: DeclarableObject>(object: DECL) {
     }
-    
-    // MARK: Download
-    
+        
     // The list of files returned here survive app relaunch. A given object declaration will appear at most once in the returned list.
     public func filesNeedingDownload(sharingGroupUUID: UUID) throws -> [(declaration: ObjectDeclaration, downloads: Set<FileDownload>)] {
         let filtered = sharingGroups.filter { $0.sharingGroupUUID == sharingGroupUUID.uuidString }
@@ -101,13 +108,6 @@ public class SyncServer {
         }
         
         return try filesNeedingDownloadHelper(sharingGroupUUID: sharingGroupUUID)
-    }
-    
-    // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.
-    // The files must have been uploaded by this client before, or be available because it was seen in `filesNeedingDownload`.
-    // If you queue an object that has a fileGroupUUID which is already queued or in progress of downloading, your request will be queued.
-    func queue<DECL: DeclarableObject, DWL: DownloadableFile>(downloads: Set<DWL>, declaration: DECL) throws {
-        try queueHelper(downloads: downloads, declaration: declaration)
     }
     
     // MARK: Sharing
