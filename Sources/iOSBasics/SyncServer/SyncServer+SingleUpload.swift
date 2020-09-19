@@ -45,10 +45,15 @@ extension SyncServer {
         let serverAPIFile = ServerAPI.File(fileUUID: uuid.uuidString, sharingGroupUUID: declaration.sharingGroupUUID.uuidString, deviceUUID: configuration.deviceUUID.uuidString, uploadObjectTrackerId: uploadObjectTrackerId, version: fileVersion)
         
         if let error = api.uploadFile(file: serverAPIFile, uploadIndex: uploadIndex, uploadCount: uploadCount) {
-            throw SyncServerError.internalError("\(error)")
+            // Not going to throw an error here. Because this method is used in the context of a loop, and some of the uploads may have started correctly.
+            delegator { [weak self] delegate in
+                guard let self = self else { return }
+                delegate.error(self, error: error)
+            }
         }
-
-        try uploadFileTracker.update(setters:
-            UploadFileTracker.statusField.description <- .uploading)
+        else {
+            try uploadFileTracker.update(setters:
+                UploadFileTracker.statusField.description <- .uploading)
+        }
     }
 }
