@@ -83,7 +83,7 @@ class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
         let endpoint = ServerEndpoints.checkCreds
         let serverURL = ServerAPI.makeURL(forEndpoint: endpoint, baseURL: Self.baseURL())
         
-        let objectTrackerId:Int64 = 22
+        let trackerId:Int64 = 22
         let testString = "Hello, There!"
         
         guard let requestInfoData = testString.data(using: .utf8) else {
@@ -95,15 +95,15 @@ class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
         var requestInfo: Data?
         
         let exp = expectation(description: "exp")
-        backgroundRequestCompleted = { _, url, trackerId, _, info, statusCode in
+        backgroundRequestCompleted = { _, url, id, _, info, statusCode in
             resultURL = url
             requestInfo = info
-            XCTAssert(objectTrackerId == trackerId)
+            XCTAssert(trackerId == id)
             XCTAssert(statusCode == 200)
             exp.fulfill()
         }
         
-        let error = networking.sendBackgroundRequestTo(serverURL, method: endpoint.method, uuid: UUID(), objectTrackerId: objectTrackerId, requestInfo: requestInfoData)
+        let error = networking.sendBackgroundRequestTo(serverURL, method: endpoint.method, uuid: UUID(), trackerId: trackerId, requestInfo: requestInfoData)
         waitForExpectations(timeout: 10, handler: nil)
         
         guard error == nil else {

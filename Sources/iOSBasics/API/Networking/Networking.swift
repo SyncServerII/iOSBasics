@@ -271,12 +271,12 @@ class Networking: NSObject {
     }
     
     // userInfo is for request specific info.
-    func sendBackgroundRequestTo(_ serverURL: URL, method: ServerHTTPMethod, uuid: UUID, objectTrackerId: Int64, requestInfo: Data? = nil) -> Error? {
+    func sendBackgroundRequestTo(_ serverURL: URL, method: ServerHTTPMethod, uuid: UUID, trackerId: Int64, requestInfo: Data? = nil) -> Error? {
 
         let task = downloadFrom(serverURL, method: method)
 
         do {
-            try backgroundCache.initializeRequestCache(uuid: uuid.uuidString, objectTrackerId: objectTrackerId, taskIdentifer: task.taskIdentifier, requestInfo: requestInfo)
+            try backgroundCache.initializeRequestCache(uuid: uuid.uuidString, trackerId: trackerId, taskIdentifer: task.taskIdentifier, requestInfo: requestInfo)
         } catch let error {
             task.cancel()
             delegate.backgroundRequestCompleted(self, result: .failure(error))

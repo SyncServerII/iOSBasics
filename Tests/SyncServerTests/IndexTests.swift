@@ -206,7 +206,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
             exp.fulfill()
         }
         
-        try syncServer.delete(object: declaration)
+        try syncServer.queue(deletion: declaration)
         waitForExpectations(timeout: 10, handler: nil)
         
         // Reset the database show a state *as if* another client instance had done the upload/deleteion.
@@ -226,7 +226,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
         
         // This is as if another client attempts a deletion of a file after a sync where it learned about the deleted file for the first time.
         do {
-            try syncServer.delete(object: declaration)
+            try syncServer.queue(deletion: declaration)
         } catch let error {
             guard let syncServerError = error as? SyncServerError else {
                 XCTFail()
@@ -255,7 +255,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
             exp.fulfill()
         }
         
-        try syncServer.delete(object: declaration)
+        try syncServer.queue(deletion: declaration)
         waitForExpectations(timeout: 10, handler: nil)
         
         // Reset the database show a state *as if* another client instance had done the upload/deleteion.
@@ -306,7 +306,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
             exp.fulfill()
         }
         
-        try syncServer.delete(object: declaration)
+        try syncServer.queue(deletion: declaration)
         waitForExpectations(timeout: 10, handler: nil)
         
         // Reset the deleted state of the file.

@@ -37,12 +37,12 @@ class BackgroundCache {
         try cache.insert()
     }
     
-    func initializeRequestCache(uuid:String, objectTrackerId: Int64, taskIdentifer: Int, requestInfo: Data?) throws {
+    func initializeRequestCache(uuid:String, trackerId: Int64, taskIdentifer: Int, requestInfo: Data?) throws {
         guard let uuid = UUID(uuidString: uuid) else {
             throw BackgroundCacheError.badUUID
         }
         
-        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, uuid: uuid, trackerId: objectTrackerId, fileVersion: nil, transfer: .request(nil), requestInfo: requestInfo)
+        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, uuid: uuid, trackerId: trackerId, fileVersion: nil, transfer: .request(nil), requestInfo: requestInfo)
         try cache.insert()
     }
     

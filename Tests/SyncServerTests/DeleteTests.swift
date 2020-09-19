@@ -69,7 +69,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         
         do {
-            try syncServer.delete(object: testObject)
+            try syncServer.queue(deletion: testObject)
         } catch {
             return
         }
@@ -105,7 +105,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         }
         
         do {
-            try syncServer.delete(object: object)
+            try syncServer.queue(deletion: object)
         } catch let error {
             if !withKnownDeclaredObjectButAllUnknownDeclaredFiles {
                 XCTFail("\(error)")
@@ -185,7 +185,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         }
         
         do {
-            try syncServer.delete(object: object)
+            try syncServer.queue(deletion: object)
         } catch let error {
             if !fewerDeclaredFiles {
                 XCTFail("\(error)")
@@ -265,7 +265,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         }
         
         do {
-            try syncServer.delete(object: object)
+            try syncServer.queue(deletion: object)
         } catch let error {
             if !moreDeclaredFiles {
                 XCTFail("\(error)")
@@ -332,7 +332,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         try syncServer.queue(uploads: uploadables, declaration: object1)
         waitForUploadsToComplete(numberUploads: 1)
         
-        try syncServer.delete(object: object1)
+        try syncServer.queue(deletion: object1)
 
         let exp = expectation(description: "exp")
         handlers.deletionCompleted = { _ in
@@ -356,7 +356,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         
         if alreadyDeleted {
             do {
-                try syncServer.delete(object: object1)
+                try syncServer.queue(deletion: object1)
             } catch {
                 return
             }

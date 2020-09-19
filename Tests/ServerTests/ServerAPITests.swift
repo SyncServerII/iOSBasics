@@ -197,7 +197,7 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
         let deletionFile = ServerAPI.DeletionFile.fileUUID(fileUUID.uuidString)
         let trackerId:Int64 = 142
         
-        let error = api.uploadDeletion(file: deletionFile, sharingGroupUUID: sharingGroupUUID, objectTrackerId: trackerId)
+        let error = api.uploadDeletion(file: deletionFile, sharingGroupUUID: sharingGroupUUID, trackerId: trackerId)
         
         guard error == nil else {
             XCTFail()
@@ -208,63 +208,6 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
             XCTFail()
             return
         }
-    }
-    
-    // On success, returns the `deferredUploadId` for the file deletion. i.e., the deferred upload is still pending.
-    func waitForDeletion(trackerId: Int64, file: ServerAPI.DeletionFile) -> Int64? {
-        var deferredUploadId: Int64?
-        
-        let exp = expectation(description: "exp")
-        
-        handlers.api.backgroundRequestCompletedHandler = { result in
-            switch result {
-            case .failure:
-                XCTFail()
-                
-            case .success(let successResult):
-                switch successResult {
-                case .gone:
-                    XCTFail()
-                    
-                case .success(objectTrackerId: let id, let result):
-                    XCTAssert(trackerId == id)
-                    
-                    guard let requestInfo = result.requestInfo else {
-                        XCTFail()
-                        return
-                    }
-                    
-                    guard let info = try? JSONDecoder().decode(ServerAPI.DeletionRequestInfo.self, from: requestInfo) else {
-                        XCTFail()
-                        return
-                    }
-
-                    XCTAssert(info.uuid.uuidString == file.uuidString)
-                    XCTAssert(info.uuidType == file.uuidType)
-        
-                    do {
-                        let data = try Data(contentsOf: result.serverResponse)
-                        let json = try JSONSerialization.jsonObject(with: data, options: JSONSerialization.ReadingOptions(rawValue: UInt(0)))
-                                
-                        guard let jsonDict = json as? [String: Any] else {
-                            XCTFail()
-                            return
-                        }
-                                
-                        let response = try UploadDeletionResponse.decode(jsonDict)
-                        deferredUploadId = response.deferredUploadId
-                    } catch let error {
-                        XCTFail("\(error)")
-                    }
-                }
-            }
-            
-            exp.fulfill()
-        }
-        
-        waitForExpectations(timeout: 10, handler: nil)
-        
-        return deferredUploadId
     }
 }
 

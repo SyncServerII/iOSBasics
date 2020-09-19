@@ -78,7 +78,7 @@ public class SyncServer {
         try syncHelper(sharingGroupUUID: sharingGroupUUID)
     }
     
-    public func delete<DECL: DeclarableObject>(object: DECL) throws {
+    public func queue<DECL: DeclarableObject>(deletion object: DECL) throws {
         try deleteHelper(object: object)
     }
     

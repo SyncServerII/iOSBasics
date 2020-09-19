@@ -2,6 +2,7 @@
 import Foundation
 import iOSShared
 import SQLite
+import ServerShared
 
 extension SyncServer {
     func uploadCompletedHelper(_ delegated: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
@@ -123,9 +124,96 @@ extension SyncServer {
         }
     }
     
+    // While a background request is a general method, we're actually only using them for upload deletions so far.
     func backgroundRequestCompletedHelper(_ delegated: AnyObject, result: Swift.Result<BackgroundRequestResult, Error>) {
-        assert(false)
-        #warning("TODO")
+
+        switch result {
+        case .success(let requestResult):
+            switch requestResult {
+            case .success(objectTrackerId: _, let successResult):
+                guard let requestInfo = successResult.requestInfo else {
+                    deletionError(SyncServerError.internalError("No request info"), tracker: nil)
+                    return
+                }
+    
+                var tracker:UploadDeletionTracker!
+                
+                do {
+                    let info = try JSONDecoder().decode(ServerAPI.DeletionRequestInfo.self, from: requestInfo)
+                    
+                    // Upload deletions are only using `fileGroupUUID` type so far.
+                    guard info.uuidType == .fileGroupUUID else {
+                        deletionError(SyncServerError.internalError("uuidType not fileGroupUUID as expected"), tracker: nil)
+                        return
+                    }
+                    
+                    tracker = try UploadDeletionTracker.fetchSingleRow(db: db, where: UploadDeletionTracker.uuidField.description == info.uuid)
+                    
+                    guard tracker != nil else {
+                        deletionError(SyncServerError.internalError("Could not find UploadDeletionTracker"), tracker: nil)
+                        return
+                    }
+                    
+                    guard tracker.deletionType == .fileGroupUUID else {
+                        deletionError(SyncServerError.internalError("UploadDeletionTracker did not have expected fileGroupUUID type"), tracker: tracker)
+                        return
+                    }
+                    
+                    let data = try Data(contentsOf: successResult.serverResponse)
+                    try FileManager.default.removeItem(at: successResult.serverResponse)
+                    let json = try JSONSerialization.jsonObject(with: data, options: JSONSerialization.ReadingOptions(rawValue: UInt(0)))
+                            
+                    guard let jsonDict = json as? [String: Any] else {
+                        deletionError(SyncServerError.internalError("Could not convert background request result to a dictionary"), tracker: tracker)
+                        return
+                    }
+                            
+                    let response = try UploadDeletionResponse.decode(jsonDict)
+                    if let deferredUploadId = response.deferredUploadId {
+                        try tracker.update(setters: UploadDeletionTracker.deferredUploadIdField.description <- deferredUploadId)
+                        completeInitialDeletion(tracker: tracker, deferredUploadId: deferredUploadId)
+                    }
+                    else {
+                        #warning("Can the server endpoint be changed so that on a second call it (at least sometimes) can send back the deferredUploadId?")
+                        completeInitialDeletion(tracker: tracker, deferredUploadId: nil)
+                    }
+                } catch let error {
+                    deletionError(error, tracker: tracker)
+                }
+                
+            case .gone(objectTrackerId: let trackerId):
+                // Since we're using this for a upload deletion, this also amounts to a certain kind of success. But, not going to wait for a deferred deletion here.
+                do {
+                    guard let tracker = try UploadDeletionTracker.fetchSingleRow(db: db, where: UploadDeletionTracker.idField.description == trackerId) else {
+                        deletionError(SyncServerError.internalError("Could not find UploadDeletionTracker"), tracker: nil)
+                        return
+                    }
+                    
+                    self.completeInitialDeletion(tracker: tracker, deferredUploadId: nil)
+
+                } catch let error {
+                    deletionError(error, tracker: nil)
+                }
+            }
+            
+        case .failure(let error):
+            deletionError(error, tracker: nil)
+        }
+    }
+    
+    private func deletionError(_ error: Error, tracker: UploadDeletionTracker?) {
+        reportError(error)
+        
+        guard let tracker = tracker else {
+            return
+        }
+        
+        do {
+            try tracker.update(setters:
+            UploadDeletionTracker.statusField.description <- .notStarted)
+        } catch let error {
+            reportError(error)
+        }
     }
 }
 

@@ -50,7 +50,7 @@ extension SyncServerTests where Self: XCTestCase {
             exp.fulfill()
         }
         
-        try syncServer.delete(object: object)
+        try syncServer.queue(deletion: object)
         waitForExpectations(timeout: 10, handler: nil)
         
         // Wait for some period of time for the deferred deletion to complete.

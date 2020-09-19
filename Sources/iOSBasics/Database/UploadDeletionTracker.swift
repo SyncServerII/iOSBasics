@@ -1,14 +1,16 @@
-// Represents a file to be or being deleted on the server.
 
 import SQLite
 import Foundation
 import ServerShared
 import iOSShared
 
+// Represents a file or file group to be or being deleted on the server. Only a single tracker model object for deletion because we just send a single request to the server-- with a fileUUID or with a fileGroupUUID.
+
 class UploadDeletionTracker: DatabaseModel {
     let db: Connection
     var id: Int64!
     
+    // This will be either a fileUUID or fileGroupUUID, depending on deletionType, below.
     static let uuidField = Field("uuid", \M.uuid)
     var uuid: UUID
     
@@ -17,7 +19,7 @@ class UploadDeletionTracker: DatabaseModel {
         case fileUUID
     }
     
-    // This indicates the type of uuid used above.
+    // The type of uuid used above.
     static let deletionTypeField = Field("deletionType", \M.deletionType)
     var deletionType: DeletionType
     
@@ -39,7 +41,7 @@ class UploadDeletionTracker: DatabaseModel {
         id: Int64! = nil,
         uuid: UUID,
         deletionType: DeletionType,
-        deferredUploadId: Int64?,
+        deferredUploadId: Int64? = nil,
         status: Status) throws {
 
         self.db = db

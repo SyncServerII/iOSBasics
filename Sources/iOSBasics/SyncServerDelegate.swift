@@ -95,11 +95,11 @@ public protocol SyncServerDelegate: AnyObject {
     func uploadQueue(_ syncServer: SyncServer, event: UploadEvent)
     func downloadQueue(_ syncServer: SyncServer, event: DownloadEvent)
 
-    // Called when vN deferred upload(s), or deferred deletions, successfully completed, is/are detected.
-    func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int)
-
     // Request to server for upload deletion completed successfully.
     func deletionCompleted(_ syncServer: SyncServer)
+
+    // Called when vN deferred upload(s), or deferred deletions, successfully completed, is/are detected.
+    func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int)
     
     // Another client deleted a file/file group.
     func downloadDeletion(_ syncServer: SyncServer, details: DownloadDeletion)

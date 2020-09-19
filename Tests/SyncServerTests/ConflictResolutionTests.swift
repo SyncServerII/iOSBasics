@@ -79,7 +79,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         try syncServer.queue(uploads: uploadables, declaration: object)
         waitForUploadsToComplete(numberUploads: 1)
         
-        try syncServer.delete(object: object)
+        try syncServer.queue(deletion: object)
 
         let exp = expectation(description: "exp")
         handlers.deletionCompleted = { _ in
@@ -118,7 +118,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         }
         
         // Note that this second delete works "out of the box" despite of the fact that we fooled ourselves (locally) into believing the file was not deleted. The server allows multiple deletions with no ill effect. (The second deletion does nothing).
-        try syncServer.delete(object: object)
+        try syncServer.queue(deletion: object)
         waitForExpectations(timeout: 10, handler: nil)
     }
     
@@ -157,7 +157,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         
         // Let's delete it.
         
-        try syncServer.delete(object: testObject)
+        try syncServer.queue(deletion: testObject)
 
         let exp = expectation(description: "exp")
         handlers.deletionCompleted = { _ in

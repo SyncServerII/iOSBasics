@@ -3,6 +3,7 @@ import Foundation
 import SQLite
 
 extension SyncServer {
+    // This currently only supports `deletionType` (see UploadDeletionTracker) of `fileGroupUUID`.
     func deleteHelper<DECL: DeclarableObject>(object: DECL) throws {
         // Ensure this DeclaredObject has been registered before.
         let declarableObject = try DeclaredObjectModel.lookupDeclarableObject(declObjectId: object.fileGroupUUID, db: db)
@@ -16,52 +17,35 @@ extension SyncServer {
         guard !(try DirectoryEntry.anyFileIsDeleted(fileUUIDs: fileUUIDs, db: db)) else {
             throw SyncServerError.attemptToDeleteAnAlreadyDeletedFile
         }
-
+        
         if let _ = try UploadDeletionTracker.fetchSingleRow(db: db, where: UploadDeletionTracker.uuidField.description == object.fileGroupUUID) {
             throw SyncServerError.attemptToDeleteAnAlreadyDeletedFile
         }
         
-        let tracker = try UploadDeletionTracker(db: db, uuid: object.fileGroupUUID, deletionType: .fileGroupUUID, deferredUploadId: 0, status: .deleting)
+        let tracker = try UploadDeletionTracker(db: db, uuid: object.fileGroupUUID, deletionType: .fileGroupUUID, status: .notStarted)
         try tracker.insert()
         
-        #warning("This is not designed correctly. It should be queued like a file upload or a file download-- to make retry after error easier/possible in the same style.")
+        guard let trackerId = tracker.id else {
+            throw SyncServerError.internalError("No tracker id")
+        }
         
         let file = ServerAPI.DeletionFile.fileGroupUUID(
             object.fileGroupUUID.uuidString)
-        api.uploadDeletion(file: file, sharingGroupUUID: object.sharingGroupUUID.uuidString) { [weak self] result in
-            guard let self = self else { return }
-            
-            switch result {
-            case .success(let deletionResult):
-                switch deletionResult {
-                case .fileAlreadyDeleted:
-                    #warning("Can the server endpoint be changed so that on a second call it (at least sometimes) can send back the deferredUploadId?")
-                    self.completeInitialDeletion(tracker: tracker, deferredUploadId: nil)
-                    
-                case .fileDeleted(deferredUploadId: let deferredUploadId):
-                    self.completeInitialDeletion(tracker: tracker, deferredUploadId: deferredUploadId)
-                }
-
-            case .failure(let error):
-                self.delegator { [weak self] delegate in
-                    guard let self = self else { return }
-                    delegate.error(self, error: error)
-                }
-                
-                do {
-                    try tracker.update(setters:
-                    UploadDeletionTracker.statusField.description <- .notStarted)
-                } catch let error {
-                    self.delegator { [weak self] delegate in
-                        guard let self = self else { return }
-                        delegate.error(self, error: error)
-                    }
-                }
+        
+        // Queue the deletion request.
+        if let error = api.uploadDeletion(file: file, sharingGroupUUID: object.sharingGroupUUID.uuidString, trackerId: trackerId) {
+            // As with uploads and downloads, don't make this a fatal error. We can restart this later.
+            delegator { [weak self] delegate in
+                guard let self = self else { return }
+                delegate.error(self, error: error)
             }
+        }
+        else {
+            try tracker.update(setters: UploadDeletionTracker.statusField.description <- .deleting)
         }
     }
     
-    private func completeInitialDeletion(tracker: UploadDeletionTracker, deferredUploadId: Int64?) {
+    func completeInitialDeletion(tracker: UploadDeletionTracker, deferredUploadId: Int64?) {
         do {
             if let deferredUploadId = deferredUploadId {
                 try tracker.update(setters:
@@ -71,16 +55,29 @@ extension SyncServer {
                         <- .waitingForDeferredDeletion)
             }
             else {
-                try tracker.update(setters:
-                    UploadDeletionTracker.statusField.description <- .done)
+                guard tracker.deletionType == .fileGroupUUID else {
+                    reportError(SyncServerError.internalError("UploadDeletionTracker did not have expected fileGroupUUID type"))
+                    return
+                }
+                
+                let entries = try DirectoryEntry.fetch(db: db, where: DirectoryEntry.fileGroupUUIDField.description == tracker.uuid)
+
+                guard entries.count > 0 else {
+                    throw SyncServerError.internalError("UploadDeletionTracker did not have expected fileGroupUUID type")
+                }
+                
+                for entry in entries {
+                    try entry.update(setters: DirectoryEntry.deletedLocallyField.description <- true)
+                    try entry.update(setters: DirectoryEntry.deletedOnServerField.description <- true)
+                }
+                    
+                // Since we don't have a `deferredUploadId`, and thus can't wait for the deferred deletion, delete the tracker.
+                try tracker.delete()
             }
         } catch let error {
             _ = try? tracker.update(setters:
                 UploadDeletionTracker.statusField.description <- .notStarted)
-            self.delegator { [weak self] delegate in
-                guard let self = self else { return }
-                delegate.error(self, error: error)
-            }
+            reportError(error)
             return
         }
         
@@ -102,9 +99,9 @@ extension SyncServer {
         
         var numberSuccessfullyCompleted = 0
         
-        func apply(deletion: UploadDeletionTracker, completion: @escaping (Swift.Result<Void, Error>) -> ()) {
+        func apply(tracker: UploadDeletionTracker, completion: @escaping (Swift.Result<Void, Error>) -> ()) {
 
-            guard let deferredUploadId = deletion.deferredUploadId else {
+            guard let deferredUploadId = tracker.deferredUploadId else {
                 completion(.failure(SyncServerError.internalError("Did not have deferredUploadId.")))
                 return
             }
@@ -127,7 +124,7 @@ extension SyncServer {
                         
                     case .completed:
                         do {
-                            try self.finishAfterDeletion(deletion: deletion)
+                            try self.finishAfterDeletion(tracker: tracker)
                             numberSuccessfullyCompleted += 1
                             completion(.success(()))
                         } catch let error {
@@ -151,13 +148,13 @@ extension SyncServer {
         return numberSuccessfullyCompleted
     }
     
-    private func finishAfterDeletion(deletion: UploadDeletionTracker) throws {
-        guard deletion.deletionType == .fileGroupUUID else {
+    private func finishAfterDeletion(tracker: UploadDeletionTracker) throws {
+        guard tracker.deletionType == .fileGroupUUID else {
             throw SyncServerError.internalError("Didn't have file group deletion type.")
         }
         
         let entries = try DirectoryEntry.fetch(db: db, where:
-            DirectoryEntry.fileGroupUUIDField.description == deletion.uuid)
+            DirectoryEntry.fileGroupUUIDField.description == tracker.uuid)
         for entry in entries {
             // Deletion commanded locally-- mark both flags as true.
             try entry.update(setters:
@@ -165,6 +162,6 @@ extension SyncServer {
                 DirectoryEntry.deletedOnServerField.description <- true)
         }
         
-        try deletion.delete()
+        try tracker.delete()
     }
 }
