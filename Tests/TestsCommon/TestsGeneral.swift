@@ -101,11 +101,11 @@ extension APITests where Self: XCTestCase {
         
         func uploadCompletedHandler(result: Swift.Result<UploadFileResult, Error>) {
             returnResult = result
-            self.uploadCompletedHandler = nil
+            self.handlers.api.uploadCompletedHandler = nil
             exp.fulfill()
         }
         
-        self.uploadCompletedHandler = uploadCompletedHandler
+        self.handlers.api.uploadCompletedHandler = uploadCompletedHandler
 
         let result = api.uploadFile(file: file, uploadIndex: uploadIndex, uploadCount: uploadCount)
         XCTAssert(result == nil)
@@ -122,11 +122,11 @@ extension APITests where Self: XCTestCase {
 
         func downloadCompletedHandler(result: Swift.Result<DownloadFileResult, Error>) {
             returnResult = result
-            self.downloadCompletedHandler = nil
+            self.handlers.api.downloadCompletedHandler = nil
             exp.fulfill()
         }
         
-        self.downloadCompletedHandler = downloadCompletedHandler
+        self.handlers.api.downloadCompletedHandler = downloadCompletedHandler
 
         let file = FileObject(fileUUID: fileUUID, fileVersion: fileVersion, trackerId: downloadObjectTrackerId)
         

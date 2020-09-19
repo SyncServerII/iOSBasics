@@ -122,6 +122,11 @@ extension SyncServer {
             }
         }
     }
+    
+    func backgroundRequestCompletedHelper(_ delegated: AnyObject, result: Swift.Result<BackgroundRequestResult, Error>) {
+        assert(false)
+        #warning("TODO")
+    }
 }
 
 extension SyncServer {

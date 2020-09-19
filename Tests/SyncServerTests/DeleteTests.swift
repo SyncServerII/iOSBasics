@@ -15,12 +15,8 @@ import ChangeResolvers
 
 class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate {
     var handlers = DelegateHandlers()
-        
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
-    var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
-    var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
-    
     var api: ServerAPI!
     var syncServer: SyncServer!
     

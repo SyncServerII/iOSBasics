@@ -23,13 +23,26 @@ class BackgroundCache {
             throw BackgroundCacheError.badUUID
         }
         
-        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: uuid, trackerId: uploadObjectTrackerId, fileVersion: nil, transfer: .upload(nil))
+        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, uuid: uuid, trackerId: uploadObjectTrackerId, fileVersion: nil, transfer: .upload(nil))
         try cache.insert()
     }
     
     func initializeDownloadCache(file:Filenaming,
         taskIdentifer: Int) throws {
-        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, fileUUID: UUID(uuidString: file.fileUUID)!, trackerId: file.trackerId, fileVersion: file.fileVersion, transfer: .download(nil))
+        guard let uuid = UUID(uuidString: file.fileUUID) else {
+            throw BackgroundCacheError.badUUID
+        }
+        
+        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, uuid: uuid, trackerId: file.trackerId, fileVersion: file.fileVersion, transfer: .download(nil))
+        try cache.insert()
+    }
+    
+    func initializeRequestCache(uuid:String, objectTrackerId: Int64, taskIdentifer: Int, requestInfo: Data?) throws {
+        guard let uuid = UUID(uuidString: uuid) else {
+            throw BackgroundCacheError.badUUID
+        }
+        
+        let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, uuid: uuid, trackerId: objectTrackerId, fileVersion: nil, transfer: .request(nil), requestInfo: requestInfo)
         try cache.insert()
     }
     
@@ -75,7 +88,26 @@ class BackgroundCache {
         )
     }
     
+    func cacheRequestResult(taskIdentifer: Int, response:HTTPURLResponse, localURL: URL) throws {
+    
+        guard let cache = try NetworkCache.fetchSingleRow(db: database, where: taskIdentifer == NetworkCache.taskIdentifierField.description) else {
+            throw BackgroundCacheError.couldNotLookup
+        }
+        
+        guard case .request = cache.transfer else {
+            throw BackgroundCacheError.wrongTransferType
+        }
+        
+        let download = NetworkTransfer.request(localURL)
+        
+        try cache.update(setters:
+            NetworkCache.transferField.description <- download
+        )
+    }
+    
     // If the NetworkCache object is returned, it has been removed from the database.
+    #warning("This method is unused.")
+    /*
     func lookupAndRemoveCache(file:Filenaming, download: Bool) throws -> NetworkCache? {
         let caches = try NetworkCache.fetch(db: database, where: UUID(uuidString: file.fileUUID)! == NetworkCache.fileUUIDField.description)
             .filter {$0.fileVersion == file.fileVersion}
@@ -114,6 +146,7 @@ class BackgroundCache {
             }
         }
     }
+    */
     
     func lookupAndRemoveCache(taskIdentifer: Int) throws -> NetworkCache? {
         guard let cache = try NetworkCache.fetchSingleRow(db: database,

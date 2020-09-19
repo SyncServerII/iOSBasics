@@ -30,7 +30,7 @@ class BackgroundCacheTests: XCTestCase {
             return
         }
         
-        XCTAssert(result.fileUUID.uuidString == fileUUID)
+        XCTAssert(result.uuid.uuidString == fileUUID)
         XCTAssert(result.taskIdentifier == taskIdentifier)
         
         guard case .upload(let body) = result.transfer, body == nil else {
@@ -50,7 +50,7 @@ class BackgroundCacheTests: XCTestCase {
         }
         
         XCTAssert(result.fileVersion == file.fileVersion)
-        XCTAssert(result.fileUUID.uuidString == file.fileUUID)
+        XCTAssert(result.uuid.uuidString == file.fileUUID)
         XCTAssert(result.taskIdentifier == taskIdentifier)
         
         guard case .download(let url) = result.transfer, url == nil else {
@@ -77,14 +77,19 @@ class BackgroundCacheTests: XCTestCase {
             XCTFail()
             return
         }
+        
         switch transfer {
         case .upload:
             XCTFail()
         case .download(let downloadUrl):
             XCTAssert(downloadUrl?.path == url.path)
+        case .request:
+            XCTFail()
         }
     }
     
+    #warning("The method this is testing is unused.")
+    /*
     func testLookupAndRemoveCacheWithDownloadCachePresent() throws {
         let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1, trackerId: -1)
         try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: taskIdentifier)
@@ -101,7 +106,10 @@ class BackgroundCacheTests: XCTestCase {
         let present = try NetworkCache.isRow(db: database, where: NetworkCache.idField.description == result.id)
         XCTAssert(!present)
     }
+    */
     
+    #warning("The method this is testing is unused.")
+    /*
     func testLookupAndRemoveCacheWithDownloadCacheAbsent() throws {
         let fileUUID = UUID().uuidString
         let trackerId:Int64 = -1
@@ -114,7 +122,10 @@ class BackgroundCacheTests: XCTestCase {
         let present = try NetworkCache.isRow(db: database, where: NetworkCache.fileUUIDField.description == UUID(uuidString: file.fileUUID)!)
         XCTAssert(present)
     }
+    */
     
+    #warning("The method this is testing is unused.")
+    /*
     func testLookupAndRemoveCacheWithUploadCachePresent() throws {
         let fileUUID = UUID().uuidString
         let trackerId: Int64 = -1
@@ -131,7 +142,10 @@ class BackgroundCacheTests: XCTestCase {
         let present = try NetworkCache.isRow(db: database, where: NetworkCache.fileUUIDField.description == UUID(uuidString: file.fileUUID)!)
         XCTAssert(!present)
     }
+    */
     
+    #warning("The method this is testing is unused.")
+    /*
     func testLookupAndRemoveCacheWithUploadCacheAbsent() throws {
         let trackerId:Int64 = -1
         let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1, trackerId: trackerId)
@@ -147,6 +161,7 @@ class BackgroundCacheTests: XCTestCase {
         let present = try NetworkCache.isRow(db: database, where: NetworkCache.fileUUIDField.description == UUID(uuidString: file.fileUUID)!)
         XCTAssert(present)
     }
+    */
     
     func testRemoveUploadCache() throws {
         let fileUUID = UUID().uuidString

@@ -18,8 +18,6 @@ protocol ServerAPIDelegator: ServerAPIDelegate {
     var handlers: DelegateHandlers {get}
     var deviceUUID: UUID! {get}
     var hashingManager: HashingManager! {get}
-    var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())? {get set}
-    var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>) -> ())? {get set}
 }
 
 extension ServerAPIDelegator {
@@ -28,11 +26,15 @@ extension ServerAPIDelegator {
     }
     
     func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
-        downloadCompletedHandler?(result)
+        handlers.api.downloadCompletedHandler?(result)
     }
     
     func uploadCompleted(_ delegated: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
-        uploadCompletedHandler?(result)
+         handlers.api.uploadCompletedHandler?(result)
+    }
+    
+    func backgroundRequestCompleted(_ delegated: AnyObject, result: Swift.Result<BackgroundRequestResult, Error>) {
+        handlers.api.backgroundRequestCompletedHandler?(result)
     }
     
     func hasher(_ delegated: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing {

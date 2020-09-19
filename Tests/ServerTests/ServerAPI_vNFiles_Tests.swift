@@ -16,17 +16,15 @@ import ChangeResolvers
 
 class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, ServerBasics {
     var hashingManager: HashingManager!
-    var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
-    var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
     var api: ServerAPI!
-    let handlers = DelegateHandlers()
+    var handlers = DelegateHandlers()
     var deviceUUID: UUID!
     var database: Connection!
     let config = Configuration.defaultTemporaryFiles
 
     override func setUpWithError() throws {
         try super.setUpWithError()
-        uploadCompletedHandler = nil
+        handlers = DelegateHandlers()
         handlers.user = try dropboxUser()
         deviceUUID = UUID()
         let database = try Connection(.inMemory)

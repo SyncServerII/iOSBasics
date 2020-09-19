@@ -18,15 +18,15 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
         do {
             cache = try backgroundCache.lookupCache(taskIdentifer: downloadTask.taskIdentifier)
         } catch let error {
-            transferDelegate.downloadError(self, file: nil, statusCode: response?.statusCode, error: error)
+            transferDelegate.error(self, file: nil, statusCode: response?.statusCode, error: error)
             return
         }
         
-        let downloadFile = FileObject(fileUUID: cache.fileUUID.uuidString, fileVersion: cache.fileVersion, trackerId: cache.trackerId)
+        let downloadFile = FileObject(fileUUID: cache.uuid.uuidString, fileVersion: cache.fileVersion, trackerId: cache.trackerId)
 
         if response == nil {
             try? cache.delete()
-            transferDelegate.downloadError(self, file: downloadFile, statusCode: response?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
+            transferDelegate.error(self, file: downloadFile, statusCode: response?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
             return
         }
 
@@ -38,22 +38,29 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
         catch (let error) {
             logger.info("Could not move file: \(error)")
             try? cache.delete()
-            transferDelegate.downloadError(self, file: downloadFile, statusCode: response?.statusCode, error: error)
+            transferDelegate.error(self, file: downloadFile, statusCode: response?.statusCode, error: error)
             return
         }
 
         switch cache?.transfer {
-        case .some(.download):
+        case .download:
             do {
                 try backgroundCache.cacheDownloadResult(taskIdentifer: downloadTask.taskIdentifier, response: response!, localURL: movedDownloadedFile)
             } catch let error {
-                transferDelegate.downloadError(self, file: downloadFile, statusCode: response?.statusCode, error: error)
+                transferDelegate.error(self, file: downloadFile, statusCode: response?.statusCode, error: error)
             }
             
-        default:
+        case .request:
+            do {
+                try backgroundCache.cacheRequestResult(taskIdentifer: downloadTask.taskIdentifier, response: response!, localURL: movedDownloadedFile)
+            } catch let error {
+                transferDelegate.error(self, file: downloadFile, statusCode: response?.statusCode, error: error)
+            }
+            
+        case .upload, .none:
             try? cache.delete()
             logger.error("Unexpected transfer type: \(String(describing: cache?.transfer))")
-            transferDelegate.downloadError(self, file: downloadFile, statusCode: response?.statusCode, error: NetworkingError.unexpectedTransferType)
+            transferDelegate.error(self, file: downloadFile, statusCode: response?.statusCode, error: NetworkingError.unexpectedTransferType)
         }
     }
     
@@ -73,17 +80,14 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
             return
         }
         
-        let file = FileObject(fileUUID: cache.fileUUID.uuidString, fileVersion: cache.fileVersion, trackerId: cache.trackerId)
+        let file = FileObject(fileUUID: cache.uuid.uuidString, fileVersion: cache.fileVersion, trackerId: cache.trackerId)
 
         if response == nil {
             try? cache.delete()
             
             switch cache.transfer {
-            case .some(.upload):
-                transferDelegate.uploadError(self, file: file, statusCode: response?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
-                
-            case .some(.download):
-                transferDelegate.downloadError(self, file: file, statusCode: response?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
+            case .upload, .download, .request:
+                transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
                 
             case .none:
                 transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
@@ -91,25 +95,23 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
 
             return
         }
-        
+
+        if let error = error {
+            transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
+            return
+        }
+            
         switch cache.transfer {
-        case .some(.upload(let uploadBody)):
-            if let error = error {
-                transferDelegate.uploadError(self, file: file, statusCode: response?.statusCode, error: error)
-            }
-            else {
-                transferDelegate.uploadCompleted(self, file: file, response: response, responseBody: uploadBody?.dictionary, statusCode: response?.statusCode)
-            }
+        case .upload(let uploadBody):
+            transferDelegate.uploadCompleted(self, file: file, response: response, responseBody: uploadBody?.dictionary, statusCode: response?.statusCode)
 
-        case .some(.download(let url)):
-            if let error = error {
-                transferDelegate.downloadError(self, file: file, statusCode: response?.statusCode, error: error)
-            }
-            else {
-                transferDelegate.downloadCompleted(self, file: file, url: url, response: response, response?.statusCode)
-            }
+        case .download(let url):
+            transferDelegate.downloadCompleted(self, file: file, url: url, response: response, response?.statusCode)
 
-        default:
+        case .request(let url):
+            transferDelegate.backgroundRequestCompleted(self, url: url, trackerId: file.trackerId, response: response, requestInfo: cache.requestInfo, statusCode: response?.statusCode)
+            
+        case .none:
             transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
         }
     }

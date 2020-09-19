@@ -16,22 +16,22 @@ import SQLite
 class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
-    var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
-    var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
     var api: ServerAPI!
     var networking: Networking!
     let handlers = DelegateHandlers()
+    var backgroundRequestCompleted: ((_ network: Any, URL?, _ trackerId:Int64, HTTPURLResponse?, _ requestInfo: Data?, _ statusCode:Int?) -> ())?
     
     override func setUpWithError() throws {
         try super.setUpWithError()
         deviceUUID = UUID()
         let database = try Connection(.inMemory)
         let config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: URL(string: Self.baseURL())!, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
-        networking = Networking(database: database, delegate: self, config: config)
+        networking = Networking(database: database, delegate: self, transferDelegate: self, config: config)
         hashingManager = HashingManager()
         try? hashingManager.add(hashing: DropboxHashing())
         api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
         handlers.user = try dropboxUser()
+        try NetworkCache.createTable(db: database)
     }
 
     override func tearDownWithError() throws {
@@ -77,5 +77,85 @@ class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
         }
         
         waitForExpectations(timeout: 10, handler: nil)
+    }
+    
+    func testBackgroundRequest() throws {
+        let endpoint = ServerEndpoints.checkCreds
+        let serverURL = ServerAPI.makeURL(forEndpoint: endpoint, baseURL: Self.baseURL())
+        
+        let objectTrackerId:Int64 = 22
+        let testString = "Hello, There!"
+        
+        guard let requestInfoData = testString.data(using: .utf8) else {
+            XCTFail()
+            return
+        }
+        
+        var resultURL: URL?
+        var requestInfo: Data?
+        
+        let exp = expectation(description: "exp")
+        backgroundRequestCompleted = { _, url, trackerId, _, info, statusCode in
+            resultURL = url
+            requestInfo = info
+            XCTAssert(objectTrackerId == trackerId)
+            XCTAssert(statusCode == 200)
+            exp.fulfill()
+        }
+        
+        let error = networking.sendBackgroundRequestTo(serverURL, method: endpoint.method, uuid: UUID(), objectTrackerId: objectTrackerId, requestInfo: requestInfoData)
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        guard error == nil else {
+            XCTFail("\(String(describing: error))")
+            return
+        }
+        
+        guard let url = resultURL else {
+            XCTFail()
+            return
+        }
+        
+        let data = try Data(contentsOf: url)
+
+        let json = try JSONSerialization.jsonObject(with: data, options: JSONSerialization.ReadingOptions(rawValue: UInt(0)))
+                
+        guard let jsonDict = json as? [String: Any] else {
+            XCTFail()
+            return
+        }
+                
+        let response = try CheckCredsResponse.decode(jsonDict)
+        XCTAssert(response.userId != nil)
+        
+        guard let info = requestInfo else {
+            XCTFail()
+            return
+        }
+        
+        guard let infoString = String(data: info, encoding: .utf8) else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(infoString == testString)
+    }
+}
+
+extension NetworkingTests: FileTransferDelegate {
+    func error(_ network: Any, file: Filenaming?, statusCode:Int?, error:Error?) {
+        XCTFail()
+    }
+
+    func downloadCompleted(_ network: Any, file: Filenaming, url: URL?, response: HTTPURLResponse?, _ statusCode:Int?) {
+        XCTFail()
+    }
+    
+    func uploadCompleted(_ network: Any, file: Filenaming, response: HTTPURLResponse?, responseBody: [String: Any]?, statusCode:Int?) {
+        XCTFail()
+    }
+    
+    func backgroundRequestCompleted(_ network: Any, url: URL?, trackerId: Int64, response: HTTPURLResponse?, requestInfo: Data?, statusCode: Int?) {
+        backgroundRequestCompleted?(network, url, trackerId, response, requestInfo, statusCode)
     }
 }

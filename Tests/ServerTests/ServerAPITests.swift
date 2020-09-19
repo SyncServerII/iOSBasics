@@ -15,17 +15,15 @@ import SQLite
 
 class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, ServerBasics, TestFiles {
     var hashingManager: HashingManager!
-    var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
-    var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
     var api: ServerAPI!
     var deviceUUID: UUID!
     var database: Connection!
     let config = Configuration.defaultTemporaryFiles
-    let handlers = DelegateHandlers()
+    var handlers = DelegateHandlers()
     
     override func setUpWithError() throws {
         try super.setUpWithError()
-        uploadCompletedHandler = nil
+        handlers = DelegateHandlers()
         handlers.user = try dropboxUser()
         deviceUUID = UUID()
         let database = try Connection(.inMemory)
@@ -170,6 +168,103 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
         }
         
         XCTAssert(status == nil)
+    }
+    
+    func testBackgroundDeletion() throws {
+        _ = handlers.user.removeUser()
+        XCTAssert(handlers.user.addUser())
+        
+        let fileUUID = UUID()
+        let fileURL = exampleTextFileURL
+        
+        let hashing = try hashingManager.hashFor(cloudStorageType: .Dropbox)
+        let checkSum = try hashing.hash(forURL: fileURL)
+        
+        guard let result = getIndex(sharingGroupUUID: nil),
+            result.sharingGroups.count > 0,
+            let sharingGroupUUID = result.sharingGroups[0].sharingGroupUUID else {
+            XCTFail()
+            return
+        }
+                                
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: nil, appMetaData: nil))
+        
+        guard case .success = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
+            XCTFail()
+            return
+        }
+        
+        let deletionFile = ServerAPI.DeletionFile.fileUUID(fileUUID.uuidString)
+        let trackerId:Int64 = 142
+        
+        let error = api.uploadDeletion(file: deletionFile, sharingGroupUUID: sharingGroupUUID, objectTrackerId: trackerId)
+        
+        guard error == nil else {
+            XCTFail()
+            return
+        }
+        
+        guard let _ = waitForDeletion(trackerId: trackerId, file: deletionFile) else {
+            XCTFail()
+            return
+        }
+    }
+    
+    // On success, returns the `deferredUploadId` for the file deletion. i.e., the deferred upload is still pending.
+    func waitForDeletion(trackerId: Int64, file: ServerAPI.DeletionFile) -> Int64? {
+        var deferredUploadId: Int64?
+        
+        let exp = expectation(description: "exp")
+        
+        handlers.api.backgroundRequestCompletedHandler = { result in
+            switch result {
+            case .failure:
+                XCTFail()
+                
+            case .success(let successResult):
+                switch successResult {
+                case .gone:
+                    XCTFail()
+                    
+                case .success(objectTrackerId: let id, let result):
+                    XCTAssert(trackerId == id)
+                    
+                    guard let requestInfo = result.requestInfo else {
+                        XCTFail()
+                        return
+                    }
+                    
+                    guard let info = try? JSONDecoder().decode(ServerAPI.DeletionRequestInfo.self, from: requestInfo) else {
+                        XCTFail()
+                        return
+                    }
+
+                    XCTAssert(info.uuid.uuidString == file.uuidString)
+                    XCTAssert(info.uuidType == file.uuidType)
+        
+                    do {
+                        let data = try Data(contentsOf: result.serverResponse)
+                        let json = try JSONSerialization.jsonObject(with: data, options: JSONSerialization.ReadingOptions(rawValue: UInt(0)))
+                                
+                        guard let jsonDict = json as? [String: Any] else {
+                            XCTFail()
+                            return
+                        }
+                                
+                        let response = try UploadDeletionResponse.decode(jsonDict)
+                        deferredUploadId = response.deferredUploadId
+                    } catch let error {
+                        XCTFail("\(error)")
+                    }
+                }
+            }
+            
+            exp.fulfill()
+        }
+        
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        return deferredUploadId
     }
 }
 

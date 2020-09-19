@@ -8,14 +8,9 @@ import iOSSignIn
 class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate, SyncServerTests {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
-    var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
-    var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
-    
     var api: ServerAPI!
     var syncServer: SyncServer!
-    
     var handlers = DelegateHandlers()
-    
     var database: Connection!
     var config:Configuration!
     

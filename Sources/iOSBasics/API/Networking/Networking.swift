@@ -32,6 +32,7 @@ protocol NetworkingDelegate: AnyObject {
     
     func uploadCompleted(_ delegated: AnyObject, result: Swift.Result<UploadFileResult, Error>)
     func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>)
+    func backgroundRequestCompleted(_ delegated: AnyObject, result: Swift.Result<BackgroundRequestResult, Error>)
 }
 
 // NSObject inheritance needed for URLSessionDelegate conformance.
@@ -262,6 +263,23 @@ class Networking: NSObject {
         } catch let error {
             task.cancel()
             delegate.downloadCompleted(self, result: .failure(error))
+            return error
+        }
+
+        task.resume()
+        return nil
+    }
+    
+    // userInfo is for request specific info.
+    func sendBackgroundRequestTo(_ serverURL: URL, method: ServerHTTPMethod, uuid: UUID, objectTrackerId: Int64, requestInfo: Data? = nil) -> Error? {
+
+        let task = downloadFrom(serverURL, method: method)
+
+        do {
+            try backgroundCache.initializeRequestCache(uuid: uuid.uuidString, objectTrackerId: objectTrackerId, taskIdentifer: task.taskIdentifier, requestInfo: requestInfo)
+        } catch let error {
+            task.cancel()
+            delegate.backgroundRequestCompleted(self, result: .failure(error))
             return error
         }
 

@@ -9,9 +9,9 @@ import ServerShared
 protocol FileTransferDelegate: AnyObject {
     func error(_ network: Any, file: Filenaming?, statusCode:Int?, error:Error?)
 
-    func downloadError(_ network: Any, file: Filenaming?, statusCode:Int?, error:Error?)
     func downloadCompleted(_ network: Any, file: Filenaming, url: URL?, response: HTTPURLResponse?, _ statusCode:Int?)
     
-    func uploadError(_ network: Any, file: Filenaming?, statusCode:Int?, error:Error?)
     func uploadCompleted(_ network: Any, file: Filenaming, response: HTTPURLResponse?, responseBody: [String: Any]?, statusCode:Int?)
+    
+    func backgroundRequestCompleted(_ network: Any, url: URL?, trackerId: Int64, response: HTTPURLResponse?, requestInfo: Data?, statusCode: Int?)
 }

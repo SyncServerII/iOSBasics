@@ -35,6 +35,17 @@ enum DownloadFileResult {
     case gone(objectTrackerId: Int64, fileUUID: UUID, GoneReason)
 }
 
+enum BackgroundRequestResult {
+    public struct SuccessResult {
+        let serverResponse: URL
+        let requestInfo: Data?
+    }
+    
+    case success(objectTrackerId: Int64, SuccessResult)
+    
+    case gone(objectTrackerId: Int64)
+}
+
 protocol ServerAPIDelegate: NetworkingDelegate {
     func hasher(_ delegated: AnyObject, forCloudStorageType cloudStorageType: CloudStorageType) throws -> CloudStorageHashing
     func error(_ delegated: AnyObject, error: Error?)

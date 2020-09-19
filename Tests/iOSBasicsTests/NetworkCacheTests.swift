@@ -11,7 +11,7 @@ class NetworkCacheTests: XCTestCase {
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID(), trackerId: -1, fileVersion: 1, transfer: nil)
+        entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, uuid: UUID(), trackerId: -1, fileVersion: 1, transfer: nil)
     }
 
     override func tearDownWithError() throws {
@@ -20,7 +20,7 @@ class NetworkCacheTests: XCTestCase {
     
     func assertContentsCorrect(entry1: NetworkCache, entry2: NetworkCache) {
         XCTAssert(entry1.taskIdentifier == entry2.taskIdentifier)
-        XCTAssert(entry1.fileUUID == entry2.fileUUID)
+        XCTAssert(entry1.uuid == entry2.uuid)
         XCTAssert(entry1.fileVersion == entry2.fileVersion)
         XCTAssert(entry1.transfer == entry2.transfer)
     }
@@ -163,7 +163,7 @@ class NetworkCacheTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different primary key.
-        let entry2 = try NetworkCache(db: database, taskIdentifier: taskIdentifier + 1, fileUUID: UUID(), trackerId: -1, fileVersion: 1, transfer: nil)
+        let entry2 = try NetworkCache(db: database, taskIdentifier: taskIdentifier + 1, uuid: UUID(), trackerId: -1, fileVersion: 1, transfer: nil)
 
         try entry2.insert()
 
@@ -182,17 +182,17 @@ class NetworkCacheTests: XCTestCase {
         let replacement = UUID()
         
         entry = try entry.update(setters:
-            NetworkCache.fileUUIDField.description <- replacement
+            NetworkCache.uuidField.description <- replacement
         )
                 
         var count = 0
         try NetworkCache.fetch(db: database,
-            where: replacement == NetworkCache.fileUUIDField.description) { row in
-            XCTAssert(row.fileUUID == replacement, "\(row.fileUUID)")
+            where: replacement == NetworkCache.uuidField.description) { row in
+            XCTAssert(row.uuid == replacement, "\(row.uuid)")
             count += 1
         }
         
-        XCTAssert(entry.fileUUID == replacement)
+        XCTAssert(entry.uuid == replacement)
         
         XCTAssert(count == 1)
     }
@@ -208,7 +208,7 @@ class NetworkCacheTests: XCTestCase {
     func testSavingNilURL() throws {
         try NetworkCache.createTable(db: database)
 
-        let entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, fileUUID: UUID(), trackerId: -1, fileVersion: 1, transfer: nil)
+        let entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, uuid: UUID(), trackerId: -1, fileVersion: 1, transfer: nil)
         try entry.insert()
 
         var count = 0

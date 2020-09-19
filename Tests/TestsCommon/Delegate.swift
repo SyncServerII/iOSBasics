@@ -17,6 +17,13 @@ class DelegateHandlers {
 
     }
     let extras = Extras()
+    
+    class ServerAPIHandlers {
+        var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())?
+        var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>) -> ())?
+        var backgroundRequestCompletedHandler: ((_ result: Swift.Result<BackgroundRequestResult, Error>) -> ())?
+    }
+    let api = ServerAPIHandlers()
 
     var user:TestUser!
     

@@ -15,16 +15,14 @@ import SQLite
 
 class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, ServerBasics, TestFiles {
     var hashingManager: HashingManager!
-    var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
-    var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
     var api: ServerAPI!
     var deviceUUID: UUID!
     var database: Connection!
-    let handlers = DelegateHandlers()
+    var handlers = DelegateHandlers()
     
     override func setUpWithError() throws {
         try super.setUpWithError()
-        uploadCompletedHandler = nil
+        handlers = DelegateHandlers()
         handlers.user = try dropboxUser()
         deviceUUID = UUID()
         let database = try Connection(.inMemory)

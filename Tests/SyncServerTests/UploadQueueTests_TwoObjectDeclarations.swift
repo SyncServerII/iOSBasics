@@ -9,10 +9,7 @@ import ChangeResolvers
 class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate {
     
     var deviceUUID: UUID!
-    var hashingManager: HashingManager!
-    var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
-    var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
-    
+    var hashingManager: HashingManager!    
     var api: ServerAPI!
     var syncServer: SyncServer!
     var handlers = DelegateHandlers()

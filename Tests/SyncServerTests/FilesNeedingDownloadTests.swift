@@ -16,14 +16,9 @@ import ChangeResolvers
 class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, SyncServerTests, Delegate {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
-    var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
-    var downloadCompletedHandler: ((Swift.Result<DownloadFileResult, Error>) -> ())?
-    
     var api: ServerAPI!
     var syncServer: SyncServer!
-    
     var handlers = DelegateHandlers()
-    
     var database: Connection!
     var config:Configuration!
     

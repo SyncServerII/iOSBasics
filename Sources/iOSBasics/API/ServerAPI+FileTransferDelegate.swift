@@ -4,11 +4,7 @@ import iOSShared
 
 extension ServerAPI: FileTransferDelegate {
     func error(_ network: Any, file: Filenaming?, statusCode: Int?, error: Error?) {
-        assert(false)
-    }
-    
-    func downloadError(_ network: Any, file: Filenaming?, statusCode: Int?, error: Error?) {
-        assert(false)
+        delegate.error(self, error: error)
     }
     
     func downloadCompleted(_ network: Any, file: Filenaming, url: URL?, response: HTTPURLResponse?, _ statusCode: Int?) {
@@ -93,10 +89,6 @@ extension ServerAPI: FileTransferDelegate {
         }
     }
     
-    func uploadError(_ network: Any, file: Filenaming?, statusCode: Int?, error: Error?) {
-        delegate.error(self, error: error)
-    }
-    
     func uploadCompleted(_ network: Any, file: Filenaming, response: HTTPURLResponse?, responseBody: [String : Any]?, statusCode: Int?) {
     
         if statusCode == HTTPStatus.gone.rawValue,
@@ -146,5 +138,26 @@ extension ServerAPI: FileTransferDelegate {
         else {
             delegate.uploadCompleted(self, result: .failure(ServerAPIError.couldNotObtainHeaderParameters))
         }
+    }
+    
+    func backgroundRequestCompleted(_ network: Any, url: URL?, trackerId: Int64, response: HTTPURLResponse?, requestInfo: Data?, statusCode: Int?) {
+
+        if statusCode == HTTPStatus.gone.rawValue {
+            delegate.backgroundRequestCompleted(self, result: .success(.gone(objectTrackerId: trackerId)))
+            return
+        }
+
+        if let resultError = self.checkForError(statusCode: statusCode, error: nil) {
+            delegate.backgroundRequestCompleted(self, result: .failure(resultError))
+            return
+        }
+        
+        guard let url = url else {
+            delegate.backgroundRequestCompleted(self, result: .failure(ServerAPIError.resultURLObtainedWasNil))
+            return
+        }
+        
+        let result = BackgroundRequestResult.SuccessResult(serverResponse: url, requestInfo: requestInfo)
+        delegate.backgroundRequestCompleted(self, result: .success(.success(objectTrackerId: trackerId, result)))
     }
 }

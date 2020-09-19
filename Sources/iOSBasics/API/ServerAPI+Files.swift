@@ -186,8 +186,40 @@ extension ServerAPI {
     }
     
     enum DeletionFile {
+        enum UUIDType: String, Codable {
+            case fileUUID
+            case fileGroupUUID
+        }
+        
         case fileUUID(String)
         case fileGroupUUID(String)
+        
+        init(uuid: UUID, type: UUIDType) {
+            switch type {
+            case .fileUUID:
+                self = .fileUUID(uuid.uuidString)
+            case .fileGroupUUID:
+                self = .fileGroupUUID(uuid.uuidString)
+            }
+        }
+        
+        var uuidString:String {
+            switch self {
+            case .fileUUID(let uuid):
+                return uuid
+            case .fileGroupUUID(let uuid):
+                return uuid
+            }
+        }
+        
+        var uuidType: UUIDType {
+            switch self {
+            case .fileUUID:
+                return .fileUUID
+            case .fileGroupUUID:
+                return .fileGroupUUID
+            }
+        }
     }
     
     enum DeletionFileResult {
@@ -195,8 +227,7 @@ extension ServerAPI {
         case fileAlreadyDeleted
     }
     
-    func uploadDeletion(file: DeletionFile, sharingGroupUUID: String, completion: @escaping (Result<DeletionFileResult, Error>)->()) {
-        
+    private func prepareDeletion(file: DeletionFile, sharingGroupUUID: String) throws -> (URL, ServerEndpoint) {
         let endpoint = ServerEndpoints.uploadDeletion
                 
         let request = UploadDeletionRequest()
@@ -210,17 +241,31 @@ extension ServerAPI {
         }
         
         guard request.valid() else {
-            completion(.failure(ServerAPIError.couldNotCreateRequest))
-            return
+            throw ServerAPIError.couldNotCreateRequest
         }
         
         guard let parameters = request.urlParameters() else {
-            completion(.failure(ServerAPIError.couldNotCreateRequest))
+            throw ServerAPIError.couldNotCreateRequest
+        }
+
+        let url = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: parameters)
+        
+        return (url, endpoint)
+    }
+    
+    func uploadDeletion(file: DeletionFile, sharingGroupUUID: String, completion: @escaping (Result<DeletionFileResult, Error>)->()) {
+        
+        let serverURL:URL
+        let endpoint: ServerEndpoint
+        do {
+            let (url, ep) = try prepareDeletion(file: file, sharingGroupUUID: sharingGroupUUID)
+            endpoint = ep
+            serverURL = url
+        } catch let error {
+            completion(.failure(error))
             return
         }
 
-        let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: parameters)
-        
         networking.sendRequestTo(serverURL, method: endpoint.method) { response, httpStatus, error in
            
             guard let response = response else {
@@ -248,5 +293,37 @@ extension ServerAPI {
             
             completion(.success(result))
         }
+    }
+    
+    class DeletionRequestInfo: Codable {
+        var uuid: UUID!
+        var uuidType: DeletionFile.UUIDType!
+    }
+    
+    // Background upload deletion request. On success, the `backgroundRequestCompleted` will have `SuccessResult.requestInfo` set as `DeletionRequestInfo` coded data.
+    func uploadDeletion(file: DeletionFile, sharingGroupUUID: String, objectTrackerId: Int64) -> Error? {
+    
+        guard let uuid = UUID(uuidString: file.uuidString) else {
+            return ServerAPIError.badUUID
+        }
+    
+        let requestInfo = DeletionRequestInfo()
+        requestInfo.uuid = uuid
+        requestInfo.uuidType = file.uuidType
+    
+        let serverURL:URL
+        let endpoint: ServerEndpoint
+        let requestInfoData: Data
+        
+        do {
+            let (url, ep) = try prepareDeletion(file: file, sharingGroupUUID: sharingGroupUUID)
+            endpoint = ep
+            serverURL = url
+            requestInfoData = try JSONEncoder().encode(requestInfo)
+        } catch let error {
+            return error
+        }
+
+        return networking.sendBackgroundRequestTo(serverURL, method: endpoint.method, uuid: uuid, objectTrackerId: objectTrackerId, requestInfo: requestInfoData)
     }
 }
