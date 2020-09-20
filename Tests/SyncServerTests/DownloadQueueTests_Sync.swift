@@ -57,6 +57,9 @@ class DownloadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         // All temporary files should have been removed prior to end of test.
         let filePaths = try FileManager.default.contentsOfDirectory(atPath: config.temporaryFiles.directory.path)
         XCTAssert(filePaths.count == 0, "\(filePaths.count)")
+        
+        let count = try NetworkCache.numberRows(db: database)
+        XCTAssert(count == 0, "\(count)")
     }
 
     func testSyncWithNoDownloadsToDoWorks() throws {

@@ -2,8 +2,6 @@ import SQLite
 import Foundation
 import ServerShared
 
-#warning("I've not seen any clean up code used that actually removes these.")
-
 class NetworkCache: DatabaseModel {
     let db: Connection
     var id: Int64!

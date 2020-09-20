@@ -334,7 +334,8 @@ extension SyncServer {
         try deleteUploadTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
     }
     
-    func goneDeleted(fileUUID: UUID) {
+    // Called when an upload or download detects that a file is `gone`.
+    private func goneDeleted(fileUUID: UUID) {
         do {
             guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where:
                 fileUUID == DirectoryEntry.fileUUIDField.description) else {
@@ -351,7 +352,8 @@ extension SyncServer {
 
             delegator { [weak self] delegate in
                 guard let self = self else { return }
-                #warning("Not sure why I have this as downloadDeletion here.")
+                // Calling `downloadDeletion` here because an upload or a download has detected a file is gone. Actually, now that I think of it, whether or not the file is really `deleted` depends on the GoneReason. For example, for a GoneReason of `authTokenExpiredOrRevoked`, this should not be reported as a `downloadDeletion`.
+                #warning("Need to get that reason and change this.")
                 delegate.downloadDeletion(self, details: .file(fileUUID))
             }
             

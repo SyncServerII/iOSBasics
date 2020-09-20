@@ -46,10 +46,10 @@ class BackgroundCache {
         try cache.insert()
     }
     
-    func lookupCache(taskIdentifer: Int) throws -> NetworkCache? {
+    func lookupCache(taskIdentifer: Int) throws -> NetworkCache {
         guard let cache = try NetworkCache.fetchSingleRow(db: database,
             where: taskIdentifer == NetworkCache.taskIdentifierField.description) else {
-            return nil
+            throw NetworkingError.couldNotGetCache
         }
         
         return cache
@@ -103,66 +103,5 @@ class BackgroundCache {
         try cache.update(setters:
             NetworkCache.transferField.description <- download
         )
-    }
-    
-    // If the NetworkCache object is returned, it has been removed from the database.
-    #warning("This method is unused.")
-    /*
-    func lookupAndRemoveCache(file:Filenaming, download: Bool) throws -> NetworkCache? {
-        let caches = try NetworkCache.fetch(db: database, where: UUID(uuidString: file.fileUUID)! == NetworkCache.fileUUIDField.description)
-            .filter {$0.fileVersion == file.fileVersion}
-        if caches.count == 0 {
-            return nil
-        }
-        
-        guard caches.count == 1 else {
-            throw NetworkingError.moreThanOneNetworkCache
-        }
-        
-        let cache = caches[0]
-        
-        guard let transfer = cache.transfer else {
-            logger.warning("transfer field of cache was nil")
-            return nil
-        }
-        
-        switch transfer {
-        case .upload:
-            if download {
-                return nil
-            }
-            else {
-                try cache.delete()
-                return cache
-            }
-            
-        case .download:
-            if download {
-                try cache.delete()
-                return cache
-            }
-            else {
-                return nil
-            }
-        }
-    }
-    */
-    
-    func lookupAndRemoveCache(taskIdentifer: Int) throws -> NetworkCache? {
-        guard let cache = try NetworkCache.fetchSingleRow(db: database,
-            where: taskIdentifer == NetworkCache.taskIdentifierField.description) else {
-            return nil
-        }
-        
-        try cache.delete()
-        return cache
-    }
-    
-    func removeCache(taskIdentifer: Int) throws {
-        guard let cache = try NetworkCache.fetchSingleRow(db: database, where: taskIdentifer == NetworkCache.taskIdentifierField.description) else {
-            throw BackgroundCacheError.couldNotLookup
-        }
-        
-        try cache.delete()
     }
 }

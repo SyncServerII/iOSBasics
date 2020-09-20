@@ -5,7 +5,7 @@ import ServerShared
 import iOSShared
 import iOSSignIn
 
-class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate {
+class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate, SyncServerTests {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
     var api: ServerAPI!
@@ -576,7 +576,36 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         try runQueueTest(withObjectType: false)
     }
     
-    func testUploadDeletedFileFails() {
-        #warning("Make me")
+    func testUploadDeletedFileFails() throws {
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let localFile = Self.exampleTextFileURL
+        
+        let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        guard declaration.declaredFiles.count == 1,
+            let declaredFile = declaration.declaredFiles.first else {
+            XCTFail()
+            return
+        }
+        
+        try delete(object: declaration)
+        
+        // Technically, this is wrong. Because we're trying to upload v1 of a file that doesn't have a change resolver. But the failure will be detected before that.
+        let uploadable1 = FileUpload(uuid: declaredFile.uuid, dataSource: .copy(exampleTextFileURL))
+        let uploadables = Set<FileUpload>([uploadable1])
+        
+        do {
+            try syncServer.queue(uploads: uploadables, declaration: declaration)
+        } catch let error {
+            guard let error = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssert(error == SyncServerError.attemptToQueueADeletedFile)
+            return
+        }
+        
+        XCTFail()
     }
 }

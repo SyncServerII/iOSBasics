@@ -24,6 +24,7 @@ enum NetworkingError: Error {
     case noDownloadURL
     case unexpectedTransferType
     case moreThanOneNetworkCache
+    case couldNotGetCache
 }
 
 protocol NetworkingDelegate: AnyObject {

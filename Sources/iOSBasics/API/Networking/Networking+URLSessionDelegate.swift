@@ -8,6 +8,8 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
     
         let originalDownloadLocation = location
         var movedDownloadedFile:URL!
+        
+        // We do *not* delete the SQLite cache here. `didFinishDownloadingTo` is not the last delegate method to be called for a download. Rather, the `didCompleteWithError` will get called.
         var cache: NetworkCache!
         
         // With an HTTP or HTTPS request, we get HTTPURLResponse back. See https://developer.apple.com/reference/foundation/urlsession/1407613-datatask
@@ -25,7 +27,6 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
         let downloadFile = FileObject(fileUUID: cache.uuid.uuidString, fileVersion: cache.fileVersion, trackerId: cache.trackerId)
 
         if response == nil {
-            try? cache.delete()
             transferDelegate.error(self, file: downloadFile, statusCode: response?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
             return
         }
@@ -37,7 +38,6 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
         }
         catch (let error) {
             logger.info("Could not move file: \(error)")
-            try? cache.delete()
             transferDelegate.error(self, file: downloadFile, statusCode: response?.statusCode, error: error)
             return
         }
@@ -58,7 +58,6 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
             }
             
         case .upload, .none:
-            try? cache.delete()
             logger.error("Unexpected transfer type: \(String(describing: cache?.transfer))")
             transferDelegate.error(self, file: downloadFile, statusCode: response?.statusCode, error: NetworkingError.unexpectedTransferType)
         }
@@ -76,6 +75,7 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
         do {
             cache = try backgroundCache.lookupCache(taskIdentifer: task.taskIdentifier)
         } catch let error {
+            try? cache?.delete()
             transferDelegate.error(self, file: nil, statusCode: response?.statusCode, error: error)
             return
         }
@@ -84,19 +84,12 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
 
         if response == nil {
             try? cache.delete()
-            
-            switch cache.transfer {
-            case .upload, .download, .request:
-                transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
-                
-            case .none:
-                transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
-            }
-
+            transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
             return
         }
 
         if let error = error {
+            try? cache.delete()
             transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
             return
         }
@@ -112,6 +105,12 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
             transferDelegate.backgroundRequestCompleted(self, url: url, trackerId: file.trackerId, response: response, requestInfo: cache.requestInfo, statusCode: response?.statusCode)
             
         case .none:
+            transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
+        }
+        
+        do {
+            try cache.delete()
+        } catch let error {
             transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
         }
     }
