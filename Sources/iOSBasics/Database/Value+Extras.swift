@@ -178,3 +178,17 @@ extension CloudStorageType: Value {
         return self.rawValue
     }
 }
+
+extension Permission: Value {
+    public static var declaredDatatype: String {
+        return "TEXT"
+    }
+    
+    public static func fromDatatypeValue(_ value: String) -> Permission {
+        return Permission(rawValue: value)!
+    }
+    
+    public var datatypeValue: String {
+        return self.rawValue
+    }
+}

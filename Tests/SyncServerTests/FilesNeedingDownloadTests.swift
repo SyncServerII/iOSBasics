@@ -268,4 +268,82 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         let file2 = results2[0].downloads.filter {$0.uuid == fileUUID2 && $0.fileVersion == 0}
         XCTAssert(file2.count == 1)
     }
+    
+    func testTwoFilesNeedingDownloadMarkFilesAsDownloaded() throws {
+        let sharingGroupUUID = try syncToGetSharingGroupUUID()
+
+        let fileGroupUUID1 = UUID()
+        let fileGroupUUID2 = UUID()
+
+        func queue(fileGroupUUID: UUID) throws -> UUID {
+            let fileUUID1 = UUID()
+
+            let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+
+            let declarations = Set<FileDeclaration>([declaration1])
+            
+            let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
+            let uploadables = Set<FileUpload>([uploadable1])
+
+            let testObject = ObjectDeclaration(fileGroupUUID: fileGroupUUID, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
+            
+            try syncServer.queue(uploads: uploadables, declaration: testObject)
+            waitForUploadsToComplete(numberUploads: 1)
+            
+            return fileUUID1
+        }
+        
+        let fileUUID1 = try queue(fileGroupUUID: fileGroupUUID1)
+        let fileUUID2 = try queue(fileGroupUUID: fileGroupUUID2)
+
+        // Reset the database to a state *as if* another client instance had done the upload-- and show the upload as ready for download.
+        database = try Connection(.inMemory)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
+        syncServer.delegate = self
+        syncServer.credentialsDelegate = self
+        
+        try sync(withSharingGroupUUID:sharingGroupUUID)
+        
+        let downloadables = try syncServer.filesNeedingDownload(sharingGroupUUID: sharingGroupUUID)
+        
+        guard downloadables.count == 2 else {
+            XCTFail()
+            return
+        }
+        
+        let downloadable1 = FileDownload(uuid: fileUUID1, fileVersion: 0)
+        try syncServer.markAsDownloaded(file: downloadable1)
+        
+        let downloadables2 = try syncServer.filesNeedingDownload(sharingGroupUUID: sharingGroupUUID)
+        
+        guard downloadables2.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        guard downloadables2[0].downloads.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        guard let download = downloadables2[0].downloads.first else {
+            XCTFail()
+            return
+        }
+        
+        guard download.uuid == fileUUID2 else {
+            XCTFail()
+            return
+        }
+
+        let downloadable2 = FileDownload(uuid: fileUUID2, fileVersion: 0)        
+        try syncServer.markAsDownloaded(file: downloadable2)
+        
+        let downloadables3 = try syncServer.filesNeedingDownload(sharingGroupUUID: sharingGroupUUID)
+        
+        guard downloadables3.count == 0 else {
+            XCTFail()
+            return
+        }
+    }
 }

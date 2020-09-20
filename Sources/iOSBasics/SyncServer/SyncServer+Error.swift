@@ -7,6 +7,7 @@ enum SyncServerError: Error {
     case noObject
     case noObjectId
     case fileNotDeclared
+    case objectNotDeclared
     case uploadsDoNotHaveDistinctUUIDs
     case declaredFilesDoNotHaveDistinctUUIDs
     case noUploads
@@ -14,17 +15,55 @@ enum SyncServerError: Error {
     case noDeclaredFiles
     case internalError(String)
     case attemptToQueueUploadOfVNAndV0Files
+    
     case attemptToQueueADeletedFile
-    case noObjectTypeForNewDeclaration
-    case unknownSharingGroup
-    case attemptToQueueAFileThatHasNotBeenDownloaded
     case attemptToDeleteObjectWithInvalidDeclaration
     case attemptToDeleteAnAlreadyDeletedFile
+    case fileNotDeletedOnServer
+    
+    case noObjectTypeForNewDeclaration
+    case unknownSharingGroup
+    
+    case attemptToQueueAFileThatHasNotBeenDownloaded
     case downloadingObjectAlreadyBeingDownloaded
     case downloadsDoNotHaveDistinctUUIDs
+    case fileNotDownloaded
+    case badFileVersion
+    
+    case attemptToCreateExistingSharingGroup
     
     static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
+        case attemptToCreateExistingSharingGroup:
+            guard case .attemptToCreateExistingSharingGroup = rhs else {
+                return false
+            }
+            return true
+            
+        case badFileVersion:
+            guard case .badFileVersion = rhs else {
+                return false
+            }
+            return true
+            
+        case fileNotDownloaded:
+            guard case .fileNotDownloaded = rhs else {
+                return false
+            }
+            return true
+        
+        case fileNotDeletedOnServer:
+            guard case .fileNotDeletedOnServer = rhs else {
+                return false
+            }
+            return true
+            
+        case objectNotDeclared:
+            guard case .objectNotDeclared = rhs else {
+                return false
+            }
+            return true
+            
         case declarationDifferentThanSyncedObject:
             guard case .declarationDifferentThanSyncedObject = rhs else {
                 return false

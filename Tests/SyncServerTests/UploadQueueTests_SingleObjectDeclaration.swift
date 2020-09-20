@@ -53,7 +53,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
     // No declared objects present
     func testLookupWithNoObject() {
         do {
-            let _ = try DeclaredObjectModel.lookupDeclarableObject(declObjectId: UUID(), db: database)
+            let _ = try DeclaredObjectModel.lookupDeclarableObject(fileGroupUUID: UUID(), db: database)
         } catch let error {
             guard let error = error as? DatabaseModelError else {
                 XCTFail()
@@ -279,7 +279,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
         try syncServer.queue(uploads: uploadables, declaration: testObject)
         
-        let obj = try DeclaredObjectModel.lookupDeclarableObject(declObjectId: testObject.declObjectId, db: database)
+        let obj = try DeclaredObjectModel.lookupDeclarableObject(fileGroupUUID: testObject.declObjectId, db: database)
         XCTAssert(obj.declCompare(to: testObject))
         
         let count1 = try DeclaredObjectModel.numberRows(db: database,
@@ -313,7 +313,7 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         waitForUploadsToComplete(numberUploads: 1)
 
         do {
-            let _ = try DeclaredObjectModel.lookupDeclarableObject(declObjectId: UUID(), db: database)
+            let _ = try DeclaredObjectModel.lookupDeclarableObject(fileGroupUUID: UUID(), db: database)
         } catch let error {
             guard let error = error as? DatabaseModelError else {
                 XCTFail()

@@ -23,13 +23,8 @@ extension SignIns {
                 sharingGroupUUID == SharingEntry.sharingGroupUUIDField.description) else {
                 throw SignInsError.noSharingEntryForSharingGroupUUID
             }
-            
-            guard let typeString = sharingEntry.cloudStorageType,
-                let cloudStorageType = CloudStorageType(rawValue: typeString) else {
-                throw SignInsError.badCloudStorageType
-            }
-            
-            return cloudStorageType
+
+            return sharingEntry.cloudStorageType
         }
     }
 }

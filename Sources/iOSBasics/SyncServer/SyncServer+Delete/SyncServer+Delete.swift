@@ -6,7 +6,7 @@ extension SyncServer {
     // This currently only supports `deletionType` (see UploadDeletionTracker) of `fileGroupUUID`.
     func deleteHelper<DECL: DeclarableObject>(object: DECL) throws {
         // Ensure this DeclaredObject has been registered before.
-        let declarableObject = try DeclaredObjectModel.lookupDeclarableObject(declObjectId: object.fileGroupUUID, db: db)
+        let declarableObject:ObjectDeclaration = try DeclaredObjectModel.lookupDeclarableObject(fileGroupUUID: object.fileGroupUUID, db: db)
         
         guard declarableObject.declCompare(to: object) else {
             throw SyncServerError.attemptToDeleteObjectWithInvalidDeclaration

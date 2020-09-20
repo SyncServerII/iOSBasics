@@ -89,15 +89,16 @@ public class SyncServer {
         try syncHelper(sharingGroupUUID: sharingGroupUUID)
     }
     
-    // MARK: Getting information
+    // MARK: Getting information: These are local operations that do not interact with the server.
 
     // Returns the same information as from the `downloadDeletion` delegate method-- other clients have removed these files.
-    public func filesNeedingDeletion() -> [ObjectDeclaration] {
-        return []
+    public func objectsNeedingDeletion() throws -> [ObjectDeclaration] {
+        return try objectsNeedingDeletionHelper()
     }
     
-    // Clients need to call this method to indicate they have deleted files returned from either the deletion delegates or from `filesNeedingDeletion`.
-    public func deletedFiles<DECL: DeclarableObject>(object: DECL) {
+    // Clients need to call this method to indicate they have deleted objects returned from either the deletion delegates or from `objectsNeedingDeletion`.
+    public func markAsDeleted<DECL: DeclarableObject>(object: DECL) throws {
+        try objectDeletedHelper(object: object)
     }
         
     // The list of files returned here survive app relaunch. A given object declaration will appear at most once in the returned list.
@@ -110,6 +111,11 @@ public class SyncServer {
         return try filesNeedingDownloadHelper(sharingGroupUUID: sharingGroupUUID)
     }
     
+    // Call this method so that, after you download a file, it doesn't appear again in `filesNeedingDownload` (for that file version).
+    public func markAsDownloaded<DWL: DownloadableFile>(file: DWL) throws {
+        try markAsDownloadedHelper(file: file)
+    }
+    
     // MARK: Sharing
     
     // The sharing groups in which the signed in user is a member.
@@ -117,35 +123,24 @@ public class SyncServer {
         return _sharingGroups
     }
     
-    // MARK: Unqueued requests-- these will fail if they involve a file or other object currently queued for upload or deletion. They will also fail if the network is offline.
+    // MARK: Unqueued server requests-- these will fail if they involve a file or other object currently queued for upload or deletion. They will also fail if the network is offline.
 
-    public func createSharingGroup(sharingGroup: UUID, sharingGroupName: String? = nil) {
+    // MARK: Sharing groups
+    
+    public func createSharingGroup(sharingGroupUUID: UUID, sharingGroupName: String? = nil, completion:@escaping (Error?)->()) {
+        createSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, sharingGroupName: sharingGroupName, completion: completion)
     }
     
-    public func updateSharingGroup(sharingGroup: UUID, newSharingGroupName: String) {
+    public func updateSharingGroup(sharingGroup: UUID, newSharingGroupName: String, completion:@escaping (Error?)->()) {
     }
     
     // Remove the current user from the sharing group.
     public func removeFromSharingGroup(sharingGroup: UUID) {
     }
     
+    // MARK: Sharing invitation
+
     public func createSharingInvitation(withPermission permission:ServerShared.Permission, sharingGroupUUID: String, numberAcceptors: UInt, allowSharingAcceptance: Bool = true, completion:((_ invitationCode:String?, Error?)->(Void))?) {
-    }
-    
-    // MARK: Accessor
-    
-    public func getAttributes(forFileUUID fileUUID: UUID) {
-    }
-    
-    // MARK: Reset
-    
-    public func reset() {
-    
-    }
-    
-    // MARK: Migration support.
-    
-    public func importFiles(files: [UUID]) {
     }
 }
 

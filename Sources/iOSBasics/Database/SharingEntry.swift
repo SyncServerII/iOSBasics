@@ -15,7 +15,7 @@ class SharingEntry: DatabaseModel {
     var id: Int64!
     
     static let permissionField = Field("permission", \M.permission)
-    var permission: String?
+    var permission: Permission
 
     static let removedFromGroupField = Field("removedFromGroup", \M.removedFromGroup)
     var removedFromGroup:  Bool
@@ -30,29 +30,16 @@ class SharingEntry: DatabaseModel {
     var syncNeeded: Bool
 
     static let cloudStorageTypeField = Field("cloudStorageType", \M.cloudStorageType)
-    var cloudStorageType: String?
+    var cloudStorageType: CloudStorageType
     
     init(db: Connection,
         id: Int64! = nil,
-        permission: String? = nil,
+        permission: Permission,
         removedFromGroup: Bool,
         sharingGroupName: String?,
         sharingGroupUUID: UUID,
         syncNeeded: Bool,
-        cloudStorageType:
-        String? = nil) throws {
-
-        if let cloudStorageType = cloudStorageType {
-            guard let _ = CloudStorageType(rawValue: cloudStorageType) else {
-                throw SharingEntryError.badCloudStorageType(cloudStorageType)
-            }
-        }
-
-        if let permission = permission {
-            guard let _ = Permission(rawValue: permission) else {
-                throw SharingEntryError.badPermission(permission)
-            }
-        }
+        cloudStorageType:CloudStorageType) throws {
         
         self.db = db
         self.id = id
@@ -117,8 +104,18 @@ extension SharingEntry {
         }
         else {
             // `removedFromGroup` set to false because we shouldn't be getting this call unless the current user is part of the sharing group.
-            // Should eventually detect when a user is removed from a sharing group and update this.
-            let newSharingEntry = try SharingEntry(db: db, permission: sharingGroup.permission?.rawValue, removedFromGroup: false, sharingGroupName: sharingGroup.sharingGroupName, sharingGroupUUID: sharingGroupUUID, syncNeeded: false, cloudStorageType: sharingGroup.cloudStorageType)
+            #warning("Should eventually detect when a user is removed from a sharing group and update this.")
+            
+            guard let permission = sharingGroup.permission else {
+                throw SyncServerError.internalError("Could not get permission")
+            }
+            
+            guard let cloudStorageTypeString = sharingGroup.cloudStorageType,
+                let cloudStorageType = CloudStorageType(rawValue: cloudStorageTypeString) else {
+                throw SyncServerError.internalError("Could not get cloud storage type")
+            }
+            
+            let newSharingEntry = try SharingEntry(db: db, permission: permission, removedFromGroup: false, sharingGroupName: sharingGroup.sharingGroupName, sharingGroupUUID: sharingGroupUUID, syncNeeded: false, cloudStorageType: cloudStorageType)
             try newSharingEntry.insert()
         }
     }

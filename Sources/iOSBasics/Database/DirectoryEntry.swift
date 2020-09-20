@@ -62,7 +62,7 @@ class DirectoryEntry: DatabaseModel, Equatable {
         }
     }
 
-    // When a file group is deleted, all files in that group are marked as deleted locally.
+    // When a file group is deleted by the local client, all files in that group are marked as deleted locally.
     static let deletedLocallyField = Field("deletedLocally", \M.deletedLocally)
     var deletedLocally: Bool
     

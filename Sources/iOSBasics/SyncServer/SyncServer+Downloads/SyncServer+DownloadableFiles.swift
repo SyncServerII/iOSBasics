@@ -25,7 +25,7 @@ extension SyncServer {
         
         for downloadGroup in downloadGroups {
             let first = downloadGroup[0]
-            let declaredObject = try DeclaredObjectModel.lookupDeclarableObject(declObjectId: first.fileGroupUUID, db: db)
+            let declaredObject:ObjectDeclaration = try DeclaredObjectModel.lookupDeclarableObject(fileGroupUUID: first.fileGroupUUID, db: db)
             
             var downloads = Set<FileDownload>()
             for entry in downloadGroup {
@@ -47,6 +47,23 @@ extension SyncServer {
         }
 
         return result
+    }
+    
+    func markAsDownloadedHelper<DWL: DownloadableFile>(file: DWL) throws {
+        guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where: DirectoryEntry.fileUUIDField.description == file.uuid) else {
+            throw SyncServerError.noObject
+        }
+        
+        guard let serverFileVersion = entry.serverFileVersion else {
+            throw SyncServerError.fileNotDownloaded
+        }
+        
+        guard file.fileVersion >= 0 && file.fileVersion <= serverFileVersion else {
+            throw SyncServerError.badFileVersion
+        }
+        
+        try entry.update(setters:
+            DirectoryEntry.fileVersionField.description <- file.fileVersion)
     }
 }
 

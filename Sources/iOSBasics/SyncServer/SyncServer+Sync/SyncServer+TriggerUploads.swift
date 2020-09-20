@@ -37,7 +37,7 @@ extension SyncServer {
         
         for uploadObject in toTrigger {
             let uploadCount = Int32(uploadObject.files.count)
-            let declaredObject = try DeclaredObjectModel.lookupDeclarableObject(declObjectId: uploadObject.object.fileGroupUUID, db: db)
+            let declaredObject:ObjectDeclaration = try DeclaredObjectModel.lookupDeclarableObject(fileGroupUUID: uploadObject.object.fileGroupUUID, db: db)
             
             guard let objectId = uploadObject.object.id else {
                 throw SyncServerError.internalError("Could not get object id")

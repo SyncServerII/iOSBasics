@@ -85,9 +85,9 @@ class DeclaredObjectModel: DatabaseModel, DeclarableObjectBasics, Equatable {
 }
 
 extension DeclaredObjectModel {
-    // Get a DeclarableObject to represent the DeclaredObjectModel and its component declared files. throws DatabaseModelError.noObject if no object found for declObjectId (i.e., fileGroupUUID).
-    static func lookupDeclarableObject(declObjectId: UUID, db: Connection) throws -> some DeclarableObject {
-        let models:[DeclaredObjectModel] = try DeclaredObjectModel.fetch(db: db, where: declObjectId == DeclaredObjectModel.fileGroupUUIDField.description)
+    // Get a DeclarableObject to represent the DeclaredObjectModel and its component declared files. throws DatabaseModelError.noObject if no object found for declObjectId (i.e., fileGroupUUID).    
+    static func lookupDeclarableObject(fileGroupUUID: UUID, db: Connection) throws -> ObjectDeclaration {
+        let models:[DeclaredObjectModel] = try DeclaredObjectModel.fetch(db: db, where: fileGroupUUID == DeclaredObjectModel.fileGroupUUIDField.description)
         
         switch models.count {
         case 0:
@@ -102,7 +102,7 @@ extension DeclaredObjectModel {
         
         let model = models[0]
                     
-        let declaredFilesInDatabase = try DeclaredFileModel.fetch(db: db, where: declObjectId == DeclaredFileModel.fileGroupUUIDField.description).map { FileDeclaration(uuid: $0.uuid, mimeType: $0.mimeType, cloudStorageType: $0.cloudStorageType, appMetaData: $0.appMetaData, changeResolverName: $0.changeResolverName) }
+        let declaredFilesInDatabase = try DeclaredFileModel.fetch(db: db, where: fileGroupUUID == DeclaredFileModel.fileGroupUUIDField.description).map { FileDeclaration(uuid: $0.uuid, mimeType: $0.mimeType, cloudStorageType: $0.cloudStorageType, appMetaData: $0.appMetaData, changeResolverName: $0.changeResolverName) }
         
         let files = Set<FileDeclaration>(declaredFilesInDatabase)
         

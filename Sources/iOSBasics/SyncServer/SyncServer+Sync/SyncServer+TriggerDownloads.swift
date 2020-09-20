@@ -42,7 +42,7 @@ extension SyncServer {
         // Now can actually trigger the downloads.
         
         for downloadObject in toTrigger {
-            let declaredObject = try DeclaredObjectModel.lookupDeclarableObject(declObjectId: downloadObject.object.fileGroupUUID, db: db)
+            let declaredObject:ObjectDeclaration = try DeclaredObjectModel.lookupDeclarableObject(fileGroupUUID: downloadObject.object.fileGroupUUID, db: db)
             
             guard let objectId = downloadObject.object.id else {
                 throw SyncServerError.internalError("Could not get object id")
