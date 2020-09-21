@@ -58,6 +58,7 @@ class DownloadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBas
     }
     
     func testUndeclaredObjectFails() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let localFile = Self.exampleTextFileURL
@@ -65,7 +66,7 @@ class DownloadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBas
         let _ = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
         
         let fileUUID1 = UUID()
-        let declaration2 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
         let declarations2 = Set<FileDeclaration>([declaration2])
 
         let object2 = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations2)
@@ -86,6 +87,7 @@ class DownloadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBas
     }
 
     func testQueueDownloadsFromDifferentObjectAlsoDownloads() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         let localFile = Self.exampleTextFileURL
         

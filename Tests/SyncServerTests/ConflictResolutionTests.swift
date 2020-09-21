@@ -13,7 +13,7 @@ import iOSShared
 import iOSSignIn
 import ChangeResolvers
 
-class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate {
+class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate, SyncServerTests {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
     var uploadCompletedHandler: ((Swift.Result<UploadFileResult, Error>) -> ())?
@@ -66,9 +66,10 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
 
     func testDeletionAfterServerDeletionDoesNotFail() throws {
         let fileUUID1 = UUID()
+        try self.sync(withSharingGroupUUID: nil)
         let sharingGroupUUID = try getSharingGroupUUID()
 
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration1])
         
         let object = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
@@ -125,9 +126,11 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
     func testUploadAfterServerDeletionDoesNotFail() throws {
         let fileUUID1 = UUID()
         let fileGroupUUID1 = UUID()
+        
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
 
-        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
+        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
         let declarations = Set<FileDeclaration>([declaration])
 
         let testObject = ObjectDeclaration(fileGroupUUID: fileGroupUUID1, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)

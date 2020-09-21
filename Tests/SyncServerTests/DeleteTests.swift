@@ -13,7 +13,7 @@ import iOSShared
 import iOSSignIn
 import ChangeResolvers
 
-class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate {
+class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate, SyncServerTests {
     var handlers = DelegateHandlers()
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
@@ -66,7 +66,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         let fileUUID1 = UUID()
         let sharingGroupUUID = UUID()
 
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration1])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
@@ -81,9 +81,10 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
     
     func runDeletion(withKnownDeclaredObjectButAllUnknownDeclaredFiles: Bool) throws {
         let fileUUID1 = UUID()
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
 
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration1])
         
         let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
@@ -94,7 +95,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         try syncServer.queue(uploads: uploadables, declaration: testObject)
         waitForUploadsToComplete(numberUploads: 1)
 
-        let declaration2 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
         let declarations2 = Set<FileDeclaration>([declaration2])
         
         let testObject2 = ObjectDeclaration(fileGroupUUID: testObject.fileGroupUUID, objectType: testObject.objectType, sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations2)
@@ -129,10 +130,10 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         
         // Wait for some period of time for the deferred deletion to complete.
         Thread.sleep(forTimeInterval: 5)
-
+        
         // This `sync` is to trigger the check for the deferred upload completion.
         try syncServer.sync()
-
+        
         let exp2 = expectation(description: "exp2")
         handlers.deferredCompleted = { _, operation, count in
             XCTAssert(operation == .deletion)
@@ -162,12 +163,13 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
     func runDeletionWithKnownDeclaredObject(fewerDeclaredFiles: Bool) throws {
         let fileUUID1 = UUID()
         let fileUUID2 = UUID()
-
+        
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         let fileGroupUUID = UUID()
         
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
-        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
 
         let object1 = ObjectDeclaration(fileGroupUUID: fileGroupUUID, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: Set<FileDeclaration>([declaration1, declaration2]))
 
@@ -243,11 +245,12 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         let fileUUID1 = UUID()
         let fileUUID2 = UUID()
 
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         let fileGroupUUID = UUID()
         
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
-        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
 
         let object1 = ObjectDeclaration(fileGroupUUID: fileGroupUUID, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: Set<FileDeclaration>([declaration1]))
 
@@ -322,10 +325,11 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
     func runDeletion(alreadyDeleted: Bool) throws {
         let fileUUID1 = UUID()
 
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         let fileGroupUUID = UUID()
         
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
 
         let object1 = ObjectDeclaration(fileGroupUUID: fileGroupUUID, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: Set<FileDeclaration>([declaration1]))
 

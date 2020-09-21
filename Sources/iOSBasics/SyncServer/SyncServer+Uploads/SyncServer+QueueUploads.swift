@@ -22,6 +22,8 @@ extension SyncServer {
         guard DECL.DeclaredFile.hasDistinctUUIDs(in: declaration.declaredFiles) else {
             throw SyncServerError.declaredFilesDoNotHaveDistinctUUIDs
         }
+        
+        #warning("Seems like we ought to check the SharingEntry and make sure the sharing group in the declaration is not deleted")
             
         // Make sure all files in the uploads are in the declaration.
         for upload in uploads {
@@ -72,9 +74,39 @@ extension SyncServer {
         
         // If there is an active upload for this fileGroupUUID, then this upload will be locally queued for later processing. If there is not one, we'll trigger the upload now.
         let activeUploadsForThisFileGroup = try UploadObjectTracker.anyUploadsWith(status: .uploading, fileGroupUUID: declaration.fileGroupUUID, db: db)
-                
+
+        // The user must do at least one `sync` call prior to queuing an upload or this throws an error.
+        let sharingGroups = try self.sharingGroups().filter { $0.sharingGroupUUID == declaration.sharingGroupUUID}
+        if sharingGroups.count == 0 {
+            throw SyncServerError.unknownSharingGroup
+        }
+        
+        if sharingGroups.count > 1 {
+            throw SyncServerError.internalError("More than one one sharing group found!")
+        }
+
+        #warning("Convert this to using the SignIns method: cloudStorageTypeForNewFile-- when we integrate `SignIns`. And then, remove cloud storage type from GenericCredentials.")
+        
+        let sharingGroup = sharingGroups[0]
+        
+        let cloudStorageType: CloudStorageType
+        
+        if let type = sharingGroup.cloudStorageType {
+            
+            // The current signed in user must be a social (non-owning) user.
+            cloudStorageType = type
+        }
+        else {
+            let creds = try credentialsDelegate.credentialsForServerRequests(self)
+            guard let type = creds.cloudStorageType else {
+                throw SyncServerError.internalError("Did not have cloud storage type for an apparent owning user!")
+            }
+            
+            cloudStorageType = type
+        }
+        
         // Create an UploadObjectTracker and UploadFileTracker(s)
-        let (newObjectTrackerId, newObjectTracker) = try createNewTrackers(fileGroupUUID: declaration.fileGroupUUID, declaration: declaration, uploads: uploads)
+        let (newObjectTrackerId, newObjectTracker) = try createNewTrackers(fileGroupUUID: declaration.fileGroupUUID, cloudStorageType: cloudStorageType, declaration: declaration, uploads: uploads)
 
         guard !activeUploadsForThisFileGroup else {
             // There are active uploads for this file group.
@@ -104,7 +136,7 @@ extension SyncServer {
     }
     
     // Add a new tracker into UploadObjectTracker, and one for each new upload.
-    private func createNewTrackers<DECL: DeclarableObject, UPL: UploadableFile>(fileGroupUUID: UUID, declaration: DECL, uploads: Set<UPL>) throws -> (newObjectTrackerId: Int64, UploadObjectTracker) {
+    private func createNewTrackers<DECL: DeclarableObject, UPL: UploadableFile>(fileGroupUUID: UUID, cloudStorageType: CloudStorageType, declaration: DECL, uploads: Set<UPL>) throws -> (newObjectTrackerId: Int64, UploadObjectTracker) {
     
         let newObjectTracker = try UploadObjectTracker(db: db, fileGroupUUID: fileGroupUUID)
         try newObjectTracker.insert()
@@ -117,7 +149,7 @@ extension SyncServer {
         
         // Create a new `UploadFileTracker` for each file we're uploading.
         for file in uploads {
-            let newFileTracker = try UploadFileTracker.create(file: file, in: declaration, newObjectTrackerId: newObjectTrackerId, config: configuration.temporaryFiles, hashingManager: hashingManager, db: db)
+            let newFileTracker = try UploadFileTracker.create(file: file, in: declaration, cloudStorageType: cloudStorageType, newObjectTrackerId: newObjectTrackerId, config: configuration.temporaryFiles, hashingManager: hashingManager, db: db)
             logger.debug("newFileTracker: \(String(describing: newFileTracker.id))")
         }
         

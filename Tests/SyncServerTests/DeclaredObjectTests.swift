@@ -40,15 +40,15 @@ class DeclaredObjectTests: XCTestCase {
     }
 
     func testSingleFileDeclarationCompareWorks() throws {
-        let declaration1 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
-        let declaration2 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
         XCTAssert(declaration1.compare(to: declaration1))
         XCTAssertFalse(declaration1.compare(to: declaration2))
     }
     
     func testFileDeclarationSetCompareWorks() throws {
-        let declaration1 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
-        let declaration2 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
         let declarations1 = Set<FileDeclaration>(arrayLiteral: declaration1)
         let declarations2 = Set<FileDeclaration>()
         let declarations3 = Set<FileDeclaration>(arrayLiteral: declaration2)
@@ -78,8 +78,8 @@ class DeclaredObjectTests: XCTestCase {
     }
     
     func testObjectDeclarationCompareWorks() {
-        let declaration1 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
-        let declaration2 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
         let objDecl1 = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: [declaration1, declaration2])
         let objDecl2 = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: UUID(), declaredFiles: [declaration1])
         

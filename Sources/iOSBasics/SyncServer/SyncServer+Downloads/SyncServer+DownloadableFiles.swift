@@ -38,7 +38,7 @@ extension SyncServer {
             }
             
             let declaredFiles = Set<FileDeclaration>(declaredObject.declaredFiles.map {
-                return FileDeclaration(uuid: $0.uuid, mimeType: $0.mimeType, cloudStorageType: $0.cloudStorageType, appMetaData: $0.appMetaData, changeResolverName: $0.changeResolverName)
+                return FileDeclaration(uuid: $0.uuid, mimeType: $0.mimeType, appMetaData: $0.appMetaData, changeResolverName: $0.changeResolverName)
             })
             
             let declaration = ObjectDeclaration(fileGroupUUID: declaredObject.fileGroupUUID, objectType: declaredObject.objectType, sharingGroupUUID: declaredObject.sharingGroupUUID, declaredFiles: declaredFiles)

@@ -116,7 +116,6 @@ class FileIndexUpsertTests: XCTestCase, Delegate {
 
         XCTAssert(declaredFile.uuid.uuidString == fileInfo.fileUUID)
         XCTAssert(declaredFile.mimeType.rawValue == fileInfo.mimeType)
-        XCTAssert(declaredFile.cloudStorageType.rawValue == fileInfo.cloudStorageType)
         XCTAssert(declaredFile.fileGroupUUID == fileGroupUUID)
         XCTAssert(declaredFile.changeResolverName == fileInfo.changeResolverName)
         XCTAssert(declaredFile.appMetaData == fileInfo.appMetaData)
@@ -261,7 +260,6 @@ class FileIndexUpsertTests: XCTestCase, Delegate {
         case fileGroup
         case sharingGroup
         case mimeType
-        case cloudStorageType
         case objectType
         case none
     }
@@ -283,8 +281,6 @@ class FileIndexUpsertTests: XCTestCase, Delegate {
             fileInfo.sharingGroupUUID = UUID().uuidString
         case .mimeType:
             fileInfo.mimeType = MimeType.jpeg.rawValue
-        case .cloudStorageType:
-            fileInfo.cloudStorageType = CloudStorageType.Google.rawValue
         case .objectType:
             fileInfo.objectType = "blarlby"
         case .none:
@@ -319,10 +315,6 @@ class FileIndexUpsertTests: XCTestCase, Delegate {
     
     func testKnownFileInfoWithMimeTypeUpdateFails() throws {
         try runKnownFileInfo(update: .mimeType)
-    }
-    
-    func testKnownFileInfoWithCloudStorageTypeUpdateFails() throws {
-        try runKnownFileInfo(update: .cloudStorageType)
     }
     
     func testKnownFileInfoWithNoInvalidUpdateWorks() throws {

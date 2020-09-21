@@ -57,6 +57,7 @@ class FilesNeedingDeletionTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
     }
     
     func testOneObjectNeedingDeletion() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let localFile = Self.exampleTextFileURL
@@ -97,6 +98,7 @@ class FilesNeedingDeletionTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
     }
     
     func testTwoObjectsNeedingDeletion() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let localFile = Self.exampleTextFileURL
@@ -161,9 +163,10 @@ class FilesNeedingDeletionTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
     }
     
     func testDeleteUndeclaredObjectFails() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
 
-        let declaration1 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: UUID(), mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration1])
 
         let object = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
@@ -181,6 +184,7 @@ class FilesNeedingDeletionTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
     }
     
     func testTwoObjectsNeedingDeletionMarkAsDeleted() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let localFile = Self.exampleTextFileURL
@@ -198,7 +202,7 @@ class FilesNeedingDeletionTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
             XCTFail()
             return
         }
-        
+
         try delete(object: declaration1)
         try delete(object: declaration2)
 

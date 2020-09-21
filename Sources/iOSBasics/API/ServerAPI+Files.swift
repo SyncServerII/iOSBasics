@@ -7,7 +7,7 @@ extension ServerAPI {
         // This is nil if there are no files.
         let fileIndex: [FileInfo]?
         
-        let sharingGroups:[SharingGroup]
+        let sharingGroups:[ServerShared.SharingGroup]
     }
     
     func index(sharingGroupUUID: UUID?, completion: @escaping (Swift.Result<IndexResult, Error>)->()) {

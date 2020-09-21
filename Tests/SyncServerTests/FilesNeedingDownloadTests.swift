@@ -81,16 +81,13 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         try syncServer.sync()
         waitForExpectations(timeout: 10, handler: nil)
         
-        guard syncServer.sharingGroups.count > 0 else {
+        let groups = try syncServer.sharingGroups()
+        
+        guard groups.count > 0 else {
             throw SyncServerError.internalError("Testing Error")
         }
         
-        guard let sharingGroupUUIDString = syncServer.sharingGroups[0].sharingGroupUUID,
-            let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString) else {
-            throw SyncServerError.internalError("Testing Error")
-        }
-        
-        return sharingGroupUUID
+        return groups[0].sharingGroupUUID
     }
     
     func testFilesNeedingDownloadKnownSharingGroupWorks() throws {
@@ -114,7 +111,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
 
         let fileUUID1 = UUID()
 
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration1])
         
         let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
@@ -162,8 +159,8 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         let fileUUID1 = UUID()
         let fileUUID2 = UUID()
 
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
-        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
 
         let declarations = Set<FileDeclaration>([declaration1, declaration2])
         
@@ -217,7 +214,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         func queue(fileGroupUUID: UUID) throws -> UUID {
             let fileUUID1 = UUID()
 
-            let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+            let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
 
             let declarations = Set<FileDeclaration>([declaration1])
             
@@ -278,7 +275,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         func queue(fileGroupUUID: UUID) throws -> UUID {
             let fileUUID1 = UUID()
 
-            let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+            let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
 
             let declarations = Set<FileDeclaration>([declaration1])
             

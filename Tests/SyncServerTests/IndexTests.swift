@@ -13,7 +13,7 @@ import iOSShared
 import iOSSignIn
 import ChangeResolvers
 
-class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate {
+class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate, SyncServerTests {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
     var api: ServerAPI!
@@ -129,7 +129,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
     func uploadExampleTextFile(sharingGroupUUID: UUID) throws -> ObjectDeclaration {
         let fileUUID1 = UUID()
         
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration1])
 
         let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
@@ -145,6 +145,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
     }
     
     func testIndexCalledFromSyncServerWithOneFile() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
@@ -193,6 +194,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
     }
     
     func testMakeSureIndexUpdateForDeletedObjectHasDeletionFail() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
 
         let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
@@ -241,7 +243,8 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
     }
     
     func testMakeSureIndexUpdateForDeletedObjectHasUploadFail() throws {
-       let sharingGroupUUID = try getSharingGroupUUID()
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
 
         let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
         guard declaration.declaredFiles.count == 1,
@@ -292,7 +295,8 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
     }
     
     func testMakeSureIndexWithDeletedFileMarksAsDeleted() throws {
-       let sharingGroupUUID = try getSharingGroupUUID()
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
 
         let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
         guard declaration.declaredFiles.count == 1,

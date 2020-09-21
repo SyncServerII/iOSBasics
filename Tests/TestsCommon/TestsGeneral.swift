@@ -204,6 +204,7 @@ extension APITests where Self: XCTestCase {
         let exp = expectation(description: "exp")
         
         handlers.extras.uploadCompleted = { _, result in
+            logger.debug("waitForUploadsToComplete: uploadCompleted")
             count += 1
             
             switch result.uploadType {

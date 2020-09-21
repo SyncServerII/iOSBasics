@@ -102,7 +102,7 @@ extension DeclaredObjectModel {
         
         let model = models[0]
                     
-        let declaredFilesInDatabase = try DeclaredFileModel.fetch(db: db, where: fileGroupUUID == DeclaredFileModel.fileGroupUUIDField.description).map { FileDeclaration(uuid: $0.uuid, mimeType: $0.mimeType, cloudStorageType: $0.cloudStorageType, appMetaData: $0.appMetaData, changeResolverName: $0.changeResolverName) }
+        let declaredFilesInDatabase = try DeclaredFileModel.fetch(db: db, where: fileGroupUUID == DeclaredFileModel.fileGroupUUIDField.description).map { FileDeclaration(uuid: $0.uuid, mimeType: $0.mimeType, appMetaData: $0.appMetaData, changeResolverName: $0.changeResolverName) }
         
         let files = Set<FileDeclaration>(declaredFilesInDatabase)
         
@@ -118,7 +118,7 @@ extension DeclaredObjectModel {
                     
         // Need to add entries for the file declarations.
         for file in declaration.declaredFiles {
-            let declared = try DeclaredFileModel(db: db, fileGroupUUID: declaration.fileGroupUUID, uuid: file.uuid, mimeType: file.mimeType, cloudStorageType: file.cloudStorageType, appMetaData: file.appMetaData, changeResolverName: file.changeResolverName)
+            let declared = try DeclaredFileModel(db: db, fileGroupUUID: declaration.fileGroupUUID, uuid: file.uuid, mimeType: file.mimeType, appMetaData: file.appMetaData, changeResolverName: file.changeResolverName)
             try declared.insert()
         }
     }

@@ -23,7 +23,6 @@ public extension File {
 
 public protocol DeclarableFile: File {
     var mimeType: MimeType {get}
-    var cloudStorageType: CloudStorageType {get}
     var appMetaData: String? {get}
 
     // If the file will be changed and have multiple versions on the server, this must be non-nil and a valid change resolver name. For a static file that will not be changed beyond v0 of the file on the server, this must be nil.
@@ -34,7 +33,6 @@ public extension DeclarableFile {
     func compare<FILE: DeclarableFile>(to other: FILE) -> Bool {
         return self.uuid == other.uuid &&
             self.mimeType == other.mimeType &&
-            self.cloudStorageType == other.cloudStorageType &&
             self.appMetaData == other.appMetaData &&
             self.changeResolverName == other.changeResolverName
     }

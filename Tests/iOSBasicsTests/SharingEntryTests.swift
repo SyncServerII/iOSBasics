@@ -15,10 +15,14 @@ class SharingEntryTests: XCTestCase {
     var database: Connection!
     let uuid = UUID()
     var entry:SharingEntry!
+    var userName: String!
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try SharingEntry(db: database, permission: .admin, removedFromGroup: true, sharingGroupName: nil, sharingGroupUUID: uuid, syncNeeded: false, cloudStorageType: .Dropbox)
+        userName = "Foobly"
+        let user = iOSBasics.SharingGroupUser(name: userName)
+        
+        entry = try SharingEntry(db: database, permission: .admin, deleted: true, sharingGroupName: nil, sharingGroupUUID: uuid, sharingGroupUsers: [user], cloudStorageType: .Dropbox)
     }
 
     override func tearDownWithError() throws {
@@ -28,9 +32,8 @@ class SharingEntryTests: XCTestCase {
     func assertContentsCorrect(entry1: SharingEntry, entry2: SharingEntry) {
         XCTAssert(entry1.sharingGroupUUID == entry2.sharingGroupUUID)
         XCTAssert(entry1.permission == entry2.permission)
-        XCTAssert(entry1.removedFromGroup == entry2.removedFromGroup)
+        XCTAssert(entry1.deleted == entry2.deleted)
         XCTAssert(entry1.sharingGroupName == entry2.sharingGroupName)
-        XCTAssert(entry1.syncNeeded == entry2.syncNeeded)
         XCTAssert(entry1.cloudStorageType == entry2.cloudStorageType)
     }
 
@@ -79,7 +82,7 @@ class SharingEntryTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
-        let entry2 = try SharingEntry(db: database, permission: .admin, removedFromGroup: true, sharingGroupName: nil, sharingGroupUUID: UUID(), syncNeeded: false, cloudStorageType: .Dropbox)
+        let entry2 = try SharingEntry(db: database, permission: .admin, deleted: true, sharingGroupName: nil, sharingGroupUUID: UUID(), sharingGroupUsers: [SharingGroupUser(name: "Farbly")], cloudStorageType: .Dropbox)
         try entry2.insert()
 
         var count = 0
@@ -117,5 +120,70 @@ class SharingEntryTests: XCTestCase {
         try entry.insert()
         
         try entry.delete()
+    }
+    
+    func testGetGroupsWithNoGroupsWorks() throws {
+        try SharingEntry.createTable(db: database)
+        let groups = try SharingEntry.getGroups(db: database)
+        XCTAssert(groups.count == 0)
+    }
+    
+    func testGetGroupsWithOneGroupWorks() throws {
+        try SharingEntry.createTable(db: database)
+        try entry.insert()
+        
+        let groups = try SharingEntry.getGroups(db: database)
+        guard groups.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        let group = groups[0]
+        
+        guard group.sharingGroupUsers.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        let user = group.sharingGroupUsers[0]
+        XCTAssert(user.name == userName)
+    }
+    
+    func testUpsertWithDeletionChange() throws {
+        try SharingEntry.createTable(db: database)
+        
+        let uuid = UUID().uuidString
+
+        let sharingGroup = ServerShared.SharingGroup()
+        sharingGroup.sharingGroupUUID = uuid
+        sharingGroup.deleted = false
+        sharingGroup.permission = Permission.admin
+        sharingGroup.sharingGroupUsers = []
+        
+        try SharingEntry.upsert(sharingGroup: sharingGroup, db: database)
+        
+        let rows1 = try SharingEntry.fetch(db: database)
+        guard rows1.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        let row1 = rows1[0]
+        
+        XCTAssert(row1.deleted == false)
+        
+        sharingGroup.deleted = true
+        
+        try SharingEntry.upsert(sharingGroup: sharingGroup, db: database)
+
+        let rows2 = try SharingEntry.fetch(db: database)
+        guard rows2.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        let row2 = rows2[0]
+        
+        XCTAssert(row2.deleted == true)
     }
 }

@@ -31,6 +31,8 @@ class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
         try? hashingManager.add(hashing: DropboxHashing())
         api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
         handlers.user = try dropboxUser()
+        _ = handlers.user.removeUser()
+        XCTAssert(handlers.user.addUser())
         try NetworkCache.createTable(db: database)
     }
 

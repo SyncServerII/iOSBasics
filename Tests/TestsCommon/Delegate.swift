@@ -3,6 +3,7 @@ import Foundation
 @testable import iOSBasics
 import iOSSignIn
 import XCTest
+import iOSShared
 
 class DelegateHandlers {
     class Extras {
@@ -92,10 +93,12 @@ extension Delegate {
     }
     
     func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int) {
+        logger.debug("handlers: deferredCompleted")
         handlers.deferredCompleted?(syncServer, operation, numberCompleted)
     }
     
     func deletionCompleted(_ syncServer: SyncServer) {
+        logger.debug("handlers: deletionCompleted")
         handlers.deletionCompleted?(syncServer)
     }
     

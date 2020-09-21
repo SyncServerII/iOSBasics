@@ -109,8 +109,9 @@ class UploadFileTracker: DatabaseModel {
 }
 
 extension UploadFileTracker {
+    // Creates an `UploadFileTracker` and copies data to a temporary file location if needed.
     // The returned `UploadFileTracker` has been inserted into the database
-    static func create<UPL: UploadableFile, DECL: DeclarableObject>(file: UPL, in declaration: DECL, newObjectTrackerId: Int64, config: Configuration.TemporaryFiles, hashingManager: HashingManager, db: Connection) throws -> UploadFileTracker {
+    static func create<UPL: UploadableFile, DECL: DeclarableObject>(file: UPL, in declaration: DECL, cloudStorageType: CloudStorageType, newObjectTrackerId: Int64, config: Configuration.TemporaryFiles, hashingManager: HashingManager, db: Connection) throws -> UploadFileTracker {
         let url: URL
         switch file.dataSource {
         case .data(let data):
@@ -121,8 +122,7 @@ extension UploadFileTracker {
             url = immutableURL
         }
         
-        let declaredFile = try DECL.fileDeclaration(forFileUUID: file.uuid, from: declaration)
-        let checkSum = try hashingManager.hashFor(cloudStorageType: declaredFile.cloudStorageType).hash(forURL: url)
+        let checkSum = try hashingManager.hashFor(cloudStorageType: cloudStorageType).hash(forURL: url)
         
         let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: newObjectTrackerId, status: .notStarted, fileUUID: file.uuid, fileVersion: nil, localURL: url, goneReason: nil, uploadCopy: file.dataSource.isCopy, checkSum: checkSum)
         try fileTracker.insert()

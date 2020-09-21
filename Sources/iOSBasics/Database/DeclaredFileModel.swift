@@ -24,9 +24,6 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
     
     static let mimeTypeField = Field("mimeType", \M.mimeType)
     var mimeType: MimeType
-    
-    static let cloudStorageTypeField = Field("cloudStorageType", \M.cloudStorageType)
-    var cloudStorageType: CloudStorageType
 
     static let appMetaDataField = Field("appMetaData", \M.appMetaData)
     var appMetaData: String?
@@ -39,7 +36,6 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
         fileGroupUUID: UUID,
         uuid: UUID,
         mimeType: MimeType,
-        cloudStorageType: CloudStorageType,
         appMetaData: String?,
         changeResolverName: String?) throws {
         self.db = db
@@ -47,7 +43,6 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
         self.fileGroupUUID = fileGroupUUID
         self.uuid = uuid
         self.mimeType = mimeType
-        self.cloudStorageType = cloudStorageType
         self.appMetaData = appMetaData
         self.changeResolverName = changeResolverName
     }
@@ -63,10 +58,6 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
         }
 
         guard mimeType.rawValue == fileInfo.mimeType else {
-            return false
-        }
-
-        guard cloudStorageType.rawValue == fileInfo.cloudStorageType else {
             return false
         }
         
@@ -86,7 +77,6 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
             lhs.fileGroupUUID == rhs.fileGroupUUID &&
             lhs.uuid == rhs.uuid &&
             lhs.mimeType == rhs.mimeType &&
-            lhs.cloudStorageType == rhs.cloudStorageType &&
             lhs.appMetaData == rhs.appMetaData &&
             lhs.changeResolverName == rhs.changeResolverName
     }
@@ -101,7 +91,6 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
             t.column(fileGroupUUIDField.description)
             t.column(uuidField.description, unique: true)
             t.column(mimeTypeField.description)
-            t.column(cloudStorageTypeField.description)
             t.column(appMetaDataField.description)
             t.column(changeResolverNameField.description)
         }
@@ -113,7 +102,6 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
             fileGroupUUID: row[Self.fileGroupUUIDField.description],
             uuid: row[Self.uuidField.description],
             mimeType: row[Self.mimeTypeField.description],
-            cloudStorageType: row[Self.cloudStorageTypeField.description],
             appMetaData: row[Self.appMetaDataField.description],
             changeResolverName: row[Self.changeResolverNameField.description]
         )
@@ -123,7 +111,6 @@ class DeclaredFileModel: DatabaseModel, Equatable, Hashable, DeclarableFile {
         try doInsertRow(db: db, values:
             Self.fileGroupUUIDField.description <- fileGroupUUID,
             Self.uuidField.description <- uuid,
-            Self.cloudStorageTypeField.description <- cloudStorageType,
             Self.mimeTypeField.description <- mimeType,
             Self.appMetaDataField.description <- appMetaData,
             Self.changeResolverNameField.description <- changeResolverName
@@ -159,18 +146,13 @@ extension DeclaredFileModel {
             let mimeType = MimeType(rawValue: mimeTypeString) else {
             throw DatabaseModelError.badMimeType
         }
-        
-        guard let cloudStorageTypeString = fileInfo.cloudStorageType,
-            let cloudStorageType = CloudStorageType(rawValue: cloudStorageTypeString) else {
-            throw DatabaseModelError.badCloudStorageType
-        }
 
         if let entry = try DeclaredFileModel.fetchSingleRow(db: db, where: DeclaredFileModel.uuidField.description == fileUUID) {
             // These don't change.
             return entry
         }
         else {
-            let entry = try DeclaredFileModel(db: db, fileGroupUUID: fileGroupUUID, uuid: fileUUID, mimeType: mimeType, cloudStorageType: cloudStorageType, appMetaData: fileInfo.appMetaData, changeResolverName: fileInfo.changeResolverName)
+            let entry = try DeclaredFileModel(db: db, fileGroupUUID: fileGroupUUID, uuid: fileUUID, mimeType: mimeType, appMetaData: fileInfo.appMetaData, changeResolverName: fileInfo.changeResolverName)
             try entry.insert()
             return entry
         }

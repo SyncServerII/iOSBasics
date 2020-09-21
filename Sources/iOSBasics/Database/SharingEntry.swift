@@ -17,8 +17,8 @@ class SharingEntry: DatabaseModel {
     static let permissionField = Field("permission", \M.permission)
     var permission: Permission
 
-    static let removedFromGroupField = Field("removedFromGroup", \M.removedFromGroup)
-    var removedFromGroup:  Bool
+    static let deletedField = Field("deleted", \M.deleted)
+    var deleted:  Bool
     
     static let sharingGroupNameField = Field("sharingGroupName", \M.sharingGroupName)
     var sharingGroupName: String?
@@ -26,28 +26,32 @@ class SharingEntry: DatabaseModel {
     static let sharingGroupUUIDField = Field("sharingGroupUUID", \M.sharingGroupUUID)
     var sharingGroupUUID: UUID
 
-    static let syncNeededField = Field("syncNeeded", \M.syncNeeded)
-    var syncNeeded: Bool
-
     static let cloudStorageTypeField = Field("cloudStorageType", \M.cloudStorageType)
-    var cloudStorageType: CloudStorageType
+    var cloudStorageType: CloudStorageType?
+
+    static let sharingGroupUsersDataField = Field("sharingGroupUsersData", \M.sharingGroupUsersData)
+    var sharingGroupUsersData: Data
+    
+    func sharingGroupUsers() throws -> [SharingGroupUser] {
+        return try JSONDecoder().decode([SharingGroupUser].self, from: sharingGroupUsersData)
+    }
     
     init(db: Connection,
         id: Int64! = nil,
         permission: Permission,
-        removedFromGroup: Bool,
+        deleted: Bool,
         sharingGroupName: String?,
         sharingGroupUUID: UUID,
-        syncNeeded: Bool,
-        cloudStorageType:CloudStorageType) throws {
+        sharingGroupUsers: [SharingGroupUser],
+        cloudStorageType:CloudStorageType?) throws {
         
         self.db = db
         self.id = id
         self.sharingGroupUUID = sharingGroupUUID
         self.permission = permission
-        self.removedFromGroup = removedFromGroup
+        self.deleted = deleted
         self.sharingGroupName = sharingGroupName
-        self.syncNeeded = syncNeeded
+        self.sharingGroupUsersData = try JSONEncoder().encode(sharingGroupUsers)
         self.cloudStorageType = cloudStorageType
     }
     
@@ -58,21 +62,24 @@ class SharingEntry: DatabaseModel {
             t.column(idField.description, primaryKey: true)
             t.column(sharingGroupUUIDField.description, unique: true)
             t.column(permissionField.description)
-            t.column(removedFromGroupField.description)
+            t.column(deletedField.description)
             t.column(sharingGroupNameField.description)
-            t.column(syncNeededField.description)
             t.column(cloudStorageTypeField.description)
+            t.column(sharingGroupUsersDataField.description)
         }
     }
     
     static func rowToModel(db: Connection, row: Row) throws -> SharingEntry {
+        let data = row[Self.sharingGroupUsersDataField.description]
+        let users = try JSONDecoder().decode([SharingGroupUser].self, from: data)
+        
         return try SharingEntry(db: db,
             id: row[Self.idField.description],
             permission: row[Self.permissionField.description],
-            removedFromGroup: row[Self.removedFromGroupField.description],
+            deleted: row[Self.deletedField.description],
             sharingGroupName: row[Self.sharingGroupNameField.description],
             sharingGroupUUID: row[Self.sharingGroupUUIDField.description],
-            syncNeeded: row[Self.syncNeededField.description],
+            sharingGroupUsers: users,
             cloudStorageType: row[Self.cloudStorageTypeField.description]
         )
     }
@@ -80,10 +87,10 @@ class SharingEntry: DatabaseModel {
     func insert() throws {
         try doInsertRow(db: db, values:
             Self.permissionField.description <- permission,
-            Self.removedFromGroupField.description <- removedFromGroup,
+            Self.deletedField.description <- deleted,
             Self.sharingGroupNameField.description <- sharingGroupName,
             Self.sharingGroupUUIDField.description <- sharingGroupUUID,
-            Self.syncNeededField.description <- syncNeeded,
+            Self.sharingGroupUsersDataField.description <- sharingGroupUsersData,
             Self.cloudStorageTypeField.description <- cloudStorageType
         )
     }
@@ -99,7 +106,16 @@ extension SharingEntry {
 
         if let sharingEntry = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID) {
             if sharingGroup.sharingGroupName != sharingEntry.sharingGroupName {
-                try sharingEntry.update(setters: SharingEntry.sharingGroupNameField.description <- sharingGroup.sharingGroupName)
+                try sharingEntry.update(setters: SharingEntry.sharingGroupNameField.description
+                        <- sharingGroup.sharingGroupName
+                )
+            }
+            
+            if sharingGroup.deleted != sharingEntry.deleted {
+                try sharingEntry.update(setters:
+                    SharingEntry.deletedField.description
+                        <- sharingGroup.deleted ?? false
+                )
             }
         }
         else {
@@ -110,13 +126,41 @@ extension SharingEntry {
                 throw SyncServerError.internalError("Could not get permission")
             }
             
-            guard let cloudStorageTypeString = sharingGroup.cloudStorageType,
-                let cloudStorageType = CloudStorageType(rawValue: cloudStorageTypeString) else {
-                throw SyncServerError.internalError("Could not get cloud storage type")
+            var cloudStorageType: CloudStorageType?
+            
+            if let cloudStorageTypeString = sharingGroup.cloudStorageType {
+                guard let type = CloudStorageType(rawValue: cloudStorageTypeString) else {
+                    throw SyncServerError.internalError("Could not get cloud storage type")
+                }
+                
+                cloudStorageType = type
             }
             
-            let newSharingEntry = try SharingEntry(db: db, permission: permission, removedFromGroup: false, sharingGroupName: sharingGroup.sharingGroupName, sharingGroupUUID: sharingGroupUUID, syncNeeded: false, cloudStorageType: cloudStorageType)
+            guard let sharingGroupUsers = sharingGroup.sharingGroupUsers else {
+                throw SyncServerError.internalError("Could not get sharing group users")
+            }
+            
+            let users = try sharingGroupUsers.map { user -> iOSBasics.SharingGroupUser in
+                guard let name = user.name else {
+                    throw SyncServerError.internalError("Could not get sharing group user name")
+                }
+                
+                return iOSBasics.SharingGroupUser(name: name)
+            }
+            
+            let deleted = sharingGroup.deleted ?? false
+            
+            let newSharingEntry = try SharingEntry(db: db, permission: permission, deleted: deleted, sharingGroupName: sharingGroup.sharingGroupName, sharingGroupUUID: sharingGroupUUID, sharingGroupUsers: users, cloudStorageType: cloudStorageType)
             try newSharingEntry.insert()
+        }
+    }
+    
+    static func getGroups(db: Connection) throws -> [iOSBasics.SharingGroup] {
+        let entries = try SharingEntry.fetch(db: db)
+
+        return try entries.map { entry -> iOSBasics.SharingGroup in
+            let sharingGroup = iOSBasics.SharingGroup(sharingGroupUUID: entry.sharingGroupUUID, sharingGroupName: entry.sharingGroupName, deleted: entry.deleted, permission: entry.permission, sharingGroupUsers: try entry.sharingGroupUsers(), cloudStorageType: entry.cloudStorageType)
+             return sharingGroup
         }
     }
 }

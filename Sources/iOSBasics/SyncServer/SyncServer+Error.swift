@@ -31,9 +31,23 @@ enum SyncServerError: Error {
     case badFileVersion
     
     case attemptToCreateExistingSharingGroup
+    case sharingGroupNotFound
+    case sharingGroupsNotFound
     
     static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
+        case sharingGroupsNotFound:
+            guard case .sharingGroupsNotFound = rhs else {
+                return false
+            }
+            return true
+            
+        case sharingGroupNotFound:
+            guard case .sharingGroupNotFound = rhs else {
+                return false
+            }
+            return true
+            
         case attemptToCreateExistingSharingGroup:
             guard case .attemptToCreateExistingSharingGroup = rhs else {
                 return false

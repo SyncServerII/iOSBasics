@@ -54,6 +54,7 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
     }
     
     func runDownload(withFiles: Bool) throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let localFile = Self.exampleTextFileURL
@@ -121,6 +122,7 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
     }
     
     func testNonDistinctFileUUIDsInDeclarationFails() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let localFile = Self.exampleTextFileURL
@@ -137,7 +139,7 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         let downloadables = Set<FileDownload>([downloadable1])
         
         var declaredFiles = declaration.declaredFiles
-        let newDeclaredFile = FileDeclaration(uuid: declaredFile.uuid, mimeType: declaredFile.mimeType, cloudStorageType: declaredFile.cloudStorageType, appMetaData: UUID().uuidString, changeResolverName: nil)
+        let newDeclaredFile = FileDeclaration(uuid: declaredFile.uuid, mimeType: declaredFile.mimeType, appMetaData: UUID().uuidString, changeResolverName: nil)
         declaredFiles.insert(newDeclaredFile)
 
         let newDeclaration = ObjectDeclaration(fileGroupUUID: declaration.fileGroupUUID, objectType: declaration.objectType, sharingGroupUUID: declaration.sharingGroupUUID, declaredFiles: declaredFiles)
@@ -155,6 +157,7 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
     }
     
     func testNonDistinctFileUUIDsInDownloadFilesFails() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let localFile = Self.exampleTextFileURL
@@ -184,6 +187,7 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
     }
     
     func testFileInDownloadNotInDeclarationFails() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let localFile = Self.exampleTextFileURL
@@ -213,6 +217,7 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
     }
         
     func testDownloadCurrentlyDownloadingFileIsQueued() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let localFile = Self.exampleTextFileURL
@@ -280,6 +285,7 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
     }
         
     func testDownloadTwoFilesInSameObject() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         let localFile = Self.exampleTextFileURL
         
@@ -287,8 +293,8 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         let fileUUID1 = UUID()
         let fileUUID2 = UUID()
         
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
-        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
+        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration1, declaration2])
 
         let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(localFile))
@@ -347,6 +353,7 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
     }
     
     func testDownloadDeletedFileFails() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let localFile = Self.exampleTextFileURL

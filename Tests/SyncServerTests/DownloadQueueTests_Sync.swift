@@ -73,6 +73,7 @@ class DownloadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, A
     }
     
     func testSecondDownloadOfSameObjectTriggersWithSync() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let localFile = Self.exampleTextFileURL
@@ -109,6 +110,7 @@ class DownloadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, A
     
     // If I call a sync too early, when an active download is happening for the same file group, no additional download happens.
     func testSyncDoesNotTriggerDownloadWhenItIsNotReady() throws {
+        try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let localFile = Self.exampleTextFileURL

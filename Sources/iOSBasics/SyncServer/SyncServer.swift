@@ -29,11 +29,13 @@ public class SyncServer {
 
     let configuration: Configuration
     let db: Connection
+    
+    #warning("When I integrate `SignIns`, use this instead of `SyncServerCredentials`. And then remove cloudStorageType from `GenericCredentials`.")
     var signIns: SignIns!
+    
     let hashingManager: HashingManager
     private(set) var api:ServerAPI!
     let delegateDispatchQueue: DispatchQueue
-    var _sharingGroups = [ServerShared.SharingGroup]()
 
     // `delegateDispatchQueue` is used to call `SyncServerDelegate` methods. (`SyncServerCredentials` methods may be called on any queue.)
     public init(hashingManager: HashingManager,
@@ -59,6 +61,7 @@ public class SyncServer {
     // All files that end up being uploaded in the same queued batch must either be v0 (their first upload) or vN (not their first upload). It is an error to attempt to upload v0 and vN files together in the same batch. This issue may not always be detected (i.e., an error thrown by this call). An error might instead be thrown on a subsequent call to `sync`.
     // In this last regard, it is a best practice to do a v0 upload for all files in a declared object in it's first `queue` call. This way, having both v0 and vN files in the same queued batch *cannot* occur.
     // Uploads are done on a background networking URLSession.
+    // You must do at least one `sync` call prior to this call after installing the app. (Not per launch of the app-- these results are persisted).
     public func queue<DECL: DeclarableObject, UPL:UploadableFile>
         (uploads: Set<UPL>, declaration: DECL) throws {
         try queueHelper(uploads: uploads, declaration: declaration)
@@ -84,6 +87,7 @@ public class SyncServer {
         b) the `filesNeedingDownload` method can be called to determine any files needing downloading for the sharing group.
     5) If a nil sharingGroupUUID is given, this fetches all sharing groups for this user from the server.
     Each call to this method does make at least one request (an `index` request) to the server. Therefore, client app developers should not make a call to this method too often. For example, calling it when a client app transitions to the foreground, and/or when a user refreshes a sharing group in their UI.
+    At least one call to this method should be done prior to any other call on this interface. For example, such a call is required for non-owning (e.g., Facebook users) in order for them to upload files.
     */
     public func sync(sharingGroupUUID: UUID? = nil) throws {
         try syncHelper(sharingGroupUUID: sharingGroupUUID)
@@ -103,7 +107,7 @@ public class SyncServer {
         
     // The list of files returned here survive app relaunch. A given object declaration will appear at most once in the returned list.
     public func filesNeedingDownload(sharingGroupUUID: UUID) throws -> [(declaration: ObjectDeclaration, downloads: Set<FileDownload>)] {
-        let filtered = sharingGroups.filter { $0.sharingGroupUUID == sharingGroupUUID.uuidString }
+        let filtered = try sharingGroups().filter { $0.sharingGroupUUID == sharingGroupUUID }
         guard filtered.count == 1 else {
             throw SyncServerError.unknownSharingGroup
         }
@@ -119,8 +123,8 @@ public class SyncServer {
     // MARK: Sharing
     
     // The sharing groups in which the signed in user is a member.
-    public var sharingGroups: [ServerShared.SharingGroup] {
-        return _sharingGroups
+    public func sharingGroups() throws -> [iOSBasics.SharingGroup]  {
+        return try getSharingGroupsHelper()
     }
     
     // MARK: Unqueued server requests-- these will fail if they involve a file or other object currently queued for upload or deletion. They will also fail if the network is offline.
@@ -131,11 +135,13 @@ public class SyncServer {
         createSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, sharingGroupName: sharingGroupName, completion: completion)
     }
     
-    public func updateSharingGroup(sharingGroup: UUID, newSharingGroupName: String, completion:@escaping (Error?)->()) {
+    public func updateSharingGroup(sharingGroupUUID: UUID, newSharingGroupName: String, completion:@escaping (Error?)->()) {
+        updateSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, newSharingGroupName: newSharingGroupName, completion: completion)
     }
     
     // Remove the current user from the sharing group.
-    public func removeFromSharingGroup(sharingGroup: UUID) {
+    public func removeFromSharingGroup(sharingGroupUUID: UUID, completion:@escaping (Error?)->()) {
+        removeFromSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, completion: completion)
     }
     
     // MARK: Sharing invitation

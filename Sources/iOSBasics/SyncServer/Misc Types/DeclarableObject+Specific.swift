@@ -25,14 +25,12 @@ public struct FileUpload: UploadableFile {
 public struct FileDeclaration: DeclarableFile {
     public let uuid: UUID
     public let mimeType: MimeType
-    public let cloudStorageType: CloudStorageType
     public let appMetaData: String?
     public let changeResolverName: String?
     
-    public init(uuid: UUID, mimeType: MimeType, cloudStorageType: CloudStorageType, appMetaData: String?, changeResolverName: String?) {
+    public init(uuid: UUID, mimeType: MimeType, appMetaData: String?, changeResolverName: String?) {
         self.uuid = uuid
         self.mimeType = mimeType
-        self.cloudStorageType = cloudStorageType
         self.appMetaData = appMetaData
         self.changeResolverName = changeResolverName
     }

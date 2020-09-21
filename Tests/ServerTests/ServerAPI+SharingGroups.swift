@@ -90,7 +90,7 @@ class ServerAPI_SharingGroups: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         XCTAssert(filter[0].sharingGroupName == sharingGroupName)
     }
     
-    func testUpdateSharingGroupWithNewUUIDFails() throws {
+    func testUpdateSharingGroupWithFakeUUIDFails() throws {
         let sharingGroupUUID = UUID()
         let newName = "Barfly foofly"
         
@@ -125,5 +125,49 @@ class ServerAPI_SharingGroups: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         }
         
         XCTAssert(filter[0].sharingGroupName == newName)
+    }
+    
+    func testRemoveUserFromUnknownSharingGroupFails() throws {
+        let unknownSharingGroup = UUID()
+        
+        let exp = expectation(description: "exp")
+        api.removeFromSharingGroup(sharingGroup: unknownSharingGroup) { error in
+            XCTAssert(error != nil)
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+    }
+    
+    func testRemoveUserFromExistingSharingGroupWorks() throws {
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        guard let index1 = getIndex(sharingGroupUUID: nil) else {
+            XCTFail()
+            return
+        }
+        
+        let filter1 = index1.sharingGroups.filter {$0.sharingGroupUUID == sharingGroupUUID.uuidString}
+        guard filter1.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        let exp = expectation(description: "exp")
+        api.removeFromSharingGroup(sharingGroup: sharingGroupUUID) { error in
+            XCTAssert(error == nil)
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        guard let index2 = getIndex(sharingGroupUUID: nil) else {
+            XCTFail()
+            return
+        }
+        
+        let filter2 = index2.sharingGroups.filter {$0.sharingGroupUUID == sharingGroupUUID.uuidString}
+        guard filter2.count == 0 else {
+            XCTFail()
+            return
+        }
     }
 }

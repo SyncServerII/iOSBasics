@@ -129,7 +129,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         case .success(let result):
             downloadResult = result
         default:
-            XCTFail()
+            XCTFail("\(download)")
             return
         }
         

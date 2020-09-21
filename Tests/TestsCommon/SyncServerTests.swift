@@ -8,6 +8,7 @@
 import XCTest
 import iOSBasics
 import ServerShared
+import iOSShared
 
 protocol SyncServerTests: TestFiles, APITests {
     var syncServer:SyncServer! { get }
@@ -18,7 +19,7 @@ extension SyncServerTests where Self: XCTestCase {
     func uploadExampleTextFile(sharingGroupUUID: UUID, localFile: URL = Self.exampleTextFileURL) throws -> ObjectDeclaration {
         let fileUUID1 = UUID()
         
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, cloudStorageType: .Dropbox, appMetaData: nil, changeResolverName: nil)
+        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
         let declarations = Set<FileDeclaration>([declaration1])
 
         let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(localFile))
@@ -41,26 +42,32 @@ extension SyncServerTests where Self: XCTestCase {
         
         try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
         waitForExpectations(timeout: 10, handler: nil)
+        
+        handlers.syncCompleted = nil
     }
     
     // Deletion complete with waiting for deferred part of the deletion.
     func delete<DECL: DeclarableObject>(object: DECL) throws {
         let exp = expectation(description: "exp")
         handlers.deletionCompleted = { _ in
+            logger.debug("delete: handlers.deletionCompleted")
             exp.fulfill()
         }
         
         try syncServer.queue(deletion: object)
         waitForExpectations(timeout: 10, handler: nil)
+        logger.debug("delete: Done queue deletion")
         
         // Wait for some period of time for the deferred deletion to complete.
         Thread.sleep(forTimeInterval: 5)
 
         // This `sync` is to trigger the check for the deferred upload completion.
         try syncServer.sync()
+        logger.debug("delete: Done sync")
 
         let exp2 = expectation(description: "exp2")
         handlers.deferredCompleted = { _, operation, count in
+            logger.debug("delete: handlers.deferredCompleted")
             XCTAssert(operation == .deletion)
             XCTAssert(count == 1)
             exp2.fulfill()
