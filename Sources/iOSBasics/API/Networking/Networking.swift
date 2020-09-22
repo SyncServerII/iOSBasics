@@ -31,7 +31,7 @@ protocol NetworkingDelegate: AnyObject {
     func credentialsForNetworkRequests(_ delegated: AnyObject) throws -> GenericCredentials
     func deviceUUID(_ delegated: AnyObject) -> UUID
     
-    func uploadCompleted(_ delegated: AnyObject, result: Swift.Result<UploadFileResult, Error>)
+    func uploadCompleted(_ delegated: AnyObject, file: Filenaming, result: Swift.Result<UploadFileResult, Error>)
     func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>)
     func backgroundRequestCompleted(_ delegated: AnyObject, result: Swift.Result<BackgroundRequestResult, Error>)
 }
@@ -238,7 +238,8 @@ class Networking: NSObject {
             try backgroundCache.initializeUploadCache(fileUUID: fileUUID, uploadObjectTrackerId: uploadObjectTrackerId, taskIdentifer: task.taskIdentifier)
         } catch let error {
             task.cancel()
-            delegate.uploadCompleted(self, result: .failure(error))
+            let file = FileObject(fileUUID: fileUUID, fileVersion: nil, trackerId: uploadObjectTrackerId)
+            delegate.uploadCompleted(self, file: file, result: .failure(error))
             return error
         }
 

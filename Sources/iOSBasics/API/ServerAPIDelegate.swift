@@ -4,9 +4,7 @@ import iOSShared
 import ServerShared
 
 enum UploadFileResult {
-    public struct Upload {
-        let fileUUID: UUID
-        
+    public struct Upload {        
         // Creation date is only returned when you upload a new file.
         let creationDate: Date?
         
@@ -15,9 +13,9 @@ enum UploadFileResult {
         let deferredUploadId: Int64?
     }
     
-    case success(uploadObjectTrackerId: Int64, Upload)
+    case success(Upload)
     
-    case gone(fileUUID: UUID, uploadObjectTrackerId: Int64, GoneReason)
+    case gone(GoneReason)
 }
 
 enum DownloadFileResult {

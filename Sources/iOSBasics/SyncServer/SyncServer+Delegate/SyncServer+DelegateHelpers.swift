@@ -5,26 +5,30 @@ import SQLite
 import ServerShared
 
 extension SyncServer {
-    func uploadCompletedHelper(_ delegated: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
+    func uploadCompletedHelper(_ delegated: AnyObject, file: Filenaming, result: Swift.Result<UploadFileResult, Error>) {
         logger.debug("uploadCompleted: \(result)")
+        
+        guard let fileUUIDString = file.fileUUID,
+            let fileUUID = UUID(uuidString: fileUUIDString) else {
+            delegator { [weak self] delegate in
+                guard let self = self else { return }
+                delegate.error(self, error: SyncServerError.internalError("Bad UUID"))
+            }
+            return
+        }
 
         switch result {
         case .failure(let error):
-            delegator { [weak self] delegate in
-                guard let self = self else { return }
-                delegate.error(self, error: error)
-            }
+            reportUploadError(fileUUID: fileUUID, trackerId: file.trackerId, error: error)
             
         case .success(let uploadFileResult):
             switch uploadFileResult {
-            case .gone(let fileUUID, let trackerId, _):
+            case .gone(_):
                 do {
-                    try cleanupAfterUploadCompleted(fileUUID: fileUUID, uploadObjectTrackerId: trackerId, result: nil)
+                    try cleanupAfterUploadCompleted(fileUUID: fileUUID, uploadObjectTrackerId: file.trackerId, result: nil)
                 } catch let error {
-                    delegator { [weak self] delegate in
-                        guard let self = self else { return }
-                        delegate.error(self, error: error)
-                    }
+                    reportUploadError(fileUUID: fileUUID, trackerId: file.trackerId, error: error)
+                    return
                 }
                 
                 goneDeleted(fileUUID: fileUUID)
@@ -35,24 +39,19 @@ extension SyncServer {
                     delegate.uploadQueue(self, event: .completed(result))
                 }
                 
-            case .success(let trackerId, let uploadResult):
+            case .success(let uploadResult):
                 do {
-                    try cleanupAfterUploadCompleted(fileUUID: uploadResult.fileUUID, uploadObjectTrackerId: trackerId,  result: uploadResult)
+                    try cleanupAfterUploadCompleted(fileUUID: fileUUID, uploadObjectTrackerId: file.trackerId,  result: uploadResult)
                 } catch let error {
-                    delegator { [weak self] delegate in
-                        guard let self = self else { return }
-                        delegate.error(self, error: error)
-                    }
+                    reportUploadError(fileUUID: fileUUID, trackerId: file.trackerId, error: error)
+                    return
                 }
 
                 // Waiting until now to mark a file as v0 if it is it's first upload-- so if earlier we have to retry a failed upload we remember to upload as v0.
                 do {
                     guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where:
-                        uploadResult.fileUUID == DirectoryEntry.fileUUIDField.description) else {
-                        delegator { [weak self] delegate in
-                            guard let self = self else { return }
-                            delegate.error(self, error: SyncServerError.internalError("Could not find DirectoryEntry"))
-                        }
+                        fileUUID == DirectoryEntry.fileUUIDField.description) else {
+                        reportUploadError(fileUUID: fileUUID, trackerId: file.trackerId, error: SyncServerError.internalError("Could not find DirectoryEntry"))
                         return
                     }
                     
@@ -62,17 +61,37 @@ extension SyncServer {
                     }
                     
                 } catch let error {
-                    delegator { [weak self] delegate in
-                        guard let self = self else { return }
-                        delegate.error(self, error: error)
-                    }
+                    reportUploadError(fileUUID: fileUUID, trackerId: file.trackerId, error: error)
+                    return
                 }
                 
                 delegator { [weak self] delegate in
                     guard let self = self else { return }
-                    let result = UploadResult(fileUUID: uploadResult.fileUUID, uploadType: .success)
+                    let result = UploadResult(fileUUID: fileUUID, uploadType: .success)
                     delegate.uploadQueue(self, event: .completed(result))
                 }
+            }
+        }
+    }
+    
+    private func reportUploadError(fileUUID: UUID, trackerId: Int64, error: Error) {
+        delegator { [weak self] delegate in
+            guard let self = self else { return }
+            delegate.error(self, error: error)
+        }
+        
+        do {
+            guard let fileTracker = try UploadFileTracker.fetchSingleRow(db: db, where: fileUUID == UploadFileTracker.fileUUIDField.description &&
+                trackerId == UploadFileTracker.uploadObjectTrackerIdField.description) else {
+                throw SyncServerError.internalError("Failed getting file tracker")
+            }
+            
+            try fileTracker.update(setters:
+                UploadFileTracker.statusField.description <- .notStarted)
+        } catch let error {
+            delegator { [weak self] delegate in
+                guard let self = self else { return }
+                delegate.error(self, error: error)
             }
         }
     }

@@ -29,7 +29,7 @@ extension ServerAPIDelegator {
         handlers.api.downloadCompletedHandler?(result)
     }
     
-    func uploadCompleted(_ delegated: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
+    func uploadCompleted(_ delegated: AnyObject, file: Filenaming, result: Swift.Result<UploadFileResult, Error>) {
          handlers.api.uploadCompletedHandler?(result)
     }
     

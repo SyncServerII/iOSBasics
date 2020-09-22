@@ -97,16 +97,16 @@ extension ServerAPI: FileTransferDelegate {
             
             guard let fileUUIDString = file.fileUUID,
                 let fileUUID = UUID(uuidString: fileUUIDString) else {
-                delegate.uploadCompleted(self, result: .failure(ServerAPIError.badUUID))
+                delegate.uploadCompleted(self, file: file, result: .failure(ServerAPIError.badUUID))
                 return
             }
             
-            delegate.uploadCompleted(self, result: .success(UploadFileResult.gone(fileUUID: fileUUID, uploadObjectTrackerId: file.trackerId, goneReason)))
+            delegate.uploadCompleted(self, file: file, result: .success(UploadFileResult.gone(goneReason)))
             return
         }
 
         if let resultError = self.checkForError(statusCode: statusCode, error: nil) {
-            delegate.uploadCompleted(self, result: .failure(resultError))
+            delegate.uploadCompleted(self, file: file, result: .failure(resultError))
             return
         }
 
@@ -115,7 +115,7 @@ extension ServerAPI: FileTransferDelegate {
             logger.info("jsonDict: \(jsonDict)")
             
             guard let uploadFileResponse = try? UploadFileResponse.decode(jsonDict) else {
-                delegate.uploadCompleted(self, result: .failure(ServerAPIError.couldNotCreateResponse))
+                delegate.uploadCompleted(self, file: file, result: .failure(ServerAPIError.couldNotCreateResponse))
                 return
             }
             
@@ -124,19 +124,17 @@ extension ServerAPI: FileTransferDelegate {
             logger.debug("uploadFileResponse.allUploadsFinished: \(String(describing: uploadFileResponse.allUploadsFinished))")
                        
             guard let updateDate = uploadFileResponse.updateDate,
-                let allUploadsFinished = uploadFileResponse.allUploadsFinished,
-                let fileUUIDString = file.fileUUID,
-                let fileUUID = UUID(uuidString: fileUUIDString) else {
-                delegate.uploadCompleted(self, result: .failure(ServerAPIError.noExpectedResultKey))
+                let allUploadsFinished = uploadFileResponse.allUploadsFinished else {
+                delegate.uploadCompleted(self, file: file, result: .failure(ServerAPIError.noExpectedResultKey))
                 return
             }
 
-            let result = UploadFileResult.Upload(fileUUID: fileUUID, creationDate: uploadFileResponse.creationDate, updateDate: updateDate, uploadsFinished: allUploadsFinished, deferredUploadId: uploadFileResponse.deferredUploadId)
+            let result = UploadFileResult.Upload(creationDate: uploadFileResponse.creationDate, updateDate: updateDate, uploadsFinished: allUploadsFinished, deferredUploadId: uploadFileResponse.deferredUploadId)
             
-            delegate.uploadCompleted(self, result: .success(.success(uploadObjectTrackerId: file.trackerId, result)))
+            delegate.uploadCompleted(self, file: file, result: .success(.success(result)))
         }
         else {
-            delegate.uploadCompleted(self, result: .failure(ServerAPIError.couldNotObtainHeaderParameters))
+            delegate.uploadCompleted(self, file: file, result: .failure(ServerAPIError.couldNotObtainHeaderParameters))
         }
     }
     

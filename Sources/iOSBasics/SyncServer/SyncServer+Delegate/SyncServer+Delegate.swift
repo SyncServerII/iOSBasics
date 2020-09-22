@@ -24,8 +24,8 @@ extension SyncServer: ServerAPIDelegate {
         return configuration.deviceUUID
     }
     
-    func uploadCompleted(_ delegated: AnyObject, result: Swift.Result<UploadFileResult, Error>) {
-        uploadCompletedHelper(delegated, result: result)
+    func uploadCompleted(_ delegated: AnyObject, file: Filenaming, result: Swift.Result<UploadFileResult, Error>) {
+        uploadCompletedHelper(delegated, file: file, result: result)
     }
     
     func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
