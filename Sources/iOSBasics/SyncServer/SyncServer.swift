@@ -36,8 +36,16 @@ public class SyncServer {
     let hashingManager: HashingManager
     private(set) var api:ServerAPI!
     let delegateDispatchQueue: DispatchQueue
-
-    // `delegateDispatchQueue` is used to call `SyncServerDelegate` methods. (`SyncServerCredentials` methods may be called on any queue.)
+    
+    /// Create a SyncServer instance.
+    ///
+    /// - Parameters:
+    ///     - hashingManager: Used to compute hashes of files for upload and
+    ///         download.
+    ///     - db: SQLite database connection
+    ///     - configuration: The sync server configuration.
+    ///     - delegateDispatchQueue: used to call `SyncServerDelegate` methods.
+    ///         (`SyncServerCredentials` methods may be called on any queue.)
     public init(hashingManager: HashingManager,
         db:Connection,
         configuration: Configuration,

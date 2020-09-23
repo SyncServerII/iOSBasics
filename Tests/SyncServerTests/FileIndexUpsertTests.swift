@@ -21,7 +21,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate {
         database = try Connection(.inMemory)
         let hashingManager = HashingManager()
         let serverURL = URL(string: "http://fake.com")!
-        config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: "Fake", deviceUUID: deviceUUID, packageTests: true)
+        config = Configuration(appGroupIdentifier: nil, serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: "Fake", deviceUUID: deviceUUID, packageTests: true)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self

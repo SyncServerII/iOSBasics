@@ -25,7 +25,7 @@ class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
         try super.setUpWithError()
         deviceUUID = UUID()
         let database = try Connection(.inMemory)
-        let config = Configuration(appGroupIdentifier: nil, sqliteDatabasePath: "", serverURL: URL(string: Self.baseURL())!, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
+        let config = Configuration(appGroupIdentifier: nil, serverURL: URL(string: Self.baseURL())!, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
         networking = Networking(database: database, delegate: self, transferDelegate: self, config: config)
         hashingManager = HashingManager()
         try? hashingManager.add(hashing: DropboxHashing())
