@@ -24,7 +24,7 @@ public struct Configuration {
         public let filePrefix:String
         public let fileExtension:String
         
-        init(directory:URL, filePrefix:String, fileExtension:String) {
+        public init(directory:URL, filePrefix:String, fileExtension:String) {
             self.directory = directory
             self.filePrefix = filePrefix
             self.fileExtension = fileExtension
