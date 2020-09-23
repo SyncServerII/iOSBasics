@@ -23,22 +23,22 @@ let package = Package(
 
         .package(url: "https://github.com/SyncServerII/ChangeResolvers.git", .branch("master")),
 
-        .package(path: "../iOSShared"),
-        //.package(url: "https://github.com/SyncServerII/iOSShared.git", .branch("master")),
+        //.package(path: "../iOSShared"),
+        .package(url: "https://github.com/SyncServerII/iOSShared.git", .branch("master")),
         
-        .package(path: "../ServerShared"),
-        //.package(url: "https://github.com/SyncServerII/ServerShared.git", .branch("master")),
+        //.package(path: "../ServerShared"),
+        .package(url: "https://github.com/SyncServerII/ServerShared.git", .branch("master")),
         
-        .package(path: "../iOSSignIn"),
-        //.package(url: "https://github.com/SyncServerII/iOSSignIn.git", .branch("master")),
+        //.package(path: "../iOSSignIn"),
+        .package(url: "https://github.com/SyncServerII/iOSSignIn.git", .branch("master")),
         
         .package(url: "https://github.com/stephencelis/SQLite.swift.git", from: "0.12.0"),
         .package(url: "https://github.com/mrackwitz/Version.git", from: "0.8.0"),
         //.package(name: "Reachability", url: "https://github.com/ashleymills/Reachability.swift.git", from: "5.0.0"),
         
         // For testing only
-        .package(path: "../iOSDropbox"),
-        // .package(url: "https://github.com/SyncServerII/iOSDropbox.git", .branch("master")),
+        // .package(path: "../iOSDropbox"),
+        .package(url: "https://github.com/SyncServerII/iOSDropbox.git", .branch("master")),
 
     ],
     targets: [

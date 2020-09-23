@@ -65,6 +65,33 @@
         }
       },
       {
+        "package": "iOSDropbox",
+        "repositoryURL": "https://github.com/SyncServerII/iOSDropbox.git",
+        "state": {
+          "branch": "master",
+          "revision": "460df54dd08521635c97dda2b1c06f9ce599143e",
+          "version": null
+        }
+      },
+      {
+        "package": "iOSShared",
+        "repositoryURL": "https://github.com/SyncServerII/iOSShared.git",
+        "state": {
+          "branch": "master",
+          "revision": "8a0dc04110cc0cf8f4f17ec9e207825e3f4eea5b",
+          "version": null
+        }
+      },
+      {
+        "package": "iOSSignIn",
+        "repositoryURL": "https://github.com/SyncServerII/iOSSignIn.git",
+        "state": {
+          "branch": "master",
+          "revision": "3ee2d5d9aa044e9943f902564d16452b412f98bb",
+          "version": null
+        }
+      },
+      {
         "package": "KeychainAccess",
         "repositoryURL": "https://github.com/kishikawakatsumi/KeychainAccess.git",
         "state": {
@@ -151,6 +178,15 @@
         "state": {
           "branch": "master",
           "revision": "d580f5fb871c557cb2cf9075d13e7aa4dd014334",
+          "version": null
+        }
+      },
+      {
+        "package": "ServerShared",
+        "repositoryURL": "https://github.com/SyncServerII/ServerShared.git",
+        "state": {
+          "branch": "master",
+          "revision": "371e1830b64557f37d60ff5dd728f60589227ff5",
           "version": null
         }
       },
