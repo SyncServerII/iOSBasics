@@ -19,6 +19,13 @@ public struct Configuration {
     
     public let deviceUUID: UUID
     
+    /// Provide details about temporary files.
+    ///
+    /// - Parameters:
+    ///     - directory: e.g., Give a specific path to a /Documents directory
+    ///         subdirectory to store temp files.
+    ///     - filePrefix: A prefix to give these files. E.g., "Neebla"
+    ///     - fileExtension: A file extension to give these files. E.g., "dat"
     public struct TemporaryFiles {
         public let directory:URL
         public let filePrefix:String
