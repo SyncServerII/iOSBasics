@@ -21,7 +21,7 @@
       },
       {
         "package": "Socket",
-        "repositoryURL": "https://github.com/IBM-Swift/BlueSocket.git",
+        "repositoryURL": "https://github.com/Kitura/BlueSocket.git",
         "state": {
           "branch": null,
           "revision": "c46a3d41f5b2401d18bcb46d0101cdc5cd13e307",
@@ -30,7 +30,7 @@
       },
       {
         "package": "SSLService",
-        "repositoryURL": "https://github.com/IBM-Swift/BlueSSLService.git",
+        "repositoryURL": "https://github.com/Kitura/BlueSSLService.git",
         "state": {
           "branch": null,
           "revision": "ab2c2aa2fe574969f391c80ee87746be431dee0e",
@@ -42,7 +42,7 @@
         "repositoryURL": "https://github.com/SyncServerII/ChangeResolvers.git",
         "state": {
           "branch": "master",
-          "revision": "80a536af4fd789a7c19b1083df90487fab78c803",
+          "revision": "b26ffad4ef058870f5007bbb7395f7abfd141487",
           "version": null
         }
       },
@@ -69,7 +69,7 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSDropbox.git",
         "state": {
           "branch": "master",
-          "revision": "460df54dd08521635c97dda2b1c06f9ce599143e",
+          "revision": "af4e1450a97998c215778b5f915ffe0f07aa30d9",
           "version": null
         }
       },
@@ -87,7 +87,7 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSSignIn.git",
         "state": {
           "branch": "master",
-          "revision": "3ee2d5d9aa044e9943f902564d16452b412f98bb",
+          "revision": "17283cb86e2109c36755e5b98584bdbd9fcb04f0",
           "version": null
         }
       },
@@ -123,8 +123,8 @@
         "repositoryURL": "https://github.com/IBM-Swift/Kitura-net.git",
         "state": {
           "branch": null,
-          "revision": "00985729329b73f3e20e40ec43071e4c294dfea3",
-          "version": "2.4.0"
+          "revision": "8ac1efdfcc807345cdd77ccdd8816923ddf2778d",
+          "version": "2.4.1"
         }
       },
       {

@@ -31,11 +31,12 @@ public class SyncServer {
     let db: Connection
     
     #warning("When I integrate `SignIns`, use this instead of `SyncServerCredentials`. And then remove cloudStorageType from `GenericCredentials`.")
-    var signIns: SignIns!
+    
     
     let hashingManager: HashingManager
     private(set) var api:ServerAPI!
     let delegateDispatchQueue: DispatchQueue
+    var signIns: SignIns?
     
     /// Create a SyncServer instance.
     ///
@@ -44,11 +45,17 @@ public class SyncServer {
     ///         download.
     ///     - db: SQLite database connection
     ///     - configuration: The sync server configuration.
+    ///     - signIns: Sign in helper for when iOSSignIn is used.
+    ///         If given, the caller must retain the instance and call the
+    ///         `SignInManagerDelegate` methods on the SignIns object when the sign
+    ///         in state changes. This connects the iOSSignIn package to the
+    ///         iOSBasics package.
     ///     - delegateDispatchQueue: used to call `SyncServerDelegate` methods.
     ///         (`SyncServerCredentials` methods may be called on any queue.)
     public init(hashingManager: HashingManager,
         db:Connection,
         configuration: Configuration,
+        signIns: SignIns? = nil,
         delegateDispatchQueue: DispatchQueue = DispatchQueue.main) throws {
         self.configuration = configuration
         self.db = db
@@ -59,6 +66,9 @@ public class SyncServer {
         try Database.setup(db: db)
 
         api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: configuration)
+        self.signIns = signIns
+        signIns?.cloudFolderName = configuration.cloudFolderName
+        signIns?.api = api
     }
     
     // MARK: Persistent queuing for upload, download, and deletion.

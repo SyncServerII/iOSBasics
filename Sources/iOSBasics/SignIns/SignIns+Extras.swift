@@ -14,7 +14,7 @@ extension SignIns {
     
     // The sharingGroupUUID is used iff the current signed in user is a sharing user.
     func cloudStorageTypeForNewFile(db: Connection, sharingGroupUUID: UUID) throws -> CloudStorageType {
-        guard let currentSignIn = signInServices.manager.currentSignIn else {
+        guard let currentSignIn = signInServicesHelper.currentSignIn else {
             throw SignInsError.noSignedInUser
         }
         

@@ -4,21 +4,18 @@ import iOSShared
 import ServerShared
 import Logging
 
-class SignIns {
-    let signInServices:SignInServices
-    let api:ServerAPI
-    let configuration: Configuration
+public class SignIns {
+    var signInServicesHelper:SignInServicesHelper
+    var api:ServerAPI!
+    var cloudFolderName:String?
     weak var delegate:SignInsDelegate!
     
-    public init(signInServices: SignInServices, api:ServerAPI, configuration: Configuration, delegate: SignInsDelegate) {
-        self.signInServices = signInServices
-        self.api = api
-        self.configuration = configuration
-        self.delegate = delegate
+    public init(signInServicesHelper: SignInServicesHelper) {
+        self.signInServicesHelper = signInServicesHelper
     }
 
     func completeSignInProcess(accountMode: AccountMode, autoSignIn:Bool) {
-        guard let signIn = signInServices.manager.currentSignIn else {
+        guard let signIn = signInServicesHelper.currentSignIn else {
             return
         }
         
@@ -29,6 +26,7 @@ class SignIns {
         }
 
         // We're about to use the API-- setup its credentials. If we have a failure, we'll sign the user out, and reset this.
+        #warning("Seems odd to call this delegate method, if we can have a failure, if it's a user delegate call.")
         delegate?.setCredentials(self, credentials: credentials)
         
         switch accountMode {
@@ -46,6 +44,7 @@ class SignIns {
                         logger.info("Sharing user signed in: access token: \(String(describing: accessToken))")
                         self.delegate?.signInCompleted(self)
                     }
+                    
                 case .failure(let error):
                     let message:Logger.Message = "Error checking for existing user: \(error)"
                     logger.error(message)
@@ -72,7 +71,7 @@ class SignIns {
                 // We should always have non-nil credentials here. We'll get to here only in the non-autosign-in case (explicit request from user to create an account). In which case, we must have credentials.
 
                 let sharingGroupUUID = UUID()
-                api.addUser(cloudFolderName: configuration.cloudFolderName, sharingGroupUUID: sharingGroupUUID, sharingGroupName: nil) { result in
+                api.addUser(cloudFolderName: cloudFolderName, sharingGroupUUID: sharingGroupUUID, sharingGroupName: nil) { result in
                     switch result {
                     case .failure(let error):
                         // 10/22/17; User is signing up. I.e., they don't have an account. Seems OK to sign them out.
@@ -87,7 +86,7 @@ class SignIns {
             }
             
         case .acceptInvitationAndCreateUser(invitation: let invitation):
-            api.redeemSharingInvitation(sharingInvitationUUID: invitation.code, cloudFolderName: configuration.cloudFolderName) { result in
+            api.redeemSharingInvitation(sharingInvitationUUID: invitation.code, cloudFolderName: cloudFolderName) { result in
                 switch result {
                 case .failure(let error):
                     logger.error("Error: \(String(describing: error))")
@@ -118,11 +117,11 @@ extension SignIns: SignInManagerDelegate {
         completeSignInProcess(accountMode: mode, autoSignIn: autoSignIn)
         
         // Reset the invitation, if any, so it doesn't get used again.
-        signInServices.invitation = nil
+        signInServicesHelper.resetCurrentInvitation()
     }
     
     public func userIsSignedOut(_ manager: SignInManager, signIn: GenericSignIn) {
-        signInServices.invitation = nil
+        signInServicesHelper.resetCurrentInvitation()
         delegate?.setCredentials(self, credentials: nil)
     }
 }

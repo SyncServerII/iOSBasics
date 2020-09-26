@@ -10,7 +10,7 @@ public enum UUIDCollisionType {
 }
 
 public protocol SyncServerCredentials: AnyObject {
-    // This method may be called using *any* queue.
+    // This method may be called by the SyncServer using *any* queue.
     func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials
 }
 
