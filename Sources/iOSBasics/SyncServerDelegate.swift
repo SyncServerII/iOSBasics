@@ -9,7 +9,7 @@ public enum UUIDCollisionType {
     case device
 }
 
-public protocol SyncServerCredentials: AnyObject {
+protocol SyncServerCredentials: AnyObject {
     // This method may be called by the SyncServer using *any* queue.
     func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials
 }
@@ -104,5 +104,3 @@ public protocol SyncServerDelegate: AnyObject {
     // Another client deleted a file/file group.
     func downloadDeletion(_ syncServer: SyncServer, details: DownloadDeletion)
 }
-
-
