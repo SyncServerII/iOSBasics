@@ -34,8 +34,16 @@ enum SyncServerError: Error {
     case sharingGroupNotFound
     case sharingGroupsNotFound
     
+    case noCloudStorageType
+    
     static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
+        case noCloudStorageType:
+            guard case .noCloudStorageType = rhs else {
+                return false
+            }
+            return true
+            
         case sharingGroupsNotFound:
             guard case .sharingGroupsNotFound = rhs else {
                 return false

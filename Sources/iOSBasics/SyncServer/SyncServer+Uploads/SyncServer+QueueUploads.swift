@@ -76,34 +76,7 @@ extension SyncServer {
         let activeUploadsForThisFileGroup = try UploadObjectTracker.anyUploadsWith(status: .uploading, fileGroupUUID: declaration.fileGroupUUID, db: db)
 
         // The user must do at least one `sync` call prior to queuing an upload or this throws an error.
-        let sharingGroups = try self.sharingGroups().filter { $0.sharingGroupUUID == declaration.sharingGroupUUID}
-        if sharingGroups.count == 0 {
-            throw SyncServerError.unknownSharingGroup
-        }
-        
-        if sharingGroups.count > 1 {
-            throw SyncServerError.internalError("More than one one sharing group found!")
-        }
-
-        #warning("Convert this to using the SignIns method: cloudStorageTypeForNewFile-- when we integrate `SignIns`. And then, remove cloud storage type from GenericCredentials.")
-        
-        let sharingGroup = sharingGroups[0]
-        
-        let cloudStorageType: CloudStorageType
-        
-        if let type = sharingGroup.cloudStorageType {
-            
-            // The current signed in user must be a social (non-owning) user.
-            cloudStorageType = type
-        }
-        else {
-            let creds = try credentialsDelegate.credentialsForServerRequests(self)
-            guard let type = creds.cloudStorageType else {
-                throw SyncServerError.internalError("Did not have cloud storage type for an apparent owning user!")
-            }
-            
-            cloudStorageType = type
-        }
+        let cloudStorageType = try cloudStorageTypeForNewFile(sharingGroupUUID: declaration.sharingGroupUUID)
         
         // Create an UploadObjectTracker and UploadFileTracker(s)
         let (newObjectTrackerId, newObjectTracker) = try createNewTrackers(fileGroupUUID: declaration.fileGroupUUID, cloudStorageType: cloudStorageType, declaration: declaration, uploads: uploads)

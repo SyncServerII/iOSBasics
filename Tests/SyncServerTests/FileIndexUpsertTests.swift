@@ -6,7 +6,8 @@ import SQLite
 import ServerShared
 import iOSShared
 
-class FileIndexUpsertTests: XCTestCase, Delegate {
+class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
+    var api: ServerAPI!
     var handlers = DelegateHandlers()
     
     var deviceUUID: UUID!
@@ -17,12 +18,15 @@ class FileIndexUpsertTests: XCTestCase, Delegate {
     override func setUpWithError() throws {
         try super.setUpWithError()
         handlers = DelegateHandlers()
+        handlers.user = try dropboxUser()
         deviceUUID = UUID()
         database = try Connection(.inMemory)
         let hashingManager = HashingManager()
         let serverURL = URL(string: "http://fake.com")!
         config = Configuration(appGroupIdentifier: nil, serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: "Fake", deviceUUID: deviceUUID, packageTests: true)
-        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
+        let fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
+        let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
     }

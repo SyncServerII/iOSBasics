@@ -25,7 +25,9 @@ class FilesNeedingDeletionTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         try hashingManager.add(hashing: handlers.user.hashing)
         let serverURL = URL(string: Self.baseURL())!
         config = Configuration(appGroupIdentifier: nil, serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
-        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
+        let fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
+        let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         api = syncServer.api
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
@@ -73,7 +75,9 @@ class FilesNeedingDeletionTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         
         // Reset the database show a state *as if* another client instance had done the upload/deleteion.
         database = try Connection(.inMemory)
-        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
+        let fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
+        let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
         
@@ -122,7 +126,9 @@ class FilesNeedingDeletionTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
 
         // Reset the database show a state *as if* another client instance had done the upload/deleteion.
         database = try Connection(.inMemory)
-        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
+        let fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
+        let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
         
@@ -208,7 +214,9 @@ class FilesNeedingDeletionTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
 
         // Reset the database show a state *as if* another client instance had done the upload/deleteion.
         database = try Connection(.inMemory)
-        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config)
+        let fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
+        let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
         

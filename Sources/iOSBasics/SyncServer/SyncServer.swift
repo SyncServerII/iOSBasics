@@ -18,8 +18,8 @@ public class SyncServer {
         }
     }
     
-    // This *must* also be set by the caller/user of this class before use of methods of this class.
-    public weak var credentialsDelegate: SyncServerCredentials!
+    // Set this before use of methods of this class.
+    weak var credentialsDelegate: SyncServerCredentials!
     
     // Use these to call delegate methods.
     private var _delegator: Delegator!
@@ -29,14 +29,11 @@ public class SyncServer {
 
     let configuration: Configuration
     let db: Connection
-    
-    #warning("When I integrate `SignIns`, use this instead of `SyncServerCredentials`. And then remove cloudStorageType from `GenericCredentials`.")
-    
-    
+
     let hashingManager: HashingManager
     private(set) var api:ServerAPI!
     let delegateDispatchQueue: DispatchQueue
-    var signIns: SignIns?
+    let signIns: SignIns
     
     /// Create a SyncServer instance.
     ///
@@ -46,7 +43,7 @@ public class SyncServer {
     ///     - db: SQLite database connection
     ///     - configuration: The sync server configuration.
     ///     - signIns: Sign in helper for when iOSSignIn is used.
-    ///         If given, the caller must retain the instance and call the
+    ///         The caller must retain the instance and call the
     ///         `SignInManagerDelegate` methods on the SignIns object when the sign
     ///         in state changes. This connects the iOSSignIn package to the
     ///         iOSBasics package.
@@ -55,7 +52,7 @@ public class SyncServer {
     public init(hashingManager: HashingManager,
         db:Connection,
         configuration: Configuration,
-        signIns: SignIns? = nil,
+        signIns: SignIns,
         delegateDispatchQueue: DispatchQueue = DispatchQueue.main) throws {
         self.configuration = configuration
         self.db = db
@@ -65,10 +62,11 @@ public class SyncServer {
         
         try Database.setup(db: db)
 
-        api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: configuration)
         self.signIns = signIns
-        signIns?.cloudFolderName = configuration.cloudFolderName
-        signIns?.api = api
+        signIns.cloudFolderName = configuration.cloudFolderName
+        api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: configuration)
+        signIns.api = api
+        credentialsDelegate = signIns
     }
     
     // MARK: Persistent queuing for upload, download, and deletion.
