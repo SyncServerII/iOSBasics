@@ -12,7 +12,7 @@ extension SyncServer {
             let fileUUID = UUID(uuidString: fileUUIDString) else {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
-                delegate.error(self, error: SyncServerError.internalError("Bad UUID"))
+                delegate.error(self, error: .error(SyncServerError.internalError("Bad UUID")))
             }
             return
         }
@@ -77,7 +77,7 @@ extension SyncServer {
     private func reportUploadError(fileUUID: UUID, trackerId: Int64, error: Error) {
         delegator { [weak self] delegate in
             guard let self = self else { return }
-            delegate.error(self, error: error)
+            delegate.error(self, error: .error(error))
         }
         
         do {
@@ -91,7 +91,7 @@ extension SyncServer {
         } catch let error {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
-                delegate.error(self, error: error)
+                delegate.error(self, error: .error(error))
             }
         }
     }
@@ -106,7 +106,7 @@ extension SyncServer {
                 } catch let error {
                     delegator { [weak self] delegate in
                         guard let self = self else { return }
-                        delegate.error(self, error: error)
+                        delegate.error(self, error: .error(error))
                     }
                 }
                 
@@ -124,7 +124,7 @@ extension SyncServer {
                 } catch let error {
                     delegator { [weak self] delegate in
                         guard let self = self else { return }
-                        delegate.error(self, error: error)
+                        delegate.error(self, error: .error(error))
                     }
                 }
                 
@@ -138,7 +138,7 @@ extension SyncServer {
         case .failure(let error):
             delegator { [weak self] delegate in
                 guard let self = self else { return }
-                delegate.error(self, error: error)
+                delegate.error(self, error: .error(error))
             }
         }
     }
@@ -360,7 +360,7 @@ extension SyncServer {
                 fileUUID == DirectoryEntry.fileUUIDField.description) else {
                 delegator { [weak self] delegate in
                     guard let self = self else { return }
-                    delegate.error(self, error: SyncServerError.internalError("Could not find DirectoryEntry"))
+                    delegate.error(self, error: .error(SyncServerError.internalError("Could not find DirectoryEntry")))
                 }
                 return
             }
@@ -379,7 +379,7 @@ extension SyncServer {
         } catch let error {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
-                delegate.error(self, error: error)
+                delegate.error(self, error: .error(error))
             }
         }
     }

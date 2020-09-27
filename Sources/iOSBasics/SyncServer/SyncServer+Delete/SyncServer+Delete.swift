@@ -37,7 +37,7 @@ extension SyncServer {
             // As with uploads and downloads, don't make this a fatal error. We can restart this later.
             delegator { [weak self] delegate in
                 guard let self = self else { return }
-                delegate.error(self, error: error)
+                delegate.error(self, error: .error(error))
             }
         }
         else {

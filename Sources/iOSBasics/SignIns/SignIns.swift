@@ -13,16 +13,26 @@ public class SignIns {
     private weak var delegate:SignInsDelegate!
     var api:ServerAPI!
     var cloudFolderName:String?
+    var delegator: ((@escaping (SyncServerDelegate)->())->())!
+    // For delegate calls
+    weak var syncServer:SyncServer!
     
     public init(signInServicesHelper: SignInServicesHelper) {
         self.signInServicesHelper = signInServicesHelper
+    }
+    
+    private func showAlert(withTitle title: String, message: String) {
+        delegator { [weak self] delegate in
+            guard let self = self else { return }
+            delegate.error(self.syncServer, error: .showAlert(title: title, message: message))
+        }
     }
 
     func completeSignInProcess(accountMode: AccountMode, autoSignIn:Bool) {
         guard let credentials = signInServicesHelper.currentCredentials,
             let userType = signInServicesHelper.userType else {
             signUserOut()
-            Alert.show(withTitle: "Alert!", message: "Oh, yikes. Something bad has happened.")
+            showAlert(withTitle: "Alert!", message: "Oh, yikes. Something bad has happened.")
             return
         }
 
@@ -32,12 +42,13 @@ public class SignIns {
         
         switch accountMode {
         case .signIn:
-            api.checkCreds(credentials) { [unowned self] result in
+            api.checkCreds(credentials) { [weak self] result in
+                guard let self = self else { return }
                 switch result {
                 case .success(let result):
                     switch result {
                     case .noUser:
-                        Alert.show(withTitle: "Alert!", message: "User not found on system.")
+                        self.showAlert(withTitle: "Alert!", message: "User not found on system.")
                         logger.info("signUserOut: noUser in checkForExistingUser")
                         self.signUserOut()
                         
@@ -55,7 +66,7 @@ public class SignIns {
                     if !autoSignIn {
                         self.signUserOut()
                         logger.error("signUserOut: error in checkForExistingUser and not autoSignIn")
-                        Alert.show(withTitle: "Alert!", message: message.description)
+                        self.showAlert(withTitle: "Alert!", message: message.description)
                     }
                 }
             }
@@ -63,7 +74,7 @@ public class SignIns {
         case .createOwningUser:
             if userType == .sharing {
                  // Social users cannot be owning users! They don't have cloud storage.
-                Alert.show(withTitle: "Alert!", message: "Somehow a sharing user attempted to create an owning user!!")
+                showAlert(withTitle: "Alert!", message: "Somehow a sharing user attempted to create an owning user!!")
                 // 10/22/17; Seems legit. Very odd error situation.
                 self.signUserOut()
                 logger.error("signUserOut: sharing user tried to create an owning user!")
@@ -72,26 +83,28 @@ public class SignIns {
                 // We should always have non-nil credentials here. We'll get to here only in the non-autosign-in case (explicit request from user to create an account). In which case, we must have credentials.
 
                 let sharingGroupUUID = UUID()
-                api.addUser(cloudFolderName: cloudFolderName, sharingGroupUUID: sharingGroupUUID, sharingGroupName: nil) { result in
+                api.addUser(cloudFolderName: cloudFolderName, sharingGroupUUID: sharingGroupUUID, sharingGroupName: nil) { [weak self] result in
+                    guard let self = self else { return }
                     switch result {
                     case .failure(let error):
                         // 10/22/17; User is signing up. I.e., they don't have an account. Seems OK to sign them out.
                         self.signUserOut()
-                        Alert.show(withTitle: "Alert!", message: "Error creating owning user: \(error)")
+                        self.showAlert(withTitle: "Alert!", message: "Error creating owning user: \(error)")
                         
                     case .success:
                         self.delegate?.newOwningUserCreated(self)
-                        Alert.show(withTitle: "Success!", message: "Created new owning user! You are now signed in too!")
+                        self.showAlert(withTitle: "Success!", message: "Created new owning user! You are now signed in too!")
                     }
                 }
             }
             
         case .acceptInvitationAndCreateUser(invitation: let invitation):
-            api.redeemSharingInvitation(sharingInvitationUUID: invitation.code, cloudFolderName: cloudFolderName) { result in
+            api.redeemSharingInvitation(sharingInvitationUUID: invitation.code, cloudFolderName: cloudFolderName) { [weak self] result in
+                guard let self = self else { return }
                 switch result {
                 case .failure(let error):
                     logger.error("Error: \(String(describing: error))")
-                    Alert.show(withTitle: "Alert!", message: "Error creating sharing user: \(String(describing: error))")
+                    showAlert(withTitle: "Alert!", message: "Error creating sharing user: \(String(describing: error))")
                     // 10/22/17; The common situation here seems to be the user is signing up via a sharing invitation. They are not on the system yet in that case. Seems safe to sign them out.
                     self.signUserOut()
                     logger.error("signUserOut: Error in redeemSharingInvitation in")
@@ -99,7 +112,7 @@ public class SignIns {
                 case .success(let result):
                     logger.info("Access token: \(String(describing: result.accessToken))")
                     self.delegate?.invitationAcceptedAndUserCreated(self)
-                    Alert.show(withTitle: "Success!", message: "Created new sharing user! You are now signed in too!")
+                    showAlert(withTitle: "Success!", message: "Created new sharing user! You are now signed in too!")
                 }
             }
         }

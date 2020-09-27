@@ -28,7 +28,7 @@ class DelegateHandlers {
 
     var user:TestUser!
     
-    var error:((SyncServer, Error?) -> ())?
+    var error:((_ syncServer: SyncServer, _ error: ErrorEvent)->())?
     
     var syncCompleted: ((SyncServer, SyncResult) -> ())?
     
@@ -55,7 +55,7 @@ extension Delegate  {
 }
 
 extension Delegate {
-    func error(_ syncServer: SyncServer, error: Error?) {
+    func error(_ syncServer: SyncServer, error: ErrorEvent) {
         XCTFail("\(String(describing: error))")
         handlers.error?(syncServer, error)
     }

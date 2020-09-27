@@ -80,9 +80,16 @@ public enum UploadEvent {
     case completed(UploadResult)
 }
 
+public enum ErrorEvent {
+    case error(Error?)
+    
+    // Client of SyncServer should show show user an alert
+    case showAlert(title: String, message: String)
+}
+
 // These methods are all called on the `delegateDispatchQueue` passed to the SyncServer constructor.
 public protocol SyncServerDelegate: AnyObject {
-    func error(_ syncServer: SyncServer, error: Error?)
+    func error(_ syncServer: SyncServer, error: ErrorEvent)
     
     // Called after the `sync` method is successful. If nil sharing group was given, the result is .noResult. If non-nil sharing group, the index is given.
     func syncCompleted(_ syncServer: SyncServer, result: SyncResult)

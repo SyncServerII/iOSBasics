@@ -18,7 +18,7 @@ extension SyncServer {
             // Going to keep going here despite the error because (a) we might have started downloads, and (b) we can restart these as part of our normal error/restart process.
             delegator { [weak self] delegate in
                 guard let self = self else { return }
-                delegate.error(self, error: error)
+                delegate.error(self, error: .error(error))
             }
         }
         else {

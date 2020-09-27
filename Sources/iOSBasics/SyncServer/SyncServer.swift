@@ -33,7 +33,7 @@ public class SyncServer {
     let hashingManager: HashingManager
     private(set) var api:ServerAPI!
     let delegateDispatchQueue: DispatchQueue
-    let signIns: SignIns
+    var signIns: SignIns
     
     /// Create a SyncServer instance.
     ///
@@ -63,10 +63,13 @@ public class SyncServer {
         try Database.setup(db: db)
 
         self.signIns = signIns
-        signIns.cloudFolderName = configuration.cloudFolderName
         api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: configuration)
+
+        signIns.cloudFolderName = configuration.cloudFolderName
         signIns.api = api
         credentialsDelegate = signIns
+        signIns.delegator = delegator
+        signIns.syncServer = self
     }
     
     // MARK: Persistent queuing for upload, download, and deletion.
