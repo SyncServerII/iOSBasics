@@ -4,17 +4,20 @@ import iOSShared
 import ServerShared
 import Logging
 
+// The integration point between iOSSignIn and iOSBasics with respect to sign-in's.
+
 public class SignIns {
     enum SignInsError: Error {
         case noSignedInUser
     }
     
     weak var signInServicesHelper:SignInServicesHelper!
-    private weak var delegate:SignInsDelegate!
+    weak var delegate:SignInsDelegate!
     var api:ServerAPI!
     var cloudFolderName:String?
+    
+    // For SyncServer delegate calls
     var delegator: ((@escaping (SyncServerDelegate)->())->())!
-    // For delegate calls
     weak var syncServer:SyncServer!
     
     public init(signInServicesHelper: SignInServicesHelper) {
@@ -37,7 +40,6 @@ public class SignIns {
         }
 
         // We're about to use the API-- setup its credentials. If we have a failure, we'll sign the user out, and reset this.
-        #warning("Seems odd to call this delegate method, if we can have a failure, if it's a user delegate call.")
         delegate?.setCredentials(self, credentials: credentials)
         
         switch accountMode {
@@ -53,7 +55,7 @@ public class SignIns {
                         logger.info("signUserOut: noUser in checkForExistingUser")
 
                     case .user(accessToken: let accessToken):
-                        logger.info("Sharing user signed in: access token: \(String(describing: accessToken))")
+                        logger.info("SyncServer user signed in: access token: \(String(describing: accessToken))")
                         self.delegate?.signInCompleted(self)
                     }
                     
@@ -131,6 +133,8 @@ public class SignIns {
         delegate?.setCredentials(self, credentials: nil)
     }
 }
+
+// The `SignInManagerDelegate` and `SyncServerCredentials` conformances are critical to integration between iOSSignIn and iOSBasics.
 
 extension SignIns: SignInManagerDelegate {
     public func signInCompleted(_ manager: SignInManager, signIn: GenericSignIn,  mode: AccountMode, autoSignIn: Bool) {
