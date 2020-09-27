@@ -14,7 +14,6 @@ public class SignIns {
     var api:ServerAPI!
     var cloudFolderName:String?
     private weak var delegate:SignInsDelegate!
-    private var credentials: GenericCredentials?
     
     // If you pass the parameter as nil, you *must* assign it before this class is actually used.
     public init(signInServicesHelper: SignInServicesHelper?) {
@@ -117,7 +116,6 @@ public class SignIns {
 
 extension SignIns: SignInManagerDelegate {
     public func signInCompleted(_ manager: SignInManager, signIn: GenericSignIn,  mode: AccountMode, autoSignIn: Bool) {
-        credentials = signIn.credentials
 
         completeSignInProcess(accountMode: mode, autoSignIn: autoSignIn)
         
@@ -126,7 +124,6 @@ extension SignIns: SignInManagerDelegate {
     }
     
     public func userIsSignedOut(_ manager: SignInManager, signIn: GenericSignIn) {
-        credentials = nil
         signInServicesHelper.resetCurrentInvitation()
         delegate?.setCredentials(self, credentials: nil)
     }
@@ -134,7 +131,7 @@ extension SignIns: SignInManagerDelegate {
 
 extension SignIns: SyncServerCredentials {
     public func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials {
-        if let credentials = credentials {
+        if let credentials = signInServicesHelper.currentCredentials {
             return credentials
         }
         throw SignInsError.noSignedInUser
