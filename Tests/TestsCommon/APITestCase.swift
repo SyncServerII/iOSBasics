@@ -60,8 +60,11 @@ extension UserSetup {
         
         api.addUser(cloudFolderName: nil, sharingGroupUUID: uuid, sharingGroupName: nil) { result in
             switch result {
-            case .success:
-                break
+            case .success(let result):
+                guard case .userId = result else {
+                    success = false
+                    return
+                }
             case .failure(let error):
                 logger.error("\(error)")
                 success = false

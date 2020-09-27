@@ -91,9 +91,16 @@ public class SignIns {
                         self.signUserOut()
                         self.showAlert(withTitle: "Alert!", message: "Error creating owning user: \(error)")
                         
-                    case .success:
-                        self.delegate?.newOwningUserCreated(self)
-                        self.showAlert(withTitle: "Success!", message: "Created new owning user! You are now signed in too!")
+                    case .success(let addUserResult):
+                        switch addUserResult {
+                        case .userId:
+                            self.delegate?.newOwningUserCreated(self)
+                            self.showAlert(withTitle: "Success!", message: "Created new owning user! You are now signed in too!")
+                            
+                        case .userAlreadyExisted:
+                            self.signUserOut()
+                            self.showAlert(withTitle: "Alert!", message: "That account has already been created -- please use the sign-in option.")
+                        }
                     }
                 }
             }

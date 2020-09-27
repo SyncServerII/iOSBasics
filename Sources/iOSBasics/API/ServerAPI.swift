@@ -89,9 +89,14 @@ class ServerAPI {
     
     // MARK: Authentication/user-sign in
     
+    enum AddUserResult {
+        case userId(UserId)
+        case userAlreadyExisted
+    }
+    
     // Adds the user specified by the creds property (or authenticationDelegate in ServerNetworking if that is nil).
     // If the type of owning user being added needs a cloud folder name, you must give it here (e.g., Google).
-    func addUser(cloudFolderName: String? = nil, sharingGroupUUID: UUID, sharingGroupName: String?, completion: @escaping (Swift.Result<UserId, Error>)->(Void)) {
+    func addUser(cloudFolderName: String? = nil, sharingGroupUUID: UUID, sharingGroupName: String?, completion: @escaping (Swift.Result<AddUserResult, Error>)->(Void)) {
     
         let endpoint = ServerEndpoints.addUser
                 
@@ -123,14 +128,21 @@ class ServerAPI {
                 completion(.failure(error))
                 return
             }
-            
-            guard let checkCredsResponse = try? AddUserResponse.decode(response),
-                let userId = checkCredsResponse.userId else {
+ 
+            guard let addUserResponse = try? AddUserResponse.decode(response) else {
                 completion(.failure(ServerAPIError.badAddUser))
                 return
             }
             
-            completion(.success(userId))
+            if let userId = addUserResponse.userId {
+                completion(.success(.userId(userId)))
+            }
+            else if let userAlreadyExisted = addUserResponse.userAlreadyExisted, userAlreadyExisted {
+                completion(.success(.userAlreadyExisted))
+            }
+            else {
+                completion(.failure(ServerAPIError.badAddUser))
+            }
         }
     }
     
