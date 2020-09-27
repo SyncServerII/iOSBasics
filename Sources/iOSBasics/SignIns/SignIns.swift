@@ -9,13 +9,15 @@ public class SignIns {
         case noSignedInUser
     }
     
-    var signInServicesHelper:SignInServicesHelper
+    public var signInServicesHelper:SignInServicesHelper!
+    
     var api:ServerAPI!
     var cloudFolderName:String?
     private weak var delegate:SignInsDelegate!
     private var credentials: GenericCredentials?
     
-    public init(signInServicesHelper: SignInServicesHelper) {
+    // If you pass the parameter as nil, you *must* assign it before this class is actually used.
+    public init(signInServicesHelper: SignInServicesHelper?) {
         self.signInServicesHelper = signInServicesHelper
     }
 
