@@ -48,10 +48,10 @@ public class SignIns {
                 case .success(let result):
                     switch result {
                     case .noUser:
+                        self.signUserOut()
                         self.showAlert(withTitle: "Alert!", message: "User not found on system.")
                         logger.info("signUserOut: noUser in checkForExistingUser")
-                        self.signUserOut()
-                        
+
                     case .user(accessToken: let accessToken):
                         logger.info("Sharing user signed in: access token: \(String(describing: accessToken))")
                         self.delegate?.signInCompleted(self)
@@ -73,10 +73,10 @@ public class SignIns {
             
         case .createOwningUser:
             if userType == .sharing {
-                 // Social users cannot be owning users! They don't have cloud storage.
-                showAlert(withTitle: "Alert!", message: "Somehow a sharing user attempted to create an owning user!!")
                 // 10/22/17; Seems legit. Very odd error situation.
                 self.signUserOut()
+                 // Social users cannot be owning users! They don't have cloud storage.
+                showAlert(withTitle: "Alert!", message: "Somehow a sharing user attempted to create an owning user!!")
                 logger.error("signUserOut: sharing user tried to create an owning user!")
             }
             else {
@@ -103,10 +103,10 @@ public class SignIns {
                 guard let self = self else { return }
                 switch result {
                 case .failure(let error):
-                    logger.error("Error: \(String(describing: error))")
-                    showAlert(withTitle: "Alert!", message: "Error creating sharing user: \(String(describing: error))")
                     // 10/22/17; The common situation here seems to be the user is signing up via a sharing invitation. They are not on the system yet in that case. Seems safe to sign them out.
                     self.signUserOut()
+                    logger.error("Error: \(String(describing: error))")
+                    showAlert(withTitle: "Alert!", message: "Error creating sharing user: \(String(describing: error))")
                     logger.error("signUserOut: Error in redeemSharingInvitation in")
                     
                 case .success(let result):
