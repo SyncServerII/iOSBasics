@@ -60,6 +60,12 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
         XCTAssert(handlers.user.addUser())
     }
     
+    func testRemoveUser() {
+        _ = handlers.user.removeUser()
+        _ = handlers.user.addUser()
+        XCTAssert(handlers.user.removeUser())
+    }
+    
     func testCheckCredsWithAUser() {
         _ = handlers.user.removeUser()
         XCTAssert(handlers.user.addUser())
