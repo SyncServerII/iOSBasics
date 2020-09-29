@@ -8,7 +8,7 @@ public class SyncServer {
     // This *must* be set by the caller/user of this class before use of methods of this class.
     public weak var delegate: SyncServerDelegate! {
         set {
-            _delegator = Delegator(delegate: newValue, delegateDispatchQueue: delegateDispatchQueue)
+            _delegator = Delegator(delegate: newValue, delegateDispatchQueue: dispatchQueue)
         }
         
         // Don't use this getter internally. Use `delegator` to call delegate methods.
@@ -32,7 +32,7 @@ public class SyncServer {
 
     let hashingManager: HashingManager
     private(set) var api:ServerAPI!
-    let delegateDispatchQueue: DispatchQueue
+    let dispatchQueue: DispatchQueue
     var signIns: SignIns
     
     /// Create a SyncServer instance.
@@ -47,17 +47,18 @@ public class SyncServer {
     ///         `SignInManagerDelegate` methods on the SignIns object when the sign
     ///         in state changes. This connects the iOSSignIn package to the
     ///         iOSBasics package.
-    ///     - delegateDispatchQueue: used to call `SyncServerDelegate` methods.
+    ///     - dispatchQueue: used to call `SyncServerDelegate` methods.
     ///         (`SyncServerCredentials` methods may be called on any queue.)
+    ///         Also used for any callbacks defined on this interface.
     public init(hashingManager: HashingManager,
         db:Connection,
         configuration: Configuration,
         signIns: SignIns,
-        delegateDispatchQueue: DispatchQueue = DispatchQueue.main) throws {
+        dispatchQueue: DispatchQueue = DispatchQueue.main) throws {
         self.configuration = configuration
         self.db = db
         self.hashingManager = hashingManager
-        self.delegateDispatchQueue = delegateDispatchQueue
+        self.dispatchQueue = dispatchQueue
         set(logLevel: .trace)
         
         try Database.setup(db: db)
@@ -151,21 +152,56 @@ public class SyncServer {
     // MARK: Sharing groups
     
     public func createSharingGroup(sharingGroupUUID: UUID, sharingGroupName: String? = nil, completion:@escaping (Error?)->()) {
-        createSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, sharingGroupName: sharingGroupName, completion: completion)
+        createSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, sharingGroupName: sharingGroupName) { [weak self] error in
+            self?.dispatchQueue.async {
+                completion(error)
+            }
+        }
     }
     
     public func updateSharingGroup(sharingGroupUUID: UUID, newSharingGroupName: String, completion:@escaping (Error?)->()) {
-        updateSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, newSharingGroupName: newSharingGroupName, completion: completion)
+        updateSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, newSharingGroupName: newSharingGroupName) { [weak self] error in
+            self?.dispatchQueue.async {
+                completion(error)
+            }
+        }
     }
     
     // Remove the current user from the sharing group.
     public func removeFromSharingGroup(sharingGroupUUID: UUID, completion:@escaping (Error?)->()) {
-        removeFromSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, completion: completion)
+        removeFromSharingGroupHelper(sharingGroupUUID: sharingGroupUUID) { [weak self] error in
+            self?.dispatchQueue.async {
+                completion(error)
+            }
+        }
     }
     
-    // MARK: Sharing invitation
+    // MARK: Sharing invitations
 
-    public func createSharingInvitation(withPermission permission:ServerShared.Permission, sharingGroupUUID: String, numberAcceptors: UInt, allowSharingAcceptance: Bool = true, completion:((_ invitationCode:String?, Error?)->(Void))?) {
+    // The non-error result is the code for the sharing invitation, a UUID.
+    public func createSharingInvitation(withPermission permission:Permission, sharingGroupUUID: UUID, numberAcceptors: UInt, allowSharingAcceptance: Bool, completion: @escaping (Swift.Result<UUID, Error>)->()) {
+        api.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: numberAcceptors, allowSharingAcceptance: allowSharingAcceptance) { [weak self] result in
+            guard let self = self else { return }
+            self.dispatchQueue.async {
+                completion(result)
+            }
+        }
+    }
+    
+    public func redeemSharingInvitation(sharingInvitationUUID:UUID, cloudFolderName: String?, completion: @escaping (Swift.Result<RedeemResult, Error>)->()) {
+        api.redeemSharingInvitation(sharingInvitationUUID: sharingInvitationUUID, cloudFolderName: cloudFolderName) { [weak self] result in
+            self?.dispatchQueue.async {
+                completion(result)
+            }
+        }
+    }
+    
+    public func getSharingInvitationInfo(sharingInvitationUUID: UUID, completion: @escaping (Swift.Result<SharingInvitationInfo, Error>)->()) {
+        api.getSharingInvitationInfo(sharingInvitationUUID: sharingInvitationUUID) { [weak self] result in
+            self?.dispatchQueue.async {
+                completion(result)
+            }
+        }
     }
 }
 

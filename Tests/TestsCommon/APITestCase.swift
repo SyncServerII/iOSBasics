@@ -44,13 +44,25 @@ protocol UserSetup where Self: XCTestCase {
     var api:ServerAPI! {get}
 }
 
+enum SelectUser {
+    case first
+    case second
+}
+    
 extension UserSetup {
     // A bit of a hack
+    
+    // First dropbox user
     var dropboxCredentialsPath: String { return "/Users/chris/Desktop/NewSyncServer/Private/iOSBasics/Dropbox.credentials"
+    }
+    
+    // Second dropbox user
+    var dropboxCredentialsPath2: String { return "/Users/chris/Desktop/NewSyncServer/Private/iOSBasics/Dropbox2.credentials"
     }
 
     // Dropbox
     
+    // Add the current user.
     @discardableResult
     private func addDropboxUser() -> Bool {
         let exp = expectation(description: "exp")
@@ -77,6 +89,7 @@ extension UserSetup {
         return success
     }
 
+    // Remove the current signed in user.
     @discardableResult
     private func removeDropboxUser() -> Bool {
         let exp = expectation(description: "exp")
@@ -98,18 +111,27 @@ extension UserSetup {
         return DropboxCredentials(savedCreds:savedCredentials)
     }
     
-    private func loadDropboxCredentials() throws -> DropboxSavedCreds {
-        let dropboxCredentials = URL(fileURLWithPath: dropboxCredentialsPath)
+    private func loadDropboxCredentials(selectUser: SelectUser = .first) throws -> DropboxSavedCreds {
+        let dropboxCredentials:URL
+        
+        switch selectUser {
+        case .first:
+            dropboxCredentials = URL(fileURLWithPath: dropboxCredentialsPath)
+        case .second:
+            dropboxCredentials = URL(fileURLWithPath: dropboxCredentialsPath2)
+        }
+        
         return try DropboxSavedCreds.fromJSON(file: dropboxCredentials)
     }
     
-    private func setupDropboxCredentials() throws -> DropboxCredentials {
-        let savedCredentials = try loadDropboxCredentials()
+    private func setupDropboxCredentials(selectUser: SelectUser = .first) throws -> DropboxCredentials {
+        let savedCredentials = try loadDropboxCredentials(selectUser: selectUser)
         return DropboxCredentials(savedCreds:savedCredentials)
     }
     
-    func dropboxUser() throws -> TestUser {
-        let creds = try setupDropboxCredentials()
+
+    func dropboxUser(selectUser: SelectUser = .first) throws -> TestUser {
+        let creds = try setupDropboxCredentials(selectUser: selectUser)
         return TestUser(
             cloudStorageType: .Dropbox,
             credentials:creds,

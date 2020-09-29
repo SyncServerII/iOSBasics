@@ -108,20 +108,27 @@ public class SignIns {
             }
             
         case .acceptInvitationAndCreateUser(invitation: let invitation):
-            api.redeemSharingInvitation(sharingInvitationUUID: invitation.code, cloudFolderName: cloudFolderName) { [weak self] result in
+            guard let codeUUID = UUID(uuidString: invitation.code) else {
+                self.signUserOut()
+                let message = "Invitation was invalid."
+                self.showAlert(withTitle: "Alert!", message: message)
+                return
+            }
+            
+            api.redeemSharingInvitation(sharingInvitationUUID: codeUUID, cloudFolderName: cloudFolderName) { [weak self] result in
                 guard let self = self else { return }
                 switch result {
                 case .failure(let error):
                     // 10/22/17; The common situation here seems to be the user is signing up via a sharing invitation. They are not on the system yet in that case. Seems safe to sign them out.
                     self.signUserOut()
-                    logger.error("Error: \(String(describing: error))")
-                    showAlert(withTitle: "Alert!", message: "Error creating sharing user: \(String(describing: error))")
-                    logger.error("signUserOut: Error in redeemSharingInvitation in")
+                    let message = "Error creating sharing user: \(error)"
+                    self.showAlert(withTitle: "Alert!", message: message)
+                    logger.error("signUserOut: Error in redeemSharingInvitation: \(error)")
                     
                 case .success(let result):
                     logger.info("Access token: \(String(describing: result.accessToken))")
                     self.delegate?.invitationAcceptedAndUserCreated(self)
-                    showAlert(withTitle: "Success!", message: "Created new sharing user! You are now signed in too!")
+                    self.showAlert(withTitle: "Success!", message: "Created new sharing user! You are now signed in too!")
                 }
             }
         }

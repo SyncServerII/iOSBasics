@@ -25,6 +25,7 @@ class ServerAPI {
         case badUploadIndex
         case badURLParameters
         case badUUID
+        case socialAcceptanceNotAllowed
     }
     
     let networking: Networking
@@ -186,17 +187,12 @@ class ServerAPI {
         }
     }
     
-    func removeUser(retryIfError:Bool=true, completion:((Error?)->(Void))?) {
+    func removeUser(retryIfError:Bool=true, completion:@escaping (Error?)->(Void)) {
         let endpoint = ServerEndpoints.removeUser
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL)
         
         networking.sendRequestTo(serverURL, method: endpoint.method) { response,  httpStatus, error in
-            completion?(self.checkForError(statusCode: httpStatus, error: error))
+            completion(self.checkForError(statusCode: httpStatus, error: error))
         }
-    }
-    
-    struct RedeemResult {
-        let accessToken: String
-        let sharingGroupUUID: String
     }
 }
