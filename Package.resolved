@@ -87,7 +87,7 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSSignIn.git",
         "state": {
           "branch": "master",
-          "revision": "5d0e7efa0cac03dd0004892c77e6ed239aacfe7e",
+          "revision": "1d3458c5d6411b8074782049e15f08372f56979e",
           "version": null
         }
       },
@@ -186,7 +186,7 @@
         "repositoryURL": "https://github.com/SyncServerII/ServerShared.git",
         "state": {
           "branch": "master",
-          "revision": "1c6dfe098d7544ef9b6cc956ece8275603f13933",
+          "revision": "608397e1e36ba126fd94c942a49ab4e359fb65c0",
           "version": null
         }
       },
