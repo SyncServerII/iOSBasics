@@ -145,15 +145,10 @@ public class SignIns {
 
 extension SignIns: iOSSignIn.SignInsDelegate {
     public func signInCompleted(_ manager: SignInManager, signIn: GenericSignIn,  mode: AccountMode, autoSignIn: Bool) {
-
         completeSignInProcess(accountMode: mode, autoSignIn: autoSignIn)
-        
-        // Reset the invitation, if any, so it doesn't get used again.
-        signInServicesHelper.resetCurrentInvitation()
     }
     
     public func userIsSignedOut(_ manager: SignInManager, signIn: GenericSignIn) {
-        signInServicesHelper.resetCurrentInvitation()
         delegate?.setCredentials(self, credentials: nil)
     }
 }
