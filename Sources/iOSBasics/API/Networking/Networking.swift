@@ -165,12 +165,18 @@ class Networking: NSObject {
                 return
             }
             
+            guard let data = data else {
+                completion?(nil, response.statusCode, NetworkingError.couldNotGetData)
+                return
+            }
+            
             if serverVersionIsOK(headerFields: response.allHeaderFields) {
                 var json:Any?
                 do {
-                    try json = JSONSerialization.jsonObject(with: data!, options: JSONSerialization.ReadingOptions(rawValue: UInt(0)))
+                    try json = JSONSerialization.jsonObject(with: data, options: JSONSerialization.ReadingOptions(rawValue: UInt(0)))
                 } catch (let error) {
-                    logger.error("processResponse: Error in JSON conversion: \(error); statusCode= \(response.statusCode)")
+                    let stringFromData = String(data: data, encoding: .utf8)
+                    logger.error("processResponse: Error in JSON conversion: \(error); statusCode= \(response.statusCode); stringFromData: \(String(describing: stringFromData))")
                     completion?(nil, response.statusCode, NetworkingError.jsonSerializationError(error))
                     return
                 }
