@@ -141,9 +141,9 @@ public class SignIns {
     }
 }
 
-// The `SignInManagerDelegate` and `SyncServerCredentials` conformances are critical to integration between iOSSignIn and iOSBasics.
+// The `iOSSignIn.SignInsDelegate` and `SyncServerCredentials` conformances are critical to integration between iOSSignIn and iOSBasics.
 
-extension SignIns: SignInManagerDelegate {
+extension SignIns: iOSSignIn.SignInsDelegate {
     public func signInCompleted(_ manager: SignInManager, signIn: GenericSignIn,  mode: AccountMode, autoSignIn: Bool) {
 
         completeSignInProcess(accountMode: mode, autoSignIn: autoSignIn)
