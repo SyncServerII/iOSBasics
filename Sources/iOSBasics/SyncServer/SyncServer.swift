@@ -64,7 +64,7 @@ public class SyncServer {
 
         self.signIns = signIns
         api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: configuration)
-
+        
         signIns.cloudFolderName = configuration.cloudFolderName
         signIns.api = api
         credentialsDelegate = signIns
@@ -187,8 +187,9 @@ public class SyncServer {
         }
     }
     
-    public func redeemSharingInvitation(sharingInvitationUUID:UUID, cloudFolderName: String?, completion: @escaping (Swift.Result<RedeemResult, Error>)->()) {
-        api.redeemSharingInvitation(sharingInvitationUUID: sharingInvitationUUID, cloudFolderName: cloudFolderName) { [weak self] result in
+    public func redeemSharingInvitation(sharingInvitationUUID:UUID, completion: @escaping (Swift.Result<RedeemResult, Error>)->()) {
+
+        api.redeemSharingInvitation(sharingInvitationUUID: sharingInvitationUUID, cloudFolderName: configuration.cloudFolderName) { [weak self] result in
             self?.dispatchQueue.async {
                 completion(result)
             }

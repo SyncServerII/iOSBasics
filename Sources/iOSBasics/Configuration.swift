@@ -15,6 +15,7 @@ public struct Configuration {
     public let minimumServerVersion:Version?
     public let failoverMessageURL:URL?
 
+    // The name of the folder to use in cloud storage for services that need a folder name. E.g., Google Drive.
     public let cloudFolderName:String?
     
     public let deviceUUID: UUID

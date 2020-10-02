@@ -133,7 +133,7 @@ class SharingInvitationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, AP
         handlers.user = user2
         
         let exp2 = expectation(description: "exp")
-        syncServer.redeemSharingInvitation(sharingInvitationUUID: code, cloudFolderName: nil) { result in
+        syncServer.redeemSharingInvitation(sharingInvitationUUID: code) { result in
             switch result {
             case .success:
                 break
