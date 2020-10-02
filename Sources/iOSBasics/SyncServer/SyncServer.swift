@@ -190,7 +190,16 @@ public class SyncServer {
     public func redeemSharingInvitation(sharingInvitationUUID:UUID, completion: @escaping (Swift.Result<RedeemResult, Error>)->()) {
 
         api.redeemSharingInvitation(sharingInvitationUUID: sharingInvitationUUID, cloudFolderName: configuration.cloudFolderName) { [weak self] result in
-            self?.dispatchQueue.async {
+            guard let self = self else { return }
+
+            switch result {
+            case .success(let redeemResult):
+                self.getIndex(sharingGroupUUID: redeemResult.sharingGroupUUID)
+            case .failure:
+                break
+            }
+            
+            self.dispatchQueue.async {
                 completion(result)
             }
         }
