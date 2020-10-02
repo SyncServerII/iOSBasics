@@ -36,7 +36,13 @@ extension SyncServerTests where Self: XCTestCase {
     
     func sync(withSharingGroupUUID sharingGroupUUID: UUID? = nil) throws {
         let exp = expectation(description: "exp")
-        handlers.syncCompleted = { _, _ in
+        handlers.syncCompleted = { _, result in
+            switch result {
+            case .index(sharingGroupUUID: _, index: _):
+                XCTAssert(sharingGroupUUID != nil)
+            case .noIndex:
+                XCTAssert(sharingGroupUUID == nil)
+            }
             exp.fulfill()
         }
         
@@ -61,16 +67,23 @@ extension SyncServerTests where Self: XCTestCase {
         // Wait for some period of time for the deferred deletion to complete.
         Thread.sleep(forTimeInterval: 5)
 
+        let exp2 = expectation(description: "exp2")
+        handlers.syncCompleted = { _, _ in
+            exp2.fulfill()
+        }
+        
         // This `sync` is to trigger the check for the deferred upload completion.
         try syncServer.sync()
         logger.debug("delete: Done sync")
+        
+        waitForExpectations(timeout: 10, handler: nil)
 
-        let exp2 = expectation(description: "exp2")
+        let exp3 = expectation(description: "exp2")
         handlers.deferredCompleted = { _, operation, count in
             logger.debug("delete: handlers.deferredCompleted")
             XCTAssert(operation == .deletion)
             XCTAssert(count == 1)
-            exp2.fulfill()
+            exp3.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
     }
