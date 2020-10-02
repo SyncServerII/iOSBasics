@@ -76,8 +76,6 @@ extension SyncServerTests where Self: XCTestCase {
         try syncServer.sync()
         logger.debug("delete: Done sync")
         
-        waitForExpectations(timeout: 10, handler: nil)
-
         let exp3 = expectation(description: "exp2")
         handlers.deferredCompleted = { _, operation, count in
             logger.debug("delete: handlers.deferredCompleted")
