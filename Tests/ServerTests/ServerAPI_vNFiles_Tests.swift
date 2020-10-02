@@ -13,6 +13,7 @@ import iOSShared
 import iOSDropbox
 import SQLite
 import ChangeResolvers
+@testable import TestsCommon
 
 class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, ServerBasics {
     var hashingManager: HashingManager!

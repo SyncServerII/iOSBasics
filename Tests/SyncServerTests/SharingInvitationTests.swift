@@ -8,6 +8,7 @@ import ServerShared
 import iOSShared
 import iOSSignIn
 import ChangeResolvers
+@testable import TestsCommon
 
 class SharingInvitationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate, SyncServerTests {
     var handlers = DelegateHandlers()
@@ -18,7 +19,8 @@ class SharingInvitationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, AP
     var database: Connection!
     var config:Configuration!
     var user2: TestUser!
-    
+    var fakeHelper:SignInServicesHelperFake!
+
     override func setUpWithError() throws {
         try super.setUpWithError()
         handlers = DelegateHandlers()
@@ -30,7 +32,7 @@ class SharingInvitationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, AP
         try hashingManager.add(hashing: handlers.user.hashing)
         let serverURL = URL(string: Self.baseURL())!
         config = Configuration(appGroupIdentifier: nil, serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
-        let fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
+        fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
         let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         api = syncServer.api

@@ -5,11 +5,12 @@ import XCTest
 import SQLite
 import ServerShared
 import iOSShared
+@testable import TestsCommon
 
 class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
     var api: ServerAPI!
     var handlers = DelegateHandlers()
-    
+    var fakeHelper:SignInServicesHelperFake!
     var deviceUUID: UUID!
     var syncServer: SyncServer!
     var database: Connection!
@@ -24,7 +25,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let hashingManager = HashingManager()
         let serverURL = URL(string: "http://fake.com")!
         config = Configuration(appGroupIdentifier: nil, serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: "Fake", deviceUUID: deviceUUID, packageTests: true)
-        let fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
+        fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
         let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self

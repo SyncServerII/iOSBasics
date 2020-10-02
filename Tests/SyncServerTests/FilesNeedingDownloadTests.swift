@@ -12,6 +12,7 @@ import ServerShared
 import iOSShared
 import iOSSignIn
 import ChangeResolvers
+@testable import TestsCommon
 
 class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, SyncServerTests, Delegate {
     var deviceUUID: UUID!
@@ -21,7 +22,8 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
     var handlers = DelegateHandlers()
     var database: Connection!
     var config:Configuration!
-    
+    var fakeHelper:SignInServicesHelperFake!
+
     override func setUpWithError() throws {
         try super.setUpWithError()
         handlers = DelegateHandlers()
@@ -32,7 +34,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         try hashingManager.add(hashing: handlers.user.hashing)
         let serverURL = URL(string: Self.baseURL())!
         config = Configuration(appGroupIdentifier: nil, serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
-        let fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
+        fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
         let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         api = syncServer.api

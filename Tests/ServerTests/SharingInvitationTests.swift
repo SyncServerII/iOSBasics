@@ -6,15 +6,13 @@
 //
 
 import XCTest
-
-
-import XCTest
 @testable import iOSBasics
 import iOSSignIn
 @testable import iOSDropbox
 import ServerShared
 import iOSShared
 import SQLite
+@testable import TestsCommon
 
 class SharingInvitationTests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, ServerBasics, TestFiles {
     var hashingManager: HashingManager!

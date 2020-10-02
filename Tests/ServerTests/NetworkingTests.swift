@@ -12,6 +12,7 @@ import iOSSignIn
 import iOSShared
 import ServerShared
 import SQLite
+@testable import TestsCommon
 
 class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
     var deviceUUID: UUID!

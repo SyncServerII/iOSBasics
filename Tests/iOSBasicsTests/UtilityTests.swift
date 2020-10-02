@@ -8,14 +8,9 @@
 import XCTest
 @testable import iOSBasics
 import iOSShared
+@testable import TestsCommon
 
-class UtilityTests: XCTestCase {
-    var exampleTextFile:String { return "Example.txt" }
-    var exampleTextFileURL: URL {
-        let directory = TestingFile.directoryOfFile(#file)
-        return directory.appendingPathComponent(exampleTextFile)
-    }
-    
+class UtilityTests: XCTestCase, TestFiles {    
     override func setUpWithError() throws {
     }
 

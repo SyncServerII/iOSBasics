@@ -6,6 +6,7 @@ import iOSSignIn
 import ServerShared
 import iOSShared
 import SQLite
+@testable import TestsCommon
 
 class ServerAPI_SharingGroups: XCTestCase, UserSetup, APITests, ServerAPIDelegator, ServerBasics, TestFiles {
     var hashingManager: HashingManager!
