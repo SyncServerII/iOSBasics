@@ -10,8 +10,9 @@ import XCTest
 import iOSShared
 @testable import TestsCommon
 
-class UtilityTests: XCTestCase, TestFiles {    
+class UtilityTests: XCTestCase, TestFiles {
     override func setUpWithError() throws {
+        set(logLevel: .trace)
     }
 
     override func tearDownWithError() throws {

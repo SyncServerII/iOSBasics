@@ -2,7 +2,7 @@ import XCTest
 @testable import iOSBasics
 import SQLite
 import ServerShared
-// @testable import TestsCommon
+import iOSShared
 
 class NetworkCacheTests: XCTestCase {
     var database: Connection!
@@ -10,6 +10,7 @@ class NetworkCacheTests: XCTestCase {
     var entry:NetworkCache!
     
     override func setUpWithError() throws {
+        set(logLevel: .trace)
         database = try Connection(.inMemory)
         entry = try NetworkCache(db: database, taskIdentifier: taskIdentifier, uuid: UUID(), trackerId: -1, fileVersion: 1, transfer: nil)
     }

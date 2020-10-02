@@ -2,7 +2,7 @@ import XCTest
 @testable import iOSBasics
 import SQLite
 import ServerShared
-// @testable import TestsCommon
+import iOSShared
 
 final class DirectoryEntryTableTests: XCTestCase {
     var database: Connection!
@@ -11,6 +11,7 @@ final class DirectoryEntryTableTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
+        set(logLevel: .trace)
         do {
             database = try Connection(.inMemory)
             entry = try DirectoryEntry(db: database, fileUUID: uuid, fileGroupUUID: UUID(), sharingGroupUUID: UUID(), fileVersion: 1, serverFileVersion: nil, deletedLocally: false, deletedOnServer: true, goneReason: GoneReason.userRemoved.rawValue)

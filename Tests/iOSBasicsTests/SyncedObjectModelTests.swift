@@ -2,6 +2,7 @@ import XCTest
 @testable import iOSBasics
 import SQLite
 import ServerShared
+import iOSShared
 
 class DeclaredObjectModelTests: XCTestCase {
     var database: Connection!
@@ -9,6 +10,7 @@ class DeclaredObjectModelTests: XCTestCase {
     var entry:DeclaredObjectModel!
     
     override func setUpWithError() throws {
+        set(logLevel: .trace)
         database = try Connection(.inMemory)
         entry = try DeclaredObjectModel(db: database, fileGroupUUID: fileGroupUUID, objectType: "someObjectType", sharingGroupUUID: UUID())
     }

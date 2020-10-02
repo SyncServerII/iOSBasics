@@ -3,6 +3,7 @@ import XCTest
 import SQLite
 import ServerShared
 @testable import TestsCommon
+import iOSShared
 
 class BackgroundCacheTests: XCTestCase {
     var database: Connection!
@@ -11,6 +12,7 @@ class BackgroundCacheTests: XCTestCase {
     let taskIdentifier = 1
     
     override func setUpWithError() throws {
+        set(logLevel: .trace)
         database = try Connection(.inMemory)
         backgroundCache = BackgroundCache(database: database)
         try NetworkCache.createTable(db: database)

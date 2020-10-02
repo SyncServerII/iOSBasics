@@ -2,6 +2,7 @@ import XCTest
 @testable import iOSBasics
 import SQLite
 import ServerShared
+import iOSShared
 
 class UploadDeletionTrackerTests: XCTestCase {
     var database: Connection!
@@ -9,6 +10,7 @@ class UploadDeletionTrackerTests: XCTestCase {
     var entry:UploadDeletionTracker!
     
     override func setUpWithError() throws {
+        set(logLevel: .trace)
         database = try Connection(.inMemory)
         entry = try UploadDeletionTracker(db: database, uuid: fileUUID, deletionType: .fileUUID, deferredUploadId: 0, status: .waitingForDeferredDeletion)
     }

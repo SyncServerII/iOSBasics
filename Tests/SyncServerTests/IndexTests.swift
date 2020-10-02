@@ -26,6 +26,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
 
     override func setUpWithError() throws {
         try super.setUpWithError()
+        set(logLevel: .trace)
         handlers = DelegateHandlers()
         handlers.user = try dropboxUser()
         deviceUUID = UUID()

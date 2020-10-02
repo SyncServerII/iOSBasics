@@ -2,6 +2,7 @@ import XCTest
 @testable import iOSBasics
 import SQLite
 import ServerShared
+import iOSShared
 
 class WorkingParametersTests: XCTestCase {
     var database: Connection!
@@ -9,6 +10,7 @@ class WorkingParametersTests: XCTestCase {
     var entry:WorkingParameters!
     
     override func setUpWithError() throws {
+        set(logLevel: .trace)
         database = try Connection(.inMemory)
         entry = try WorkingParameters(db: database, currentSharingGroup: UUID())
     }

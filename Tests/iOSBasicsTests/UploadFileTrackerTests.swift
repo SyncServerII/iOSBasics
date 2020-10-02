@@ -2,6 +2,7 @@ import XCTest
 @testable import iOSBasics
 import SQLite
 import ServerShared
+import iOSShared
 
 class UploadFileTrackerTests: XCTestCase {
     var database: Connection!
@@ -9,6 +10,7 @@ class UploadFileTrackerTests: XCTestCase {
     var entry:UploadFileTracker!
     
     override func setUpWithError() throws {
+        set(logLevel: .trace)
         database = try Connection(.inMemory)
         entry = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: .notStarted, fileUUID: fileUUID, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly")
     }

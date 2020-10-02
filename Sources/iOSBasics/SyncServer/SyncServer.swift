@@ -59,7 +59,6 @@ public class SyncServer {
         self.db = db
         self.hashingManager = hashingManager
         self.dispatchQueue = dispatchQueue
-        set(logLevel: .trace)
         
         try Database.setup(db: db)
 

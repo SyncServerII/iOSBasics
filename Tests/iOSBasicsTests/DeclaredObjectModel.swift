@@ -2,6 +2,7 @@ import XCTest
 @testable import iOSBasics
 import SQLite
 import ServerShared
+import iOSShared
 
 class DeclaredFileModelTests: XCTestCase {
     var database: Connection!
@@ -9,6 +10,7 @@ class DeclaredFileModelTests: XCTestCase {
     var entry:DeclaredFileModel!
     
     override func setUpWithError() throws {
+        set(logLevel: .trace)
         database = try Connection(.inMemory)
         entry = try DeclaredFileModel(db: database, fileGroupUUID: fileGroupUUID, uuid: UUID(), mimeType: MimeType.text, appMetaData: "Foo", changeResolverName: "Bar")
     }

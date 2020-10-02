@@ -8,10 +8,11 @@
 import XCTest
 import ServerShared
 @testable import iOSBasics
+import iOSShared
 
 class DeclaredObjectTests: XCTestCase {
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+        set(logLevel: .trace)
     }
 
     override func tearDownWithError() throws {
