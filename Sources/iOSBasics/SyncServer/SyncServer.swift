@@ -3,6 +3,7 @@ import SQLite
 import iOSShared
 import ServerShared
 import iOSSignIn
+import UIKit
 
 public class SyncServer {
     // This *must* be set by the caller/user of this class before use of methods of this class.
@@ -70,6 +71,14 @@ public class SyncServer {
         credentialsDelegate = signIns
         signIns.delegator = delegator
         signIns.syncServer = self
+    }
+    
+    // MARK: Background network requests
+    
+    public func application(_ application: UIApplication,
+        handleEventsForBackgroundURLSession identifier: String,
+        completionHandler: @escaping () -> Void) {
+        api.networking.application(application, handleEventsForBackgroundURLSession: identifier, completionHandler: completionHandler)
     }
     
     // MARK: Persistent queuing for upload, download, and deletion.

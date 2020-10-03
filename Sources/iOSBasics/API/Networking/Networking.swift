@@ -11,6 +11,7 @@ import iOSSignIn
 import iOSShared
 import Version
 import SQLite
+import UIKit
 
 enum NetworkingError: Error {
     case couldNotGetHTTPURLResponse
@@ -43,6 +44,7 @@ class Networking: NSObject {
     let config: Configuration
     var backgroundSession: URLSession!
     let backgroundCache: BackgroundCache
+    var handleEventsForBackgroundURLSessionCompletionHandler: (() -> Void)?
     
     init(database:Connection, delegate: NetworkingDelegate, transferDelegate:FileTransferDelegate? = nil, config: Configuration) {
         self.delegate = delegate
@@ -51,6 +53,14 @@ class Networking: NSObject {
         self.backgroundCache = BackgroundCache(database: database)
         super.init()
         backgroundSession = createBackgroundURLSession()
+    }
+    
+    /* "This method receives the session identifier you created in Listing 1 as its second parameter." (https://developer.apple.com/documentation/foundation/url_loading_system/downloading_files_in_the_background). I wonder what happens with app extensions?
+     */
+    func application(_ application: UIApplication,
+        handleEventsForBackgroundURLSession identifier: String,
+        completionHandler: @escaping () -> Void) {
+        handleEventsForBackgroundURLSessionCompletionHandler = completionHandler
     }
     
     // An error occurred on the xpc connection to setup the background session: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service on pid 0 named com.apple.nsurlsessiond" UserInfo={NSDebugDescription=connection to service on pid 0 named com.apple.nsurlsessiond}
@@ -68,11 +78,13 @@ class Networking: NSObject {
         }
         else {
             sessionConfiguration = URLSessionConfiguration.background(withIdentifier: "biz.SpasticMuffin.SyncServer." + appBundleName)
+            sessionConfiguration.sessionSendsLaunchEvents = true
         }
         
         sessionConfiguration.timeoutIntervalForRequest = 60
         
-        return URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: OperationQueue.main)
+        let urlSession = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: OperationQueue.main)
+        return urlSession
     }
     
     // Pass `credentials` if you need to replace the instance credentials.

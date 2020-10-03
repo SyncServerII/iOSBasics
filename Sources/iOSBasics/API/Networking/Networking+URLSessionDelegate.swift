@@ -134,6 +134,11 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
     // This gets called "When all events have been delivered, the system calls the urlSessionDidFinishEvents(forBackgroundURLSession:) method of URLSessionDelegate. At this point, fetch the backgroundCompletionHandler stored by the app delegate in Listing 3 and execute it. Listing 4 shows this process." (https://developer.apple.com/documentation/foundation/url_loading_system/downloading_files_in_the_background)
     func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
         // "Note that because urlSessionDidFinishEvents(forBackgroundURLSession:) may be called on a secondary queue, it needs to explicitly execute the handler (which was received from a UIKit method) on the main queue." (https://developer.apple.com/documentation/foundation/url_loading_system/downloading_files_in_the_background)
+        
+        DispatchQueue.main.async {
+            self.handleEventsForBackgroundURLSessionCompletionHandler?()
+            self.handleEventsForBackgroundURLSessionCompletionHandler = nil
+        }
     }
     
     func urlSession(_ session: URLSession, didBecomeInvalidWithError error: Error?) {
