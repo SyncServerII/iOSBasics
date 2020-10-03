@@ -127,7 +127,7 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
                 try backgroundCache.cacheUploadResult(taskIdentifer: uploadTask.taskIdentifier, uploadBody: jsonDict)
             }
         } catch let error {
-            logger.error("Could not do JSON conversion: \(error)")
+            logger.warning("Could not do JSON conversion: \(error); data.count: \(data.count)")
         }
     }
     
