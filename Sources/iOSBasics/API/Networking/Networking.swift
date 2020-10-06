@@ -79,7 +79,7 @@ class Networking: NSObject {
         if config.packageTests {
             sessionConfiguration = URLSessionConfiguration.default
         }
-        else if let urlSessionBackgroundIdentifier = config.urlSessionBackgroundIdentifier{
+        else if let urlSessionBackgroundIdentifier = config.urlSessionBackgroundIdentifier {
             sessionConfiguration = URLSessionConfiguration.background(withIdentifier: urlSessionBackgroundIdentifier)
             sessionConfiguration.sessionSendsLaunchEvents = true
             sessionConfiguration.sharedContainerIdentifier = config.appGroupIdentifier
