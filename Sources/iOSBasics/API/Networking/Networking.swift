@@ -79,6 +79,7 @@ class Networking: NSObject {
         else {
             sessionConfiguration = URLSessionConfiguration.background(withIdentifier: "biz.SpasticMuffin.SyncServer." + appBundleName)
             sessionConfiguration.sessionSendsLaunchEvents = true
+            sessionConfiguration.sharedContainerIdentifier = config.sharedContainerIdentifier
         }
         
         sessionConfiguration.timeoutIntervalForRequest = 60

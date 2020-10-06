@@ -5,6 +5,10 @@ import iOSShared
 public struct Configuration {
     // If your app uses an app group identifier to have a shared container between extensions and your app.
     public let appGroupIdentifier: String?
+    
+    // https://stackoverflow.com/questions/26172783
+    // https://stackoverflow.com/questions/25438709
+    public let sharedContainerIdentifier: String?
         
     public let serverURL: URL
 
@@ -51,8 +55,9 @@ public struct Configuration {
         return TemporaryFiles(directory: directory, filePrefix: "SyncServer", fileExtension: "dat")
     }
     
-    public init(appGroupIdentifier: String?, serverURL: URL, minimumServerVersion:Version?, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryFiles:TemporaryFiles = Self.defaultTemporaryFiles, packageTests: Bool = false) {
+    public init(appGroupIdentifier: String?, sharedContainerIdentifier: String? = nil, serverURL: URL, minimumServerVersion:Version?, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryFiles:TemporaryFiles = Self.defaultTemporaryFiles, packageTests: Bool = false) {
         self.appGroupIdentifier = appGroupIdentifier
+        self.sharedContainerIdentifier = sharedContainerIdentifier
         self.serverURL = serverURL
         self.minimumServerVersion = minimumServerVersion
         self.failoverMessageURL = failoverMessageURL
