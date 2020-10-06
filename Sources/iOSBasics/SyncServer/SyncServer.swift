@@ -64,7 +64,11 @@ public class SyncServer {
         try Database.setup(db: db)
 
         self.signIns = signIns
-        api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: configuration)
+        
+        guard let api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: configuration) else {
+            throw SyncServerError.internalError("Could not create ServerAPI")
+        }
+        self.api = api
         
         signIns.cloudFolderName = configuration.cloudFolderName
         signIns.api = api

@@ -33,8 +33,14 @@ class ServerAPI {
     weak var delegate: ServerAPIDelegate!
     let hashingManager: HashingManager
     
-    init(database: Connection, hashingManager: HashingManager, delegate: ServerAPIDelegate, config: Configuration) {
-        self.networking = Networking(database: database, delegate: delegate, config: config)
+    init?(database: Connection, hashingManager: HashingManager, delegate: ServerAPIDelegate, config: Configuration) {
+    
+        guard let networking = Networking(database: database, delegate: delegate, config: config) else {
+            return nil
+        }
+        
+        self.networking = networking
+
         self.config = config
         self.delegate = delegate
         self.hashingManager = hashingManager

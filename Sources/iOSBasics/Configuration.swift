@@ -8,6 +8,8 @@ public struct Configuration {
     // If your app uses an app group identifier to have a shared container between extensions and your app.
     public let appGroupIdentifier: String?
     
+    public let urlSessionBackgroundIdentifier: String?
+    
     public let serverURL: URL
 
     public var baseURL: String {
@@ -53,8 +55,9 @@ public struct Configuration {
         return TemporaryFiles(directory: directory, filePrefix: "SyncServer", fileExtension: "dat")
     }
     
-    public init(appGroupIdentifier: String?, sharedContainerIdentifier: String? = nil, serverURL: URL, minimumServerVersion:Version?, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryFiles:TemporaryFiles = Self.defaultTemporaryFiles, packageTests: Bool = false) {
+    public init(appGroupIdentifier: String?, urlSessionBackgroundIdentifier: String? = nil, serverURL: URL, minimumServerVersion:Version?, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryFiles:TemporaryFiles = Self.defaultTemporaryFiles, packageTests: Bool = false) {
         self.appGroupIdentifier = appGroupIdentifier
+        self.urlSessionBackgroundIdentifier = urlSessionBackgroundIdentifier
         self.serverURL = serverURL
         self.minimumServerVersion = minimumServerVersion
         self.failoverMessageURL = failoverMessageURL

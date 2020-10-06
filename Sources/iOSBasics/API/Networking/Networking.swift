@@ -46,13 +46,18 @@ class Networking: NSObject {
     let backgroundCache: BackgroundCache
     var handleEventsForBackgroundURLSessionCompletionHandler: (() -> Void)?
     
-    init(database:Connection, delegate: NetworkingDelegate, transferDelegate:FileTransferDelegate? = nil, config: Configuration) {
+    init?(database:Connection, delegate: NetworkingDelegate, transferDelegate:FileTransferDelegate? = nil, config: Configuration) {
         self.delegate = delegate
         self.transferDelegate = transferDelegate
         self.config = config
         self.backgroundCache = BackgroundCache(database: database)
         super.init()
-        backgroundSession = createBackgroundURLSession()
+        
+        guard let session = createBackgroundURLSession() else {
+            return nil
+        }
+        
+        backgroundSession = session
     }
     
     /* "This method receives the session identifier you created in Listing 1 as its second parameter." (https://developer.apple.com/documentation/foundation/url_loading_system/downloading_files_in_the_background). I wonder what happens with app extensions?
@@ -68,18 +73,19 @@ class Networking: NSObject {
     // https://stackoverflow.com/questions/58212317/an-error-occurred-on-the-xpc-connection-to-setup-the-background-session
     // I'm working around this currently by not using a background URLSession when doing testing at the Package level.
     
-    private func createBackgroundURLSession() -> URLSession {
-        let appBundleName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String
-        
+    private func createBackgroundURLSession() -> URLSession? {
         let sessionConfiguration:URLSessionConfiguration
         // https://developer.apple.com/reference/foundation/urlsessionconfiguration/1407496-background
         if config.packageTests {
             sessionConfiguration = URLSessionConfiguration.default
         }
-        else {
-            sessionConfiguration = URLSessionConfiguration.background(withIdentifier: "biz.SpasticMuffin.SyncServer." + appBundleName)
+        else if let urlSessionBackgroundIdentifier = config.urlSessionBackgroundIdentifier{
+            sessionConfiguration = URLSessionConfiguration.background(withIdentifier: urlSessionBackgroundIdentifier)
             sessionConfiguration.sessionSendsLaunchEvents = true
             sessionConfiguration.sharedContainerIdentifier = config.appGroupIdentifier
+        }
+        else {
+            return nil
         }
         
         sessionConfiguration.timeoutIntervalForRequest = 60
