@@ -49,15 +49,15 @@ extension SyncServer {
 
                 // Waiting until now to mark a file as v0 if it is it's first upload-- so if earlier we have to retry a failed upload we remember to upload as v0.
                 do {
-                    guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where:
-                        fileUUID == DirectoryEntry.fileUUIDField.description) else {
+                    guard let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where:
+                        fileUUID == DirectoryFileEntry.fileUUIDField.description) else {
                         reportUploadError(fileUUID: fileUUID, trackerId: file.trackerId, error: SyncServerError.internalError("Could not find DirectoryEntry"))
                         return
                     }
                     
                     if entry.fileVersion == nil {
                         try entry.update(setters:
-                            DirectoryEntry.fileVersionField.description <- 0)
+                            DirectoryFileEntry.fileVersionField.description <- 0)
                     }
                     
                 } catch let error {
@@ -73,7 +73,7 @@ extension SyncServer {
             }
         }
     }
-    
+
     private func reportUploadError(fileUUID: UUID, trackerId: Int64, error: Error) {
         delegator { [weak self] delegate in
             guard let self = self else { return }
@@ -143,6 +143,7 @@ extension SyncServer {
         }
     }
     
+/*
     // While a background request is a general method, we're actually only using them for upload deletions so far.
     func backgroundRequestCompletedHelper(_ delegated: AnyObject, result: Swift.Result<BackgroundRequestResult, Error>) {
 
@@ -234,6 +235,7 @@ extension SyncServer {
             reportError(error)
         }
     }
+*/
 }
 
 extension SyncServer {
@@ -356,18 +358,18 @@ extension SyncServer {
     // Called when an upload or download detects that a file is `gone`.
     private func goneDeleted(fileUUID: UUID) {
         do {
-            guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where:
-                fileUUID == DirectoryEntry.fileUUIDField.description) else {
+            guard let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where:
+                fileUUID == DirectoryFileEntry.fileUUIDField.description) else {
                 delegator { [weak self] delegate in
                     guard let self = self else { return }
-                    delegate.error(self, error: .error(SyncServerError.internalError("Could not find DirectoryEntry")))
+                    delegate.error(self, error: .error(SyncServerError.internalError("Could not find DirectoryFileEntry")))
                 }
                 return
             }
             
             // Specifically *not* changing `deletedLocallyField` because the difference between these two (i.e., deletedLocally false, and deletedOnServer true) will be used to drive local deletion for the client.
             try entry.update(setters:
-                DirectoryEntry.deletedOnServerField.description <- true)
+                DirectoryFileEntry.deletedOnServerField.description <- true)
 
             delegator { [weak self] delegate in
                 guard let self = self else { return }

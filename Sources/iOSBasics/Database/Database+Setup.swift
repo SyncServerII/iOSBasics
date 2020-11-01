@@ -10,10 +10,10 @@ import SQLite
 
 extension Database {
     static func setup(db: Connection) throws {
-        try DirectoryEntry.createTable(db: db)
+        try DirectoryObjectEntry.createTable(db: db)
+        try DirectoryFileEntry.createTable(db: db)
         try NetworkCache.createTable(db: db)
         try SharingEntry.createTable(db: db)
-        try DeclaredFileModel.createTable(db: db)
         try UploadFileTracker.createTable(db: db)
         try DeclaredObjectModel.createTable(db: db)
         try UploadObjectTracker.createTable(db: db)

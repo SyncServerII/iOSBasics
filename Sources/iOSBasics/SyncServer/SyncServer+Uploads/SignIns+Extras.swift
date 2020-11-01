@@ -2,9 +2,9 @@ import ServerShared
 import SQLite
 import Foundation
 
-extension SyncServer {    
+extension SyncServer {
     // The sharingGroupUUID is used iff the current signed in user is a sharing user.
-    // The user must do at least one `sync` call prior to queuing an upload or this throws an error.
+    // The user must do at least one `sync` call prior to queuing an upload or this may throw an error (throws an error for sharing accounts).
     func cloudStorageTypeForNewFile(sharingGroupUUID: UUID) throws -> CloudStorageType {
         if let cloudStorageType = signIns.signInServicesHelper.cloudStorageType {
             return cloudStorageType

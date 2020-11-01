@@ -3,6 +3,7 @@ import Foundation
 import SQLite
 import iOSShared
 
+/*
 extension SyncServer {
     func queueHelper<DECL: DeclarableObject, DWL: DownloadableFile>(downloads: Set<DWL>, declaration: DECL) throws {
                 
@@ -94,3 +95,4 @@ extension SyncServer {
         return (newObjectTrackerId, newObjectTracker, trackers)
     }
 }
+*/

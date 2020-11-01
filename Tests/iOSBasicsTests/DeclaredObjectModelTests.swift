@@ -8,11 +8,13 @@ class DeclaredObjectModelTests: XCTestCase {
     var database: Connection!
     let fileGroupUUID = UUID()
     var entry:DeclaredObjectModel!
+    let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+    let objectType = "Foo"
     
     override func setUpWithError() throws {
         set(logLevel: .trace)
         database = try Connection(.inMemory)
-        entry = try DeclaredObjectModel(db: database, fileGroupUUID: fileGroupUUID, objectType: "someObjectType", sharingGroupUUID: UUID())
+        entry = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration])
     }
 
     override func tearDownWithError() throws {
@@ -27,7 +29,8 @@ class DeclaredObjectModelTests: XCTestCase {
         try DeclaredObjectModel.createTable(db: database)
         try DeclaredObjectModel.createTable(db: database)
     }
-    
+
+
     func testInsertIntoTable() throws {
         try DeclaredObjectModel.createTable(db: database)
         try entry.insert()
@@ -38,20 +41,20 @@ class DeclaredObjectModelTests: XCTestCase {
         
         var count = 0
         try DeclaredObjectModel.fetch(db: database,
-            where: fileGroupUUID == DeclaredObjectModel.fileGroupUUIDField.description) { row in
+            where: objectType == DeclaredObjectModel.objectTypeField.description) { row in
             count += 1
         }
         
         XCTAssert(count == 0)
     }
-
+    
     func testFilterWhenRowFound() throws {
         try DeclaredObjectModel.createTable(db: database)
         try entry.insert()
         
         var count = 0
         try DeclaredObjectModel.fetch(db: database,
-            where: fileGroupUUID == DeclaredObjectModel.fileGroupUUIDField.description) { row in
+            where: objectType == DeclaredObjectModel.objectTypeField.description) { row in
             XCTAssertEqual(entry, row)
             count += 1
         }
@@ -63,9 +66,9 @@ class DeclaredObjectModelTests: XCTestCase {
         try DeclaredObjectModel.createTable(db: database)
         try entry.insert()
         
-        // Second entry-- to have a different fileGroupUUID, the primary key.
-        let entry2 = try DeclaredObjectModel(db: database, fileGroupUUID: UUID(), objectType: "someObjectType", sharingGroupUUID: UUID())
-
+        // Second entry-- to have a different primary key.
+        let entry2 = try DeclaredObjectModel(db: database, objectType: "OtherFoo", files: [fileDeclaration])
+        
         try entry2.insert()
 
         var count = 0
@@ -75,29 +78,29 @@ class DeclaredObjectModelTests: XCTestCase {
         
         XCTAssert(count == 2)
     }
-
+    
     func testUpdate() throws {
         try DeclaredObjectModel.createTable(db: database)
         try entry.insert()
                 
-        let replacement = UUID()
+        let replacement = "OtherType"
         
         entry = try entry.update(setters:
-            DeclaredObjectModel.fileGroupUUIDField.description <- replacement
+            DeclaredObjectModel.objectTypeField.description <- replacement
         )
                 
         var count = 0
         try DeclaredObjectModel.fetch(db: database,
-            where: replacement == DeclaredObjectModel.fileGroupUUIDField.description) { row in
-            XCTAssert(row.fileGroupUUID == replacement, "\(row.fileGroupUUID)")
+            where: replacement == DeclaredObjectModel.objectTypeField.description) { row in
+            XCTAssert(row.objectType == replacement, "\(row.objectType)")
             count += 1
         }
         
-        XCTAssert(entry.fileGroupUUID == replacement)
+        XCTAssert(entry.objectType == replacement)
         
         XCTAssert(count == 1)
     }
-
+    
     func testDelete() throws {
         try DeclaredObjectModel.createTable(db: database)
         try entry.insert()
@@ -112,6 +115,73 @@ class DeclaredObjectModelTests: XCTestCase {
         XCTAssert(count == 0)
     }
     
+    func testProtocolConstructor() throws {
+        try DeclaredObjectModel.createTable(db: database)
+
+        let object = ObjectDeclaration(objectType: "Foobly", declaredFiles: [fileDeclaration])
+        let entry = try DeclaredObjectModel(db: database, object: object)
+        try entry.insert()
+        
+        var count = 0
+        try DeclaredObjectModel.fetch(db: database,
+            where: object.objectType == DeclaredObjectModel.objectTypeField.description) { row in
+            XCTAssert(row.objectType ==  object.objectType, "\(row.objectType)")
+            count += 1
+        }
+        
+        XCTAssert(count == 1)
+    }
+    
+    func testNoFilesInRegularConstructorFails() throws {
+        try DeclaredObjectModel.createTable(db: database)
+
+        do {
+            let _ = try DeclaredObjectModel(db: database, objectType: "OtherFoo", files: [])
+            XCTFail()
+        } catch {
+        }
+    }
+    
+    func testNoFilesInProtocolConstructorFails() throws {
+        try DeclaredObjectModel.createTable(db: database)
+        let object = ObjectDeclaration(objectType: "Foobly", declaredFiles: [])
+
+        do {
+            let _ = try DeclaredObjectModel(db: database, object: object)
+            XCTFail()
+        } catch {
+        }
+    }
+    
+    // No declared objects present
+    func testLookupWithNoObject() throws {
+        try DeclaredObjectModel.createTable(db: database)
+        
+        do {
+            let _ = try DeclaredObjectModel.lookup(objectType: "foo", db: database)
+        } catch let error {
+            guard let error = error as? DatabaseModelError else {
+                XCTFail()
+                return
+            }
+            XCTAssert(error == DatabaseModelError.noObject)
+            return
+        }
+
+        XCTFail()
+    }
+    
+    func testLookupWithObject() throws {
+        try DeclaredObjectModel.createTable(db: database)
+        try entry.insert()
+
+        let result = try DeclaredObjectModel.lookup(objectType: objectType, db: database)
+        
+        XCTAssert(result.objectType == entry.objectType)
+        XCTAssert(iOSBasics.equal(result.declaredFiles, try entry.getFiles()))
+    }
+    
+    /*
     func testUpsert() throws {
         try DeclaredObjectModel.createTable(db: database)
         try entry.insert()
@@ -125,5 +195,6 @@ class DeclaredObjectModelTests: XCTestCase {
         let declaredObject2 = try DeclaredObjectModel.upsert(object: obj2, db: database)
         
         XCTAssert(entry != declaredObject2)
-    }
+    }*/
 }
+

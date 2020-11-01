@@ -3,6 +3,7 @@ import Foundation
 import SQLite
 import ServerShared
 
+/*
 extension SyncServer {
     func filesNeedingDownloadHelper(sharingGroupUUID: UUID) throws -> [(ObjectDeclaration, Set<FileDownload>)] {
     
@@ -72,3 +73,4 @@ extension UUID: Comparable {
         return lhs.uuidString < rhs.uuidString
     }
 }
+*/

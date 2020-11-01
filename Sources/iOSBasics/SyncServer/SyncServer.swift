@@ -18,7 +18,7 @@ public class SyncServer {
             return nil
         }
     }
-    
+
     // Set this before use of methods of this class.
     weak var credentialsDelegate: SyncServerCredentials!
     
@@ -36,6 +36,8 @@ public class SyncServer {
     let dispatchQueue: DispatchQueue
     var signIns: SignIns
     
+    var objectDeclarations = [DeclarableObject & ObjectDownloadHandler]()
+
     /// Create a SyncServer instance.
     ///
     /// - Parameters:
@@ -85,20 +87,32 @@ public class SyncServer {
         api.networking.application(application, handleEventsForBackgroundURLSession: identifier, completionHandler: completionHandler)
     }
     
+    // MARK: Declaring object types.
+    
+    // You must register all objects every time the app starts.
+    // Some of these can be for new objects, e.g., for the first time an app launching.
+    // Some of these can be for existing existing objects-- e.g., this will be the ongoing typical case.
+    // To provide a migration path, it is acceptable to extend specific existing DeclarableObject's with specific objectTypes by adding new DeclarableFile's, or to register entirely new DeclarableObject's.
+    // Older or deprecated DeclarableObject's should still be registered on each app launch, unless new downloads will never happen for those DeclarableObject's.
+    // It is not acceptable to remove DeclarableFile's from existing DeclarableObject's.
+    // This class keeps strong references to the passed objects.
+    public func register(object: DeclarableObject & ObjectDownloadHandler) throws {
+        try declarationHelper(object: object)
+    }
+    
     // MARK: Persistent queuing for upload, download, and deletion.
     
     // If you upload an object that has a fileGroupUUID which is already queued or in progress of uploading, your request will be queued.
-    // The first time you queue a SyncedObject, this call persistently registers the DeclaredObject portion of the object. Subsequent `queue` calls with the same syncObjectId in the object, must exactly match the DeclaredObject.
-    // The `uuid` of files present in the uploads must be in the declaration.
     // All files that end up being uploaded in the same queued batch must either be v0 (their first upload) or vN (not their first upload). It is an error to attempt to upload v0 and vN files together in the same batch. This issue may not always be detected (i.e., an error thrown by this call). An error might instead be thrown on a subsequent call to `sync`.
     // In this last regard, it is a best practice to do a v0 upload for all files in a declared object in it's first `queue` call. This way, having both v0 and vN files in the same queued batch *cannot* occur.
     // Uploads are done on a background networking URLSession.
     // You must do at least one `sync` call prior to this call after installing the app. (Not per launch of the app-- these results are persisted).
-    public func queue<DECL: DeclarableObject, UPL:UploadableFile>
-        (uploads: Set<UPL>, declaration: DECL) throws {
-        try queueHelper(uploads: uploads, declaration: declaration)
+    public func queue(upload: UploadableObject) throws {
+        try queueHelper(upload: upload)
     }
-    
+
+#if false
+    /*
     // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.
     // The files must have been uploaded by this client before, or be available because it was seen in `filesNeedingDownload`.
     // If you queue an object that has a fileGroupUUID which is already queued or in progress of downloading, your request will be queued.
@@ -151,7 +165,9 @@ public class SyncServer {
     public func markAsDownloaded<DWL: DownloadableFile>(file: DWL) throws {
         try markAsDownloadedHelper(file: file)
     }
-    
+    */
+#endif
+
     // MARK: Sharing
     
     // The sharing groups in which the signed in user is a member.
@@ -161,8 +177,9 @@ public class SyncServer {
     
     // MARK: Unqueued server requests-- these will fail if they involve a file or other object currently queued for upload or deletion. They will also fail if the network is offline.
 
+#if false
     // MARK: Sharing groups
-    
+
     public func createSharingGroup(sharingGroupUUID: UUID, sharingGroupName: String? = nil, completion:@escaping (Error?)->()) {
         createSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, sharingGroupName: sharingGroupName) { [weak self] error in
             self?.dispatchQueue.async {
@@ -225,5 +242,6 @@ public class SyncServer {
             }
         }
     }
+#endif
 }
 

@@ -1,135 +1,43 @@
 import Foundation
 import ServerShared
 
-public enum LocalPersistence {
-    case copy
-    case immutable
+public protocol DeclarableFile {
+    // Needed to indicate a specific file and because `mimeType`'s need not be unique across all files for an object. `fileLabel`'s must all be unique for a specific object.
+    var fileLabel: String {get}
     
-    var isCopy: Bool {
-        return self == .copy
-    }
-}
-
-public protocol File: Hashable {
-    var uuid: UUID {get}
-}
-
-public extension File {
-    static func hasDistinctUUIDs(in set: Set<Self>) -> Bool {
-        let uuids = Set<UUID>(set.map {$0.uuid})
-        return uuids.count == set.count
-    }
-}
-
-public protocol DeclarableFile: File {
     var mimeType: MimeType {get}
-    var appMetaData: String? {get}
 
     // If the file will be changed and have multiple versions on the server, this must be non-nil and a valid change resolver name. For a static file that will not be changed beyond v0 of the file on the server, this must be nil.
     var changeResolverName: String? {get}
 }
 
-public extension DeclarableFile {
-    func compare<FILE: DeclarableFile>(to other: FILE) -> Bool {
-        return self.uuid == other.uuid &&
-            self.mimeType == other.mimeType &&
-            self.appMetaData == other.appMetaData &&
-            self.changeResolverName == other.changeResolverName
-    }
-    
-    // Returns true iff objects are the same.
-    static func compare<FILE1: DeclarableFile, FILE2: DeclarableFile>(
-        first: Set<FILE1>, second: Set<FILE2>) -> Bool {
-        let firstUUIDs = Set<UUID>(first.map { $0.uuid })
-        let secondUUIDs = Set<UUID>(second.map { $0.uuid })
-        
-        guard firstUUIDs == secondUUIDs else {
-            return false
-        }
-        
-        for uuid in firstUUIDs {
-            guard let a = first.first(where: {$0.uuid == uuid}),
-                let b = second.first(where: {$0.uuid == uuid}) else {
-                return false
-            }
-            
-            return a.compare(to: b)
-        }
-        
-        return true
+extension DeclarableFile {
+    public func equal(_ other: DeclarableFile) -> Bool {
+        return mimeType == other.mimeType
+            && changeResolverName == other.changeResolverName
+            && fileLabel == other.fileLabel
     }
 }
 
-public enum UploadDataSource: Equatable {
-    case data(Data)
+public func equal(_ lhs: [DeclarableFile], _ rhs: [DeclarableFile]) -> Bool {
+    guard lhs.count == rhs.count else {
+        return false
+    }
     
-    // SyncServer interface will make a copy of this file. The underlying file might change while the SyncServer method is doing its work.
-    case copy(URL)
-    
-    // SyncServer interface does *not* make a copy of this file. The underlying file is assumed to *not* change while the SyncServer method is doing its work.
-    case immutable(URL)
-    
-    var isCopy: Bool {
-        switch self {
-        case .copy, .data:
-            return true
-        case .immutable:
+    for (index, lhsFile) in lhs.enumerated() {
+        let rhsFile = rhs[index]
+        guard lhsFile.equal(rhsFile) else {
             return false
         }
     }
-}
-
-public protocol UploadableFile: File {
-    var dataSource: UploadDataSource {get}
-}
-
-extension UploadableFile {
-    public func compare<FILE: UploadableFile>(to other: FILE) -> Bool {
-        return self.uuid == other.uuid &&
-            self.dataSource == other.dataSource
-    }
     
-    public static func compare<FILE1: UploadableFile, FILE2: UploadableFile>(
-        first: Set<FILE1>, second: Set<FILE2>) -> Bool {
-        let firstUUIDs = Set<UUID>(first.map { $0.uuid })
-        let secondUUIDs = Set<UUID>(second.map { $0.uuid })
-        
-        guard firstUUIDs == secondUUIDs else {
-            return false
-        }
-        
-        for uuid in firstUUIDs {
-            guard let a = first.first(where: {$0.uuid == uuid}),
-                let b = second.first(where: {$0.uuid == uuid}) else {
-                return false
-            }
-            
-            return a.compare(to: b)
-        }
-        
-        return true
-    }
+    return true
 }
 
 public protocol DeclarableObjectBasics {
-    // An id for this Object. This is required because we're organizing DeclarableObject's around these UUID's. AKA, declObjectId
-    var fileGroupUUID: UUID { get }
-    
     // The type of object that this collection of files is representing.
-    // E.g., a Neebla image or Neebla URL as above.
-    var objectType: String? { get }
-
-    // An id for the group of users that have access to this Object
-    var sharingGroupUUID: UUID { get }
-}
-
-public extension DeclarableObjectBasics {
-    // Returns true iff objects are the same.
-    func compare<BASICS: DeclarableObjectBasics>(to other: BASICS) -> Bool {
-        return self.fileGroupUUID == other.fileGroupUUID &&
-            self.objectType == other.objectType &&
-            self.sharingGroupUUID == other.sharingGroupUUID
-    }
+    // E.g., a Neebla image or Neebla URL.
+    var objectType: String { get }
 }
 
 /* An abstraction of a declaration of a data object backed by one or more cloud storage files. Two examples from Neebla:
@@ -140,33 +48,13 @@ public extension DeclarableObjectBasics {
 Representations in terms of a set of files are selected both in terms of the need for storing information for an application's data object, and in terms of having representations that are basically intelligible to a user when stored in their cloud storage. For example, it wouldn't be suitable to compress data files in a non-obvious encoding. JPEG format is fine as it's widely used, and zip compression could be fine as well. But a proprietary compression algorithm not widely used would not be suitable.
 */
 public protocol DeclarableObject: DeclarableObjectBasics {
-    associatedtype DeclaredFile: DeclarableFile
-    var declaredFiles: Set<DeclaredFile> { get }
+    // This is an array (and not a set) because it is allowable to have multiple files in a declaration with the same mimeType and changeResolver. And because sets introduce associated types into Swift protocols and that's just annoying! :).
+    var declaredFiles: [DeclarableFile] { get }
 }
 
 extension DeclarableObject {
-    var declObjectId: UUID {
-        return fileGroupUUID
+    public func equal(_ other: DeclarableObject) -> Bool {
+        return objectType == other.objectType
+            && iOSBasics.equal(declaredFiles, other.declaredFiles)
     }
-    
-    // Returns true iff objects are the same.
-    func declCompare<OBJ: DeclarableObject>(to other: OBJ) -> Bool {
-        return self.compare(to: other) &&
-            DeclaredFile.compare(first: self.declaredFiles, second: other.declaredFiles)
-    }
-    
-    // Get a specific `DeclarableFile` from a declaration.
-    static func fileDeclaration<OBJ: DeclarableObject>(forFileUUID uuid: UUID, from declaration: OBJ) throws -> some DeclarableFile {
-        let declaredFiles = declaration.declaredFiles.filter {$0.uuid == uuid}
-        guard declaredFiles.count == 1,
-            let declaredFile = declaredFiles.first else {
-            throw SyncServerError.internalError("Not just one declared file: \(declaredFiles.count)")
-        }
-        
-        return declaredFile
-    }
-}
-
-public protocol DownloadableFile: File {
-    var fileVersion: FileVersionInt { get }
 }

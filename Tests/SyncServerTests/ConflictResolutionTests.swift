@@ -14,6 +14,7 @@ import iOSSignIn
 import ChangeResolvers
 @testable import TestsCommon
 
+/*
 class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate, SyncServerTests {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
@@ -202,3 +203,4 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         waitForUploadsToComplete(numberUploads: 1, gone: true)
     }
 }
+*/

@@ -3,6 +3,7 @@ import Foundation
 import SQLite
 
 extension SyncServer {
+/*
     // Only re-check of uploads so far. This handles vN uploads only. v0 uploads are always handled in `queueObject`.
     func triggerUploads() throws {
         let notStartedUploads = try UploadObjectTracker.allUploadsWith(status: .notStarted, db: db)
@@ -57,4 +58,5 @@ extension SyncServer {
             }
         }
     }
+    */
 }

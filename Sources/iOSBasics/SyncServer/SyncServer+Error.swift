@@ -5,6 +5,7 @@ enum SyncServerError: Error {
     case declarationDifferentThanSyncedObject(String)
     case tooManyObjects
     case noObject
+    case noObjectMatch
     case noObjectId
     case fileNotDeclared
     case objectNotDeclared
@@ -36,8 +37,30 @@ enum SyncServerError: Error {
     
     case noCloudStorageType
     
+    case objectDoesNotHaveAllExistingFiles
+    case duplicateFileLabel
+    case someFileLabelsNotInDeclaredObject
+    
     static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
+        case someFileLabelsNotInDeclaredObject:
+            guard case .someFileLabelsNotInDeclaredObject = rhs else {
+                return false
+            }
+            return true
+            
+        case duplicateFileLabel:
+            guard case .duplicateFileLabel = rhs else {
+                return false
+            }
+            return true
+            
+        case objectDoesNotHaveAllExistingFiles:
+            guard case .objectDoesNotHaveAllExistingFiles = rhs else {
+                return false
+            }
+            return true
+            
         case noCloudStorageType:
             guard case .noCloudStorageType = rhs else {
                 return false
@@ -100,6 +123,12 @@ enum SyncServerError: Error {
             
         case noObject:
             guard case .noObject = rhs else {
+                return false
+            }
+            return true
+
+        case noObjectMatch:
+            guard case .noObjectMatch = rhs else {
                 return false
             }
             return true
@@ -209,6 +238,7 @@ enum SyncServerError: Error {
     }
 }
 
+/*
 extension SyncServer {
     func reportError(_ error: Error) {
         delegator { [weak self] delegate in
@@ -217,3 +247,4 @@ extension SyncServer {
         }
     }
 }
+*/

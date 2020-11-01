@@ -2,6 +2,7 @@
 import Foundation
 
 extension SyncServer {
+    /*
     // Throws an error if the declared object cannot be queued.
     func declaredObjectCanBeQueued<DECL: DeclarableObject>(declaration: DECL, declaredObject:DeclaredObjectModel) throws {
         guard declaredObject.compare(to: declaration) else {
@@ -21,4 +22,5 @@ extension SyncServer {
             throw SyncServerError.attemptToQueueADeletedFile
         }
     }
+    */
 }

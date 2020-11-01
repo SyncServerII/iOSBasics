@@ -10,39 +10,40 @@ import ServerShared
 import SQLite
 
 extension SyncServer {
+    // Assumes that an UploadFileTracker has already been created for the file referenced by fileUUID.
     // uploadIndex >= 1 and uploadIndex <= uploadCount
-    func singleUpload<DECL: DeclarableObject>(declaration: DECL, fileUUID uuid: UUID, v0Upload: Bool, objectTrackerId: Int64, uploadIndex: Int32, uploadCount: Int32) throws {
-        let declaredFile = try DECL.fileDeclaration(forFileUUID: uuid, from: declaration)
-        
-        guard let uploadFileTracker = try UploadFileTracker.fetchSingleRow(db: db, where:
+    func singleUpload(objectType: DeclaredObjectModel, objectTracker: UploadObjectTracker, objectEntry: DirectoryObjectEntry, fileLabel: String, fileUUID uuid: UUID, v0Upload: Bool, uploadIndex: Int32, uploadCount: Int32) throws {
+    
+        let fileDeclaration = try objectType.getFile(with: fileLabel)
+    
+        guard let objectTrackerId = objectTracker.id else {
+            throw SyncServerError.internalError("Could not get object tracker id")
+        }
+            
+        guard let fileTracker = try UploadFileTracker.fetchSingleRow(db: db, where:
             uuid == UploadFileTracker.fileUUIDField.description &&
             objectTrackerId == UploadFileTracker.uploadObjectTrackerIdField.description),
-            let checkSum = uploadFileTracker.checkSum,
-            let localURL = uploadFileTracker.localURL else {
+            let checkSum = fileTracker.checkSum,
+            let localURL = fileTracker.localURL else {
             throw SyncServerError.internalError("Could not get upload file tracker: \(uuid)")
         }
         
-        let uploadObjectTrackerId = uploadFileTracker.uploadObjectTrackerId
         let fileVersion:ServerAPI.File.Version
-        
+
         if v0Upload {
             var appMetaData: AppMetaData?
-            if let appMetaDataContents = declaredFile.appMetaData {
+            if let appMetaDataContents = fileTracker.appMetaData {
                 appMetaData = AppMetaData(contents: appMetaDataContents)
             }
-            
-            guard let objectType = declaration.objectType else {
-                throw SyncServerError.internalError("No object type in v0 upload")
-            }
-            
-            let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: declaration.fileGroupUUID, objectType: objectType)
-            fileVersion = .v0(url: localURL, mimeType: declaredFile.mimeType, checkSum: checkSum, changeResolverName: declaredFile.changeResolverName, fileGroup: fileGroup, appMetaData: appMetaData)
+                        
+            let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: objectTracker.fileGroupUUID, objectType: objectType.objectType)
+            fileVersion = .v0(url: localURL, mimeType: fileDeclaration.mimeType, checkSum: checkSum, changeResolverName: fileDeclaration.changeResolverName, fileGroup: fileGroup, appMetaData: appMetaData)
         }
         else {
             fileVersion = .vN(url: localURL)
         }
         
-        let serverAPIFile = ServerAPI.File(fileUUID: uuid.uuidString, sharingGroupUUID: declaration.sharingGroupUUID.uuidString, deviceUUID: configuration.deviceUUID.uuidString, uploadObjectTrackerId: uploadObjectTrackerId, version: fileVersion)
+        let serverAPIFile = ServerAPI.File(fileUUID: uuid.uuidString, sharingGroupUUID: objectEntry.sharingGroupUUID.uuidString, deviceUUID: configuration.deviceUUID.uuidString, uploadObjectTrackerId: objectTrackerId, version: fileVersion)
         
         if let error = api.uploadFile(file: serverAPIFile, uploadIndex: uploadIndex, uploadCount: uploadCount) {
             // Not going to throw an error here. Because this method is used in the context of a loop, and some of the uploads may have started correctly.
@@ -52,7 +53,7 @@ extension SyncServer {
             }
         }
         else {
-            try uploadFileTracker.update(setters:
+            try fileTracker.update(setters:
                 UploadFileTracker.statusField.description <- .uploading)
         }
     }

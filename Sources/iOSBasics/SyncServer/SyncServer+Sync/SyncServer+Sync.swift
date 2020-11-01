@@ -9,6 +9,7 @@ import Foundation
 import SQLite
 
 extension SyncServer {
+/*
     func syncHelper(sharingGroupUUID: UUID? = nil) throws {
         getIndex(sharingGroupUUID: sharingGroupUUID)
         
@@ -115,4 +116,5 @@ extension SyncServer {
         
         return numberSuccessfullyCompleted
     }
+*/
 }

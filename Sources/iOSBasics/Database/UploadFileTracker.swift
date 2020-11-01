@@ -41,6 +41,9 @@ class UploadFileTracker: DatabaseModel {
     static let checkSumField = Field("checkSum", \M.checkSum)
     var checkSum: String?
     
+    static let appMetaDataField = Field("appMetaData", \M.appMetaData)
+    var appMetaData: String?
+    
     init(db: Connection,
         id: Int64! = nil,
         uploadObjectTrackerId: Int64,
@@ -50,7 +53,8 @@ class UploadFileTracker: DatabaseModel {
         localURL:URL?,
         goneReason: GoneReason?,
         uploadCopy: Bool,
-        checkSum: String?) throws {
+        checkSum: String?,
+        appMetaData: String?) throws {
 
         self.db = db
         self.id = id
@@ -62,6 +66,7 @@ class UploadFileTracker: DatabaseModel {
         self.goneReason = goneReason
         self.uploadCopy = uploadCopy
         self.checkSum = checkSum
+        self.appMetaData = appMetaData
     }
     
     // MARK: DatabaseModel
@@ -77,6 +82,7 @@ class UploadFileTracker: DatabaseModel {
             t.column(goneReasonField.description)
             t.column(uploadCopyField.description)
             t.column(checkSumField.description)
+            t.column(appMetaDataField.description)
         }
     }
     
@@ -90,7 +96,8 @@ class UploadFileTracker: DatabaseModel {
             localURL: row[Self.localURLField.description],
             goneReason: row[Self.goneReasonField.description],
             uploadCopy: row[Self.uploadCopyField.description],
-            checkSum: row[Self.checkSumField.description]
+            checkSum: row[Self.checkSumField.description],
+            appMetaData: row[Self.appMetaDataField.description]
         )
     }
     
@@ -103,15 +110,17 @@ class UploadFileTracker: DatabaseModel {
             Self.localURLField.description <- localURL,
             Self.goneReasonField.description <- goneReason,
             Self.uploadCopyField.description <- uploadCopy,
-            Self.checkSumField.description <- checkSum
+            Self.checkSumField.description <- checkSum,
+            Self.appMetaDataField.description <- appMetaData
         )
     }
 }
 
 extension UploadFileTracker {
-    // Creates an `UploadFileTracker` and copies data to a temporary file location if needed.
-    // The returned `UploadFileTracker` has been inserted into the database
-    static func create<UPL: UploadableFile, DECL: DeclarableObject>(file: UPL, in declaration: DECL, cloudStorageType: CloudStorageType, newObjectTrackerId: Int64, config: Configuration.TemporaryFiles, hashingManager: HashingManager, db: Connection) throws -> UploadFileTracker {
+    // Creates an `UploadFileTracker` and copies data from the file's UploadableDataSource to a temporary file location if needed.
+    // The returned `UploadFileTracker` has been inserted into the database.
+    // The objectTrackerId is the id of the UploadObjectTracker for this file.
+    static func create(file: UploadableFile, cloudStorageType: CloudStorageType, objectTrackerId: Int64, config: Configuration.TemporaryFiles, hashingManager: HashingManager, db: Connection) throws -> UploadFileTracker {
         let url: URL
         switch file.dataSource {
         case .data(let data):
@@ -124,7 +133,7 @@ extension UploadFileTracker {
         
         let checkSum = try hashingManager.hashFor(cloudStorageType: cloudStorageType).hash(forURL: url)
         
-        let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: newObjectTrackerId, status: .notStarted, fileUUID: file.uuid, fileVersion: nil, localURL: url, goneReason: nil, uploadCopy: file.dataSource.isCopy, checkSum: checkSum)
+        let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: objectTrackerId, status: .notStarted, fileUUID: file.uuid, fileVersion: nil, localURL: url, goneReason: nil, uploadCopy: file.dataSource.isCopy, checkSum: checkSum, appMetaData: file.appMetaData)
         try fileTracker.insert()
         
         return fileTracker

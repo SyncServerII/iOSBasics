@@ -4,6 +4,7 @@ import SQLite
 import ServerShared
 import iOSShared
 
+/*
 class DeclaredFileModelTests: XCTestCase {
     var database: Connection!
     let fileGroupUUID = UUID()
@@ -154,3 +155,4 @@ class DeclaredFileModelTests: XCTestCase {
         XCTAssert(model2 != entry)
     }
 }
+*/

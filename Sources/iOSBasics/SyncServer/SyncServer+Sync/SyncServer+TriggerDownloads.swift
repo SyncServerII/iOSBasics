@@ -1,6 +1,7 @@
 import Foundation
 
 extension SyncServer {
+/*
     // Re-check of queued downloads.
     func triggerDownloads() throws {
         let notStartedDownloads = try DownloadObjectTracker.allDownloadsWith(status: .notStarted, db: db)
@@ -58,4 +59,5 @@ extension SyncServer {
             delegate.downloadQueue(self, event: .sync(numberDownloadsStarted: UInt(toTrigger.count)))
         }
     }
+    */
 }

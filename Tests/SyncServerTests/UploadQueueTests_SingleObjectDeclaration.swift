@@ -51,26 +51,379 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
 
     override func tearDownWithError() throws {
         // All temporary files should have been removed prior to end of test.
-        let filePaths = try FileManager.default.contentsOfDirectory(atPath: config.temporaryFiles.directory.path)
+        let filePaths = try FileManager.default.contentsOfDirectory(atPath: config.temporaryFiles.directory.path)        
         XCTAssert(filePaths.count == 0, "\(filePaths.count)")
     }
     
-    // No declared objects present
-    func testLookupWithNoObject() {
+    func runUpload(withNoFiles: Bool) throws {
+        let sharingGroupUUID = try getSharingGroup()
+
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+         
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+        
+        var uploads = [FileUpload]()
+        if !withNoFiles {
+            uploads += [file1]
+        }
+        
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: uploads)
+
+        let directoryObjectEntryCount = try DirectoryObjectEntry.numberRows(db: database)
+        let directoryFileEntryCount = try DirectoryFileEntry.numberRows(db: database)
+        let objectTrackerCount = try UploadObjectTracker.numberRows(db: database)
+        let fileTrackerCount = try UploadFileTracker.numberRows(db: database)
+        
         do {
-            let _ = try DeclaredObjectModel.lookupDeclarableObject(fileGroupUUID: UUID(), db: database)
-        } catch let error {
-            guard let error = error as? DatabaseModelError else {
-                XCTFail()
-                return
+            try syncServer.queue(upload: upload)
+        } catch (let error) {
+            if !withNoFiles {
+                XCTFail("\(error)")
             }
-            XCTAssert(error == DatabaseModelError.noObject)
+            return
+        }
+        
+        if withNoFiles {
+            XCTFail()
+            return
+        }
+        
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        // Check for new directory entries.
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == directoryObjectEntryCount + 1)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == directoryFileEntryCount + 1)
+        
+        // There should be no change in the tracker counts-- they should have been removed after the uploads.
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == objectTrackerCount)
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == fileTrackerCount)
+    }
+    
+    func testUploadWithNoFilesFails() throws {
+        try runUpload(withNoFiles: true)
+    }
+    
+    func testUploadWithFilesWorks() throws {
+        try runUpload(withNoFiles: false)
+    }
+    
+    func runUpload(duplicatedUUID: Bool) throws {
+        let sharingGroupUUID = try getSharingGroup()
+        
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeType: .jpeg, changeResolverName: nil)
+
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
+        try syncServer.register(object: example)
+        
+        let fileUUID1 = UUID()
+        let fileUUID2:UUID
+        
+        if duplicatedUUID {
+            fileUUID2 = fileUUID1
+        }
+        else {
+            fileUUID2 = UUID()
+        }
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
+        let fileUpload2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID2)
+
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1, fileUpload2])
+
+        let directoryObjectEntryCount = try DirectoryObjectEntry.numberRows(db: database)
+        let directoryFileEntryCount = try DirectoryFileEntry.numberRows(db: database)
+        let objectTrackerCount = try UploadObjectTracker.numberRows(db: database)
+        let fileTrackerCount = try UploadFileTracker.numberRows(db: database)
+        
+        do {
+            try syncServer.queue(upload: upload)
+        } catch let error {
+            if !duplicatedUUID {
+                XCTFail("\(error)")
+            }
+            return
+        }
+        
+        if duplicatedUUID {
+            XCTFail()
+            return
+        }
+        
+        waitForUploadsToComplete(numberUploads: 2)
+        
+        // Check for new directory entries.
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == directoryObjectEntryCount + 1)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == directoryFileEntryCount + 2)
+        
+        // There should be no change in the tracker counts-- they should have been removed after the uploads.
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == objectTrackerCount)
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == fileTrackerCount)
+    }
+    
+    func testUploadWithDuplicatedUUIDsFails() throws {
+        try runUpload(duplicatedUUID: true)
+    }
+    
+    func testUploadWithoutDuplicatedUUIDsWorks() throws {
+        try runUpload(duplicatedUUID: false)
+    }
+    
+    func runQueueObject(knownObjectType:Bool) throws {
+        let sharingGroupUUID = try getSharingGroup()
+        
+        let objectType = "Foo"
+        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+            
+        if knownObjectType {
+            let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration])
+            try syncServer.register(object: example)
+        }
+        
+        let file = FileUpload(fileLabel: fileDeclaration.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [file])
+
+        let directoryObjectEntryCount = try DirectoryObjectEntry.numberRows(db: database)
+        let directoryFileEntryCount = try DirectoryFileEntry.numberRows(db: database)
+        let objectTrackerCount = try UploadObjectTracker.numberRows(db: database)
+        let fileTrackerCount = try UploadFileTracker.numberRows(db: database)
+        
+        do {
+            try syncServer.queue(upload: upload)
+        } catch {
+            if knownObjectType {
+                XCTFail()
+            }
+            return
+        }
+        
+        if !knownObjectType {
+            XCTFail()
+            return
+        }
+        
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        // Check for new directory entries.
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == directoryObjectEntryCount + 1)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == directoryFileEntryCount + 1)
+        
+        // There should be no change in the tracker counts-- they should have been removed after the uploads.
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == objectTrackerCount)
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == fileTrackerCount)
+    }
+    
+    func testUploadObjectWithUnknownObjectTypeFails() throws {
+        try runQueueObject(knownObjectType:false)
+    }
+    
+    func testUploadObjectWithKnownObjectTypeWorks() throws {
+        try runQueueObject(knownObjectType:true)
+    }
+    
+    func uploadObject(duplicateFileLabel: Bool) throws {
+        let sharingGroupUUID = try getSharingGroup()
+
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeType: .jpeg, changeResolverName: nil)
+         
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
+        try syncServer.register(object: example)
+        
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+        let file2 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+        
+        var uploads = [file1]
+        if duplicateFileLabel {
+            uploads += [file2]
+        }
+        
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: uploads)
+
+        let directoryObjectEntryCount = try DirectoryObjectEntry.numberRows(db: database)
+        let directoryFileEntryCount = try DirectoryFileEntry.numberRows(db: database)
+        let objectTrackerCount = try UploadObjectTracker.numberRows(db: database)
+        let fileTrackerCount = try UploadFileTracker.numberRows(db: database)
+        
+        do {
+            try syncServer.queue(upload: upload)
+        } catch {
+            if !duplicateFileLabel {
+                XCTFail()
+            }
+            return
+        }
+        
+        if duplicateFileLabel {
+            XCTFail()
             return
         }
 
-        XCTFail()
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        // Check for new directory entries.
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == directoryObjectEntryCount + 1)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == directoryFileEntryCount + 1)
+        
+        // There should be no change in the tracker counts-- they should have been removed after the uploads.
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == objectTrackerCount)
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == fileTrackerCount)
     }
     
+    func testUploadObjectWithDuplicateFileLabelFails() throws {
+        try uploadObject(duplicateFileLabel: true)
+    }
+    
+    func testUploadObjectWithNonDuplicateFileLabelWorks() throws {
+        try uploadObject(duplicateFileLabel: false)
+    }
+    
+    func runUpload(withUnknownLabel: Bool) throws {
+        let sharingGroupUUID = try getSharingGroup()
+
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let fileLabel: String
+        if withUnknownLabel {
+            fileLabel = "file2"
+        }
+        else {
+            fileLabel = fileDeclaration1.fileLabel
+        }
+        
+        let fileUpload1 = FileUpload(fileLabel: fileLabel, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+
+        let directoryObjectEntryCount = try DirectoryObjectEntry.numberRows(db: database)
+        let directoryFileEntryCount = try DirectoryFileEntry.numberRows(db: database)
+        let objectTrackerCount = try UploadObjectTracker.numberRows(db: database)
+        let fileTrackerCount = try UploadFileTracker.numberRows(db: database)
+        
+        do {
+            try syncServer.queue(upload: upload)
+        } catch let error {
+            if !withUnknownLabel {
+                XCTFail("\(error)")
+            }
+            return
+        }
+        
+        if withUnknownLabel {
+            XCTFail()
+            return
+        }
+        
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        // Check for new directory entries.
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == directoryObjectEntryCount + 1)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == directoryFileEntryCount + 1)
+        
+        // There should be no change in the tracker counts-- they should have been removed after the uploads.
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == objectTrackerCount)
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == fileTrackerCount)
+    }
+    
+    func testWithV0UploadWithUnknownLabelFails() throws {
+        try runUpload(withUnknownLabel: true)
+    }
+    
+    func testV0UploadWithKnownLabelWorks() throws {
+        try runUpload(withUnknownLabel: false)
+    }
+    
+    // Temporary until I get `sync` working again
+    func getSharingGroup(createEntry: Bool = true) throws -> UUID {
+        let sharingGroup = try getSharingGroupUUID()
+        
+        if createEntry {
+            let entry = try SharingEntry(db: database, permission: Permission.admin, deleted: false, sharingGroupName: nil, sharingGroupUUID: sharingGroup, sharingGroupUsers: [], cloudStorageType: CloudStorageType.Dropbox)
+            try entry.insert()
+        }
+        
+        return sharingGroup
+    }
+    
+    func runUpload(withKnownSharingGroup: Bool) throws {
+        var sharingGroupUUID = try getSharingGroup()
+        
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+
+        if !withKnownSharingGroup {
+            sharingGroupUUID = UUID()
+        }
+
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        
+        let directoryObjectEntryCount = try DirectoryObjectEntry.numberRows(db: database)
+        let directoryFileEntryCount = try DirectoryFileEntry.numberRows(db: database)
+        let objectTrackerCount = try UploadObjectTracker.numberRows(db: database)
+        let fileTrackerCount = try UploadFileTracker.numberRows(db: database)
+
+        do {
+            try syncServer.queue(upload: upload)
+        } catch let error {
+            if withKnownSharingGroup {
+                XCTFail("\(error)")
+            }
+            return
+        }
+        
+        if !withKnownSharingGroup {
+            XCTFail()
+            return
+        }
+        
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        // Check for new directory entries.
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == directoryObjectEntryCount + 1)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == directoryFileEntryCount + 1)
+        
+        // There should be no change in the tracker counts-- they should have been removed after the uploads.
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == objectTrackerCount)
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == fileTrackerCount)
+    }
+    
+    func testUploadWithUnknownSharingGroupFails() throws {
+        try runUpload(withKnownSharingGroup: false)
+    }
+    
+    func testUploadWithKnownSharingGroupWorks() throws {
+        try runUpload(withKnownSharingGroup: true)
+    }
+
+//    func testUploadv0AndVNfilesTogetherFails() {
+//        assert(false)
+//    }
+    
+    // Test where all queued upload files have been uploaded already: All have change resolvers.
+    
+    // Test that all queued upload files have been uploaded already: Some do not have change resolvers. This should fail.
+    
+    // Test that none of the queued upload files have been uploaded already.
+    
+    // Test that only some of the new upload files are in the existing set: Should fail
+    
+        
+    /*
     func runQueueTest(withDeclaredFiles: Bool) throws {
         let fileUUID1 = UUID()
         try self.sync()
@@ -113,7 +466,9 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         }
         XCTAssert(fileVersion == 0)
     }
+    */
     
+/*
     func testTestWithADeclaredFileWorks() throws {
         try runQueueTest(withDeclaredFiles: true)
     }
@@ -623,4 +978,5 @@ class UploadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBas
         
         XCTFail()
     }
+*/
 }

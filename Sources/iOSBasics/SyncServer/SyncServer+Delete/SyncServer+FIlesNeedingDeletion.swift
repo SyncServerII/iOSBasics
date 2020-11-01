@@ -3,6 +3,7 @@ import Foundation
 import SQLite
 import ServerShared
 
+/*
 extension SyncServer {
     func objectsNeedingDeletionHelper() throws -> [ObjectDeclaration] {
         let entries = try DirectoryEntry.fetch(db: db, where: DirectoryEntry.deletedOnServerField.description == true &&
@@ -51,3 +52,4 @@ extension SyncServer {
         }
     }
 }
+*/

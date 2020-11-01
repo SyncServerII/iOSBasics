@@ -15,6 +15,7 @@ protocol SyncServerTests: TestFiles, APITests {
     var handlers: DelegateHandlers { get }
 }
 
+/*
 extension SyncServerTests where Self: XCTestCase {
     func uploadExampleTextFile(sharingGroupUUID: UUID, localFile: URL = Self.exampleTextFileURL) throws -> ObjectDeclaration {
         let fileUUID1 = UUID()
@@ -87,3 +88,4 @@ extension SyncServerTests where Self: XCTestCase {
     }
 }
 
+*/

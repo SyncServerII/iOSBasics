@@ -12,7 +12,7 @@ class UploadFileTrackerTests: XCTestCase {
     override func setUpWithError() throws {
         set(logLevel: .trace)
         database = try Connection(.inMemory)
-        entry = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: .notStarted, fileUUID: fileUUID, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly")
+        entry = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: .notStarted, fileUUID: fileUUID, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: "Foo")
     }
 
     override func tearDownWithError() throws {
@@ -74,7 +74,7 @@ class UploadFileTrackerTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
-        let entry2 = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: .notStarted, fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly")
+        let entry2 = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: .notStarted, fileUUID: UUID(), fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: nil)
 
         try entry2.insert()
 
@@ -120,10 +120,10 @@ class UploadFileTrackerTests: XCTestCase {
         
         let originalStatus: UploadFileTracker.Status = .notStarted
         
-        let e1 = try UploadFileTracker(db: database, uploadObjectTrackerId: 1, status: originalStatus, fileUUID: fileUUID, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly")
+        let e1 = try UploadFileTracker(db: database, uploadObjectTrackerId: 1, status: originalStatus, fileUUID: fileUUID, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: "moo")
         try e1.insert()
         
-        let e2 = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: originalStatus, fileUUID: fileUUID, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly")
+        let e2 = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: originalStatus, fileUUID: fileUUID, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: "bloo")
         try e2.insert()
         
         try e1.update(setters:

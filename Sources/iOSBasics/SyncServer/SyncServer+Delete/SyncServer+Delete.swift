@@ -2,6 +2,7 @@
 import Foundation
 import SQLite
 
+/*
 extension SyncServer {
     // This currently only supports `deletionType` (see UploadDeletionTracker) of `fileGroupUUID`.
     func deleteHelper<DECL: DeclarableObject>(object: DECL) throws {
@@ -165,3 +166,4 @@ extension SyncServer {
         try tracker.delete()
     }
 }
+*/

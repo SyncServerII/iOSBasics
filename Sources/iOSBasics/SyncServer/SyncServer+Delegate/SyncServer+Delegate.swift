@@ -5,6 +5,7 @@ import iOSSignIn
 import SQLite
 
 extension SyncServer: ServerAPIDelegate {
+
     func error(_ delegated: AnyObject, error: Error?) {
         delegator { [weak self] delegate in
             guard let self = self else { return }
@@ -29,10 +30,12 @@ extension SyncServer: ServerAPIDelegate {
     }
     
     func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
-        downloadCompletedHelper(delegated, result: result)
+        #warning("FIX ME")
+        //downloadCompletedHelper(delegated, result: result)
     }
     
     func backgroundRequestCompleted(_ delegated: AnyObject, result: Swift.Result<BackgroundRequestResult, Error>) {
-        backgroundRequestCompletedHelper(delegated, result: result)
+        #warning("FIX ME")
+        //backgroundRequestCompletedHelper(delegated, result: result)
     }
 }

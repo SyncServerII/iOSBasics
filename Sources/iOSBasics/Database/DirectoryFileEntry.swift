@@ -2,25 +2,28 @@ import SQLite
 import Foundation
 import ServerShared
 
-// Represents a file the iOSBasics client knows about in regards to the current signed in user. Used to represent a directory of all files for the current signed in user. Each file is part of a specific DeclaredObject.
+// Represents a file the iOSBasics client knows about in regards to the current signed in user. Used to represent a directory of all files for the current signed in user.
+// The collection of `DirectoryFileEntry`'s with the same fileGroupUUID (and necessarily having the same `objectType` and `sharingGroupUUID`) comprises an instance of a specific DeclarableObject
 
-class DirectoryEntry: DatabaseModel, Equatable {
-    enum DirectoryEntryError: Error {
+class DirectoryFileEntry: DatabaseModel, Equatable {
+    enum DirectoryFileEntryError: Error {
         case badGoneReason(String)
         case badCloudStorageType(String)
     }
     
     let db: Connection
     var id: Int64!
-        
-    static let fileUUIDField = Field("fileUUID", \M.fileUUID)
-    var fileUUID: UUID
 
+    // Reference to the DirectoryObjectEntry containing this file.
     static let fileGroupUUIDField = Field("fileGroupUUID", \M.fileGroupUUID)
     var fileGroupUUID: UUID
     
-    static let sharingGroupUUIDField = Field("sharingGroupUUID", \M.sharingGroupUUID)
-    var sharingGroupUUID: UUID
+    static let fileUUIDField = Field("fileUUID", \M.fileUUID)
+    var fileUUID: UUID
+
+    // Corresponds to the DeclarableFile
+    static let fileLabelField = Field("fileLabel", \M.fileLabel)
+    var fileLabel: String
     
     // The version of the file locally.
     // This will be 0 after a first *successful* upload for a file initiated by the local client. After that, it will only be updated when a specific file version is downloaded in its entirety from the server. It cannot be updated for vN files on deferred upload completion because the local client, if other competing clients are concurrently making changes, may not have the complete file update for a specific version.
@@ -72,18 +75,19 @@ class DirectoryEntry: DatabaseModel, Equatable {
     static let goneReasonField = Field("goneReason", \M.goneReason)
     var goneReason: String?
     
-    static func == (lhs: DirectoryEntry, rhs: DirectoryEntry) -> Bool {
+    static func == (lhs: DirectoryFileEntry, rhs: DirectoryFileEntry) -> Bool {
         return lhs.id == rhs.id &&
             lhs.fileUUID == rhs.fileUUID &&
             lhs.fileVersion == rhs.fileVersion &&
             lhs.fileGroupUUID == rhs.fileGroupUUID &&
-            lhs.sharingGroupUUID == rhs.sharingGroupUUID &&
             lhs.serverFileVersion == rhs.serverFileVersion &&
             lhs.deletedLocally == rhs.deletedLocally &&
             lhs.deletedOnServer == rhs.deletedOnServer &&
-            lhs.goneReason == rhs.goneReason
+            lhs.goneReason == rhs.goneReason &&
+            lhs.fileLabel == rhs.fileLabel
     }
     
+    /*
     // Returns true iff the static or invariants parts of `self` and the fileInfo are the same.
     func sameInvariants(fileInfo: FileInfo) -> Bool {
         guard fileUUID.uuidString == fileInfo.fileUUID else {
@@ -100,12 +104,13 @@ class DirectoryEntry: DatabaseModel, Equatable {
         
         return true
     }
+    */
     
     init(db: Connection,
         id: Int64! = nil,
         fileUUID: UUID,
+        fileLabel: String,
         fileGroupUUID: UUID,
-        sharingGroupUUID: UUID,
         fileVersion: FileVersionInt?,
         serverFileVersion: FileVersionInt?,
         deletedLocally: Bool,
@@ -114,15 +119,15 @@ class DirectoryEntry: DatabaseModel, Equatable {
         
         if let goneReason = goneReason {
             guard let _ = GoneReason(rawValue: goneReason) else {
-                throw DirectoryEntryError.badGoneReason(goneReason)
+                throw DirectoryFileEntryError.badGoneReason(goneReason)
             }
         }
         
         self.db = db
         self.id = id
+        self.fileLabel = fileLabel
         self.fileUUID = fileUUID
         self.fileGroupUUID = fileGroupUUID
-        self.sharingGroupUUID = sharingGroupUUID
         self.fileVersion = fileVersion
         self.serverFileVersion = serverFileVersion
         self.deletedLocally = deletedLocally
@@ -136,8 +141,8 @@ class DirectoryEntry: DatabaseModel, Equatable {
         try startCreateTable(db: db) { t in
             t.column(idField.description, primaryKey: true)
             t.column(fileUUIDField.description, unique: true)
+            t.column(fileLabelField.description)
             t.column(fileGroupUUIDField.description)
-            t.column(sharingGroupUUIDField.description)
             t.column(fileVersionField.description)
             t.column(serverFileVersionField.description)
             t.column(deletedLocallyField.description)
@@ -146,12 +151,12 @@ class DirectoryEntry: DatabaseModel, Equatable {
         }
     }
     
-    static func rowToModel(db: Connection, row: Row) throws -> DirectoryEntry {
-        return try DirectoryEntry(db: db,
+    static func rowToModel(db: Connection, row: Row) throws -> DirectoryFileEntry {
+        return try DirectoryFileEntry(db: db,
             id: row[Self.idField.description],
             fileUUID: row[Self.fileUUIDField.description],
+            fileLabel: row[Self.fileLabelField.description],
             fileGroupUUID: row[Self.fileGroupUUIDField.description],
-            sharingGroupUUID: row[Self.sharingGroupUUIDField.description],
             fileVersion: row[Self.fileVersionField.description],
             serverFileVersion: row[Self.serverFileVersionField.description],
             deletedLocally: row[Self.deletedLocallyField.description],
@@ -163,8 +168,8 @@ class DirectoryEntry: DatabaseModel, Equatable {
     func insert() throws {        
         try doInsertRow(db: db, values:
             Self.fileUUIDField.description <- fileUUID,
+            Self.fileLabelField.description <- fileLabel,
             Self.fileGroupUUIDField.description <- fileGroupUUID,
-            Self.sharingGroupUUIDField.description <- sharingGroupUUID,
             Self.fileVersionField.description <- fileVersion,
             Self.serverFileVersionField.description <- serverFileVersion,
             Self.deletedLocallyField.description <- deletedLocally,
@@ -174,6 +179,22 @@ class DirectoryEntry: DatabaseModel, Equatable {
     }
 }
 
+extension DirectoryFileEntry {
+    // Returns the DirectoryFileEntry's that could be found for the `upload.uploads`.
+    static func lookup(upload: UploadableObject, db: Connection) throws -> [DirectoryFileEntry] {
+        var result = [DirectoryFileEntry]()
+        
+        for uploadable in upload.uploads {
+            if let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == uploadable.uuid) {
+                result += [entry]
+            }
+        }
+        
+        return result
+    }
+}
+
+/*
 extension DirectoryEntry {
     static func fileVersion(fileUUID: UUID, db: Connection) throws -> FileVersionInt? {
         guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where:
@@ -300,3 +321,4 @@ extension DirectoryEntry {
         return result
     }
 }
+*/

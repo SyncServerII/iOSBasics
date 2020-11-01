@@ -138,11 +138,11 @@ class UploadObjectTrackerTests: XCTestCase {
             break
             
         case .oneFile:
-            fileTracker = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTrackerId, status: .uploaded, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil)
+            fileTracker = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTrackerId, status: .uploaded, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil)
             try fileTracker.insert()
             
         case .oneOfTwoFilesMatching:
-            let fileTracker2 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTrackerId, status: .uploading, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil)
+            let fileTracker2 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTrackerId, status: .uploading, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil)
             try fileTracker2.insert()
         }
         
@@ -209,7 +209,7 @@ class UploadObjectTrackerTests: XCTestCase {
         let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil)
         try objectTracker.insert()
         
-        let fileTracker = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploading, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil)
+        let fileTracker = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploading, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil)
         try fileTracker.insert()
         
         guard !(try UploadObjectTracker.anyUploadsWith(status: .uploaded, fileGroupUUID: fileGroupUUID, db: database)) else {
@@ -226,7 +226,7 @@ class UploadObjectTrackerTests: XCTestCase {
         let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil)
         try objectTracker.insert()
         
-        let fileTracker = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploading, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil)
+        let fileTracker = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploading, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil)
         try fileTracker.insert()
         
         guard try UploadObjectTracker.anyUploadsWith(status: .uploading, fileGroupUUID: fileGroupUUID, db: database) else {
@@ -243,10 +243,10 @@ class UploadObjectTrackerTests: XCTestCase {
         let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil)
         try objectTracker.insert()
         
-        let fileTracker1 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploading, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil)
+        let fileTracker1 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploading, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil)
         try fileTracker1.insert()
         
-        let fileTracker2 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploaded, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil)
+        let fileTracker2 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploaded, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil)
         try fileTracker2.insert()
         
         guard try UploadObjectTracker.anyUploadsWith(status: .uploading, fileGroupUUID: fileGroupUUID, db: database) else {
@@ -263,10 +263,10 @@ class UploadObjectTrackerTests: XCTestCase {
         let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil)
         try objectTracker.insert()
         
-        let fileTracker1 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploading, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil)
+        let fileTracker1 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploading, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil)
         try fileTracker1.insert()
         
-        let fileTracker2 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploading, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil)
+        let fileTracker2 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploading, fileUUID: UUID(), fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil)
         try fileTracker2.insert()
         
         guard try UploadObjectTracker.anyUploadsWith(status: .uploading, fileGroupUUID: fileGroupUUID, db: database) else {

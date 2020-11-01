@@ -4,6 +4,7 @@ import SQLite
 import ServerShared
 
 extension SyncServer {
+    /*
     // Operates asynchronously.
     func getIndex(sharingGroupUUID: UUID?) {
         api.index(sharingGroupUUID: sharingGroupUUID) { [weak self] result in
@@ -231,4 +232,5 @@ extension SyncServer {
             }
         }
     }
+    */
 }
