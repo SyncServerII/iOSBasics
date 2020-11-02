@@ -192,19 +192,57 @@ extension DirectoryFileEntry {
         
         return result
     }
-}
+    
+    // The `fileInfo` is assumed to come from the server.
+    @discardableResult
+    static func upsert(fileInfo: FileInfo, db: Connection) throws ->
+        (DirectoryFileEntry, markedForDeletion: Bool) {
+        
+        let resultEntry:DirectoryFileEntry
+        var markedForDeletion = false
+        
+        guard let fileUUIDString = fileInfo.fileUUID,
+            let fileUUID = UUID(uuidString: fileUUIDString) else {
+            throw DatabaseModelError.invalidUUID
+        }
 
-/*
-extension DirectoryEntry {
+        if let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) {
+            try entry.update(setters: DirectoryFileEntry.serverFileVersionField.description <- fileInfo.fileVersion)
+            if fileInfo.deleted && !entry.deletedOnServer {
+                // Specifically *not* changing `deletedLocallyField` because the difference between these two (i.e., deletedLocally false, and deletedOnServer true) will be used to drive local deletion for the client.
+                try entry.update(setters:
+                    DirectoryFileEntry.deletedOnServerField.description <- true
+                )
+                markedForDeletion = true
+            }
+            resultEntry = entry
+        }
+        else {            
+            guard let fileGroupUUIDString = fileInfo.fileGroupUUID,
+                let fileGroupUUID = UUID(uuidString: fileGroupUUIDString) else {
+                throw DatabaseModelError.invalidUUID
+            }
+            
+            #warning("It seems I'll need to modify the server to enable a fileLabel to be uploaded and downloaded")
+            
+            // `deletedLocally` is set to the same state as `deletedOnServer` because this is a file not yet known the local client. This just indicates that, if deleted on server already, the local client doesn't have to take any deletion actions for this file. If not deleted on the server, then the file isn't deleted locally either.
+            let entry = try DirectoryFileEntry(db: db, fileUUID: fileUUID, fileLabel: "TBD", fileGroupUUID: fileGroupUUID, fileVersion: nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, goneReason: nil)
+            try entry.insert()
+            resultEntry = entry
+        }
+        
+        return (resultEntry, markedForDeletion)
+    }
+    
     static func fileVersion(fileUUID: UUID, db: Connection) throws -> FileVersionInt? {
-        guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where:
-            fileUUID == DirectoryEntry.fileUUIDField.description) else {
+        guard let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where:
+            fileUUID == DirectoryFileEntry.fileUUIDField.description) else {
             throw DatabaseModelError.noObject
         }
         
         return entry.fileVersion
     }
-    
+
     enum UploadState {
         case v0
         case vN
@@ -215,7 +253,7 @@ extension DirectoryEntry {
         var uploadState = Set<UploadState>()
         
         for fileUUID in fileUUIDs {
-            let version = try DirectoryEntry.fileVersion(fileUUID: fileUUID, db: db)
+            let version = try DirectoryFileEntry.fileVersion(fileUUID: fileUUID, db: db)
             uploadState.insert(version == nil ? .v0 : .vN)
         }
         
@@ -225,6 +263,11 @@ extension DirectoryEntry {
         
         return uploadVersion
     }
+}
+
+/*
+extension DirectoryEntry {
+
     
     // Create a `DirectoryEntry` per file in `declaredFiles`.
     static func createEntries<FILE: DeclarableFile>(for declaredFiles: Set<FILE>, fileGroupUUID: UUID, sharingGroupUUID: UUID, db: Connection) throws {
@@ -259,51 +302,6 @@ extension DirectoryEntry {
         }
         
         return false
-    }
-    
-    // The `fileInfo` is assumed to come from the server.
-    @discardableResult
-    static func upsert(fileInfo: FileInfo, db: Connection) throws ->
-        (DirectoryEntry, markedForDeletion: Bool) {
-        
-        let resultEntry:DirectoryEntry
-        var markedForDeletion = false
-        
-        guard let fileUUIDString = fileInfo.fileUUID,
-            let fileUUID = UUID(uuidString: fileUUIDString) else {
-            throw DatabaseModelError.invalidUUID
-        }
-
-        if let entry = try DirectoryEntry.fetchSingleRow(db: db, where: DirectoryEntry.fileUUIDField.description == fileUUID) {
-            try entry.update(setters: DirectoryEntry.serverFileVersionField.description <- fileInfo.fileVersion)
-            if fileInfo.deleted && !entry.deletedOnServer {
-                // Specifically *not* changing `deletedLocallyField` because the difference between these two (i.e., deletedLocally false, and deletedOnServer true) will be used to drive local deletion for the client.
-                try entry.update(setters:
-                    DirectoryEntry.deletedOnServerField.description <- true
-                )
-                markedForDeletion = true
-            }
-            resultEntry = entry
-        }
-        else {
-            // Creation of a DirectoryEntry for a file not yet known to the local client.
-            guard let sharingGroupUUIDString = fileInfo.sharingGroupUUID,
-                let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString) else {
-                throw DatabaseModelError.invalidUUID
-            }
-            
-            guard let fileGroupUUIDString = fileInfo.fileGroupUUID,
-                let fileGroupUUID = UUID(uuidString: fileGroupUUIDString) else {
-                throw DatabaseModelError.invalidUUID
-            }
-            
-            // `deletedLocally` is set to the same state as `deletedOnServer` because this is a file not yet known the local client. This just indicates that, if deleted on server already, the local client doesn't have to take any deletion actions for this file. If not deleted on the server, then the file isn't deleted locally either.
-            let entry = try DirectoryEntry(db: db, fileUUID: fileUUID, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, fileVersion:  nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, goneReason: nil)
-            try entry.insert()
-            resultEntry = entry
-        }
-        
-        return (resultEntry, markedForDeletion)
     }
     
     // It is an error for one of the uploadables to not be in the DirectoryEntry's

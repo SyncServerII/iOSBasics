@@ -23,16 +23,18 @@ enum SyncServerError: Error {
     case fileNotDeletedOnServer
     
     case noObjectTypeForNewDeclaration
-    case unknownSharingGroup
     
     case attemptToQueueAFileThatHasNotBeenDownloaded
     case downloadingObjectAlreadyBeingDownloaded
     case downloadsDoNotHaveDistinctUUIDs
+    case noMatchingUUID
+    case matchingUUIDButNoFileLabel
     case fileNotDownloaded
     case badFileVersion
     
     case attemptToCreateExistingSharingGroup
     case sharingGroupNotFound
+    case sharingGroupDeleted
     case sharingGroupsNotFound
     
     case noCloudStorageType
@@ -41,8 +43,41 @@ enum SyncServerError: Error {
     case duplicateFileLabel
     case someFileLabelsNotInDeclaredObject
     
+    case someUploadFilesV0SomeVN
+    case noChangeResolver
+    
     static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
+        case sharingGroupDeleted:
+            guard case .sharingGroupDeleted = rhs else {
+                return false
+            }
+            return true
+            
+        case noChangeResolver:
+            guard case .noChangeResolver = rhs else {
+                return false
+            }
+            return true
+            
+        case matchingUUIDButNoFileLabel:
+            guard case .matchingUUIDButNoFileLabel = rhs else {
+                return false
+            }
+            return true
+            
+        case noMatchingUUID:
+            guard case .noMatchingUUID = rhs else {
+                return false
+            }
+            return true
+            
+        case someUploadFilesV0SomeVN:
+            guard case .someUploadFilesV0SomeVN = rhs else {
+                return false
+            }
+            return true
+            
         case someFileLabelsNotInDeclaredObject:
             guard case .someFileLabelsNotInDeclaredObject = rhs else {
                 return false
@@ -195,12 +230,6 @@ enum SyncServerError: Error {
             
         case noObjectTypeForNewDeclaration:
             guard case .noObjectTypeForNewDeclaration = rhs else {
-                return false
-            }
-            return true
-            
-        case unknownSharingGroup:
-            guard case .unknownSharingGroup = rhs else {
                 return false
             }
             return true

@@ -1,6 +1,7 @@
 
 import Foundation
 import SQLite
+import ServerShared
 
 class DirectoryObjectEntry: DatabaseModel, Equatable {
     let db: Connection
@@ -14,25 +15,38 @@ class DirectoryObjectEntry: DatabaseModel, Equatable {
     
     static let sharingGroupUUIDField = Field("sharingGroupUUID", \M.sharingGroupUUID)
     var sharingGroupUUID: UUID
-    
+
+    static let cloudStorageTypeField = Field("cloudStorageType", \M.cloudStorageType)
+    var cloudStorageType: CloudStorageType
+        
     static func == (lhs: DirectoryObjectEntry, rhs: DirectoryObjectEntry) -> Bool {
         return lhs.id == rhs.id &&
             lhs.fileGroupUUID == rhs.fileGroupUUID &&
             lhs.sharingGroupUUID == rhs.sharingGroupUUID &&
-            lhs.objectType == rhs.objectType
+            lhs.objectType == rhs.objectType &&
+            lhs.cloudStorageType == rhs.cloudStorageType
+    }
+    
+    static func == (lhs: DirectoryObjectEntry, rhs: FileInfo) -> Bool {
+        return lhs.fileGroupUUID.uuidString == rhs.fileGroupUUID &&
+            lhs.sharingGroupUUID.uuidString == rhs.sharingGroupUUID &&
+            lhs.objectType == rhs.objectType &&
+            lhs.cloudStorageType.rawValue == rhs.cloudStorageType
     }
     
     init(db: Connection,
         id: Int64! = nil,
         objectType: String,
         fileGroupUUID: UUID,
-        sharingGroupUUID: UUID) throws {
+        sharingGroupUUID: UUID,
+        cloudStorageType: CloudStorageType) throws {
         
         self.db = db
         self.id = id
         self.objectType = objectType
         self.fileGroupUUID = fileGroupUUID
         self.sharingGroupUUID = sharingGroupUUID
+        self.cloudStorageType = cloudStorageType
     }
     
     // MARK: DatabaseModel
@@ -43,6 +57,7 @@ class DirectoryObjectEntry: DatabaseModel, Equatable {
             t.column(objectTypeField.description)
             t.column(fileGroupUUIDField.description)
             t.column(sharingGroupUUIDField.description)
+            t.column(cloudStorageTypeField.description)
         }
     }
     
@@ -51,7 +66,8 @@ class DirectoryObjectEntry: DatabaseModel, Equatable {
             id: row[Self.idField.description],
             objectType: row[Self.objectTypeField.description],
             fileGroupUUID: row[Self.fileGroupUUIDField.description],
-            sharingGroupUUID: row[Self.sharingGroupUUIDField.description]
+            sharingGroupUUID: row[Self.sharingGroupUUIDField.description],
+            cloudStorageType: row[Self.cloudStorageTypeField.description]
         )
     }
     
@@ -59,7 +75,8 @@ class DirectoryObjectEntry: DatabaseModel, Equatable {
         try doInsertRow(db: db, values:
             Self.objectTypeField.description <- objectType,
             Self.fileGroupUUIDField.description <- fileGroupUUID,
-            Self.sharingGroupUUIDField.description <- sharingGroupUUID
+            Self.sharingGroupUUIDField.description <- sharingGroupUUID,
+            Self.cloudStorageTypeField.description <- cloudStorageType
         )
     }
 }
@@ -69,7 +86,7 @@ extension DirectoryObjectEntry {
         let objectEntry: DirectoryObjectEntry
         
         // All current `DirectoryFileEntry`'s for this object. i.e., for this `fileGroupUUID`.
-        let allEntries:[DirectoryFileEntry]
+        let allFileEntries:[DirectoryFileEntry]
     }
     
     static func lookup(fileGroupUUID: UUID, db: Connection) throws -> ObjectInfo? {
@@ -79,25 +96,65 @@ extension DirectoryObjectEntry {
         
         let fileEntries = try DirectoryFileEntry.fetch(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID)
         
-        return ObjectInfo(objectEntry: objectEntry, allEntries: fileEntries)
+        return ObjectInfo(objectEntry: objectEntry, allFileEntries: fileEntries)
+    }
+    
+    enum ObjectEntryType {
+        case newInstance
+        case existing(DirectoryObjectEntry)
     }
     
     // When a specific object instance is being uploaded for the first time, we need to create a new `DirectoryObjectEntry` and new `DirectoryFileEntry`'s as needed too.
-    // Throws an error if `upload.sharingGroupUUID` doesn't exist as a SharingEntry.
-    static func createNewInstance(upload: UploadableObject, objectType: DeclaredObjectModel, db: Connection) throws -> DirectoryObjectEntry {
-    
-        guard let _ = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == upload.sharingGroupUUID) else {
-            throw DatabaseModelError.invalidSharingGroupUUID
+    static func createNewInstance(upload: UploadableObject, objectType: DeclaredObjectModel, objectEntryType: ObjectEntryType, cloudStorageType: CloudStorageType, db: Connection) throws -> DirectoryObjectEntry {
+        
+        let objectEntry:DirectoryObjectEntry
+        switch objectEntryType {
+        case .existing(let existingObjectEntry):
+            objectEntry = existingObjectEntry
+        case .newInstance:
+            objectEntry = try DirectoryObjectEntry(db: db, objectType: upload.objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: upload.sharingGroupUUID, cloudStorageType: cloudStorageType)
+            try objectEntry.insert()
         }
-        
-        let objectEntry = try DirectoryObjectEntry(db: db, objectType: upload.objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: upload.sharingGroupUUID)
-        try objectEntry.insert()
-        
+
         for file in upload.uploads {
             let fileEntry = try DirectoryFileEntry(db: db, fileUUID: file.uuid, fileLabel: file.fileLabel, fileGroupUUID: upload.fileGroupUUID, fileVersion: nil, serverFileVersion: nil, deletedLocally: false, deletedOnServer: false, goneReason: nil)
             try fileEntry.insert()
         }
         
         return objectEntry
+    }
+    
+    // If the DirectoryObjectEntry exists, it much match the `FileInfo`. If it doesn't exist, it's created.
+    static func matchSert(fileInfo: FileInfo, db: Connection) throws -> DirectoryObjectEntry {
+        guard let objectType = fileInfo.objectType else {
+            throw DatabaseModelError.noObjectType
+        }
+        
+        guard let fileGroupUUIDString = fileInfo.fileGroupUUID,
+              let fileGroupUUID = UUID(uuidString: fileGroupUUIDString) else {
+            throw DatabaseModelError.invalidUUID
+        }
+        
+        guard let sharingGroupUUIDString = fileInfo.sharingGroupUUID,
+              let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString) else {
+            throw DatabaseModelError.invalidUUID
+        }
+        
+        guard let cloudStorageTypeString = fileInfo.cloudStorageType,
+            let cloudStorageType = CloudStorageType(rawValue: cloudStorageTypeString) else {
+            throw DatabaseModelError.badCloudStorageType
+        }
+        
+        if let entry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) {
+            guard entry == fileInfo else {
+                throw DatabaseModelError.notMatching
+            }
+            return entry
+        }
+        else {
+            let newEntry = try DirectoryObjectEntry(db: db, objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, cloudStorageType: cloudStorageType)
+            try newEntry.insert()
+            return newEntry
+        }
     }
 }

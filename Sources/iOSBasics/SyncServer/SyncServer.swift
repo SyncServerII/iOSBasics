@@ -102,6 +102,7 @@ public class SyncServer {
     
     // MARK: Persistent queuing for upload, download, and deletion.
     
+    // The first upload for a specific object instance (i.e., with a specific fileGroupUUID)
     // If you upload an object that has a fileGroupUUID which is already queued or in progress of uploading, your request will be queued.
     // All files that end up being uploaded in the same queued batch must either be v0 (their first upload) or vN (not their first upload). It is an error to attempt to upload v0 and vN files together in the same batch. This issue may not always be detected (i.e., an error thrown by this call). An error might instead be thrown on a subsequent call to `sync`.
     // In this last regard, it is a best practice to do a v0 upload for all files in a declared object in it's first `queue` call. This way, having both v0 and vN files in the same queued batch *cannot* occur.
@@ -112,7 +113,6 @@ public class SyncServer {
     }
 
 #if false
-    /*
     // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.
     // The files must have been uploaded by this client before, or be available because it was seen in `filesNeedingDownload`.
     // If you queue an object that has a fileGroupUUID which is already queued or in progress of downloading, your request will be queued.
@@ -123,7 +123,8 @@ public class SyncServer {
     public func queue<DECL: DeclarableObject>(deletion object: DECL) throws {
         try deleteHelper(object: object)
     }
-    
+#endif
+
     /* This performs a variety of actions:
     1) It triggers any next pending uploads. In general, after a set of uploads queued by your call(s) to the SyncServer `queue` uploads method, further uploads are not automatically initiated. It's up to the caller of this interface to call `sync` periodically to drive that. It's likely best that `sync` only be called while the app is in the foreground-- to avoid penalties (e.g., increased latencies) incurred by initating network requests, from other networking requests, while the app is in the background. Uploads are carried out using a background URLSession and so can run while the app is in the background.
     2) Triggers any next pending downloads.
@@ -139,6 +140,7 @@ public class SyncServer {
         try syncHelper(sharingGroupUUID: sharingGroupUUID)
     }
     
+#if false
     // MARK: Getting information: These are local operations that do not interact with the server.
 
     // Returns the same information as from the `downloadDeletion` delegate method-- other clients have removed these files.
@@ -165,7 +167,6 @@ public class SyncServer {
     public func markAsDownloaded<DWL: DownloadableFile>(file: DWL) throws {
         try markAsDownloadedHelper(file: file)
     }
-    */
 #endif
 
     // MARK: Sharing
@@ -177,7 +178,6 @@ public class SyncServer {
     
     // MARK: Unqueued server requests-- these will fail if they involve a file or other object currently queued for upload or deletion. They will also fail if the network is offline.
 
-#if false
     // MARK: Sharing groups
 
     public func createSharingGroup(sharingGroupUUID: UUID, sharingGroupName: String? = nil, completion:@escaping (Error?)->()) {
@@ -195,7 +195,7 @@ public class SyncServer {
             }
         }
     }
-    
+
     // Remove the current user from the sharing group.
     public func removeFromSharingGroup(sharingGroupUUID: UUID, completion:@escaping (Error?)->()) {
         removeFromSharingGroupHelper(sharingGroupUUID: sharingGroupUUID) { [weak self] error in
@@ -242,6 +242,5 @@ public class SyncServer {
             }
         }
     }
-#endif
 }
 

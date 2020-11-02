@@ -4,6 +4,7 @@ import iOSSignIn
 import ServerShared
 import iOSShared
 @testable import iOSDropbox
+import SQLite
 
 protocol ServerBasics {
 }
@@ -138,8 +139,8 @@ extension APITests where Self: XCTestCase {
         return returnResult
     }
     
-    func getUploadsResults(deferredUploadId: Int64) -> Result<DeferredUploadStatus?, Error> {
-        var theResult: Result<DeferredUploadStatus?, Error>!
+    func getUploadsResults(deferredUploadId: Int64) -> Swift.Result<DeferredUploadStatus?, Error> {
+        var theResult: Swift.Result<DeferredUploadStatus?, Error>!
         
         let exp = expectation(description: "exp")
 
@@ -187,6 +188,18 @@ extension APITests where Self: XCTestCase {
         }
         
         return status
+    }
+    
+    // Temporary until I get `sync` working again
+    func getSharingGroup(createEntry: Bool = true, db: Connection) throws -> UUID {
+        let sharingGroup = try getSharingGroupUUID()
+        
+        if createEntry {
+            let entry = try SharingEntry(db: db, permission: Permission.admin, deleted: false, sharingGroupName: nil, sharingGroupUUID: sharingGroup, sharingGroupUsers: [], cloudStorageType: CloudStorageType.Dropbox)
+            try entry.insert()
+        }
+        
+        return sharingGroup
     }
     
     func getSharingGroupUUID() throws -> UUID {

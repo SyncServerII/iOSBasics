@@ -2,9 +2,9 @@
 import Foundation
 import SQLite
 import ServerShared
+import iOSShared
 
 extension SyncServer {
-    /*
     // Operates asynchronously.
     func getIndex(sharingGroupUUID: UUID?) {
         api.index(sharingGroupUUID: sharingGroupUUID) { [weak self] result in
@@ -91,7 +91,7 @@ extension SyncServer {
         }
     }
     
-    // This has a somewhat similar effect to the preliminary part of doing a `queue` call on the SyncServer interface. It reconstructs the database records for declarations and DirectoryEntry's from the fileIndex.
+    // This has a somewhat similar effect to the preliminary part of doing a `queue` call on the SyncServer interface. It reconstructs the database DirectoryObjectEntry's and DirectoryFileEntry's from the fileIndex. All object type declarations must be done locally and previously within the app.
     // This has no effect if no elements in `fileIndex`.
     // Not private only to enable testing; otherwise, don't call this from outside of this file.
     func upsert(fileIndex: [FileInfo], sharingGroupUUID: UUID) throws {
@@ -104,7 +104,7 @@ extension SyncServer {
             throw SyncServerError.internalError("Not at least one element")
         }
         
-        try checkInvariants(fileIndex: fileIndex, sharingGroupUUID: sharingGroupUUID)
+        //try checkInvariants(fileIndex: fileIndex, sharingGroupUUID: sharingGroupUUID)
         let fileGroups = Partition.array(fileIndex, using: \.fileGroupUUID)
         
         for fileGroup in fileGroups {
@@ -116,12 +116,13 @@ extension SyncServer {
             
             // All objectTypes across the fileGroup must be either nil, or the same string value
             let objectTypes = Set<String>(fileGroup.compactMap { $0.objectType })
-            
+            var objectModel:DeclaredObjectModel?
             switch objectTypes.count {
             case 0:
-                break
+                logger.warning("No object type for fileGroup: \(String(describing: fileGroup[0].fileGroupUUID))")
             case 1:
                 objectType = objectTypes.first
+                objectModel = try DeclaredObjectModel.fetchSingleRow(db: db, where: DeclaredObjectModel.objectTypeField.description == objectType!)
             default:
                 throw SyncServerError.internalError("Not at least one element")
             }
@@ -136,20 +137,18 @@ extension SyncServer {
             guard sharingGroupUUID.uuidString == firstFile.sharingGroupUUID else {
                 throw SyncServerError.internalError("sharingGroupUUID didn't match")
             }
-                        
-            let objectBasics = ObjectBasics(fileGroupUUID: fileGroupUUID, objectType: objectType, sharingGroupUUID: sharingGroupUUID)
-            let object = try DeclaredObjectModel.upsert(object: objectBasics, db: db)
+            
+            let _ = try DirectoryObjectEntry.matchSert(fileInfo: firstFile, db: db)
             
             var deletedCount = 0
             
             for file in fileGroup {
-                try DeclaredFileModel.upsert(fileInfo: file, object: object, db: db)
-                let (entry, deleted) = try DirectoryEntry.upsert(fileInfo: file, db: db)
+                let (fileEntry, deleted) = try DirectoryFileEntry.upsert(fileInfo: file, db: db)
                 if deleted {
                     deletedCount += 1
                     delegator { [weak self] delegate in
                         guard let self = self else { return }
-                        delegate.downloadDeletion(self, details: .file(entry.fileUUID))
+                        delegate.downloadDeletion(self, details: .file(fileEntry.fileUUID))
                     }
                 }
             }
@@ -167,6 +166,7 @@ extension SyncServer {
         }
     }
     
+    /*
     private func checkInvariants(fileIndex: [FileInfo], sharingGroupUUID: UUID) throws {
         // Make sure all fileIndex's have the given sharing group.
         guard (fileIndex.filter {$0.sharingGroupUUID == sharingGroupUUID.uuidString}).count == fileIndex.count else {
@@ -188,7 +188,7 @@ extension SyncServer {
             var hasDeclaredFile = false
             var hasDeclaredObject = false
 
-            // If a fileIndex fileUUID has a DirectoryEntry, a DeclaredObjectModel, or a DeclaredFileModel then their main (static) components must not have changed.
+            // If a fileIndex fileUUID has a DirectoryFileEntry or a DirectoryObjectEntry then their main (static) components must not have changed.
             
             if let declaredObject = try DeclaredObjectModel.fetchSingleRow(db: db, where: DeclaredObjectModel.fileGroupUUIDField.description == fileGroupUUID) {
                 

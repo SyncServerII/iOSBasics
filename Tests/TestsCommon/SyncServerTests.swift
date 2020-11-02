@@ -6,7 +6,7 @@
 //
 
 import XCTest
-import iOSBasics
+@testable import iOSBasics
 import ServerShared
 import iOSShared
 
@@ -15,26 +15,7 @@ protocol SyncServerTests: TestFiles, APITests {
     var handlers: DelegateHandlers { get }
 }
 
-/*
 extension SyncServerTests where Self: XCTestCase {
-    func uploadExampleTextFile(sharingGroupUUID: UUID, localFile: URL = Self.exampleTextFileURL) throws -> ObjectDeclaration {
-        let fileUUID1 = UUID()
-        
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
-        let declarations = Set<FileDeclaration>([declaration1])
-
-        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(localFile))
-        let uploadables = Set<FileUpload>([uploadable1])
-
-        let testObject = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
-        
-        try syncServer.queue(uploads: uploadables, declaration: testObject)
-        
-        waitForUploadsToComplete(numberUploads: 1)
-        
-        return testObject
-    }
-    
     func sync(withSharingGroupUUID sharingGroupUUID: UUID? = nil) throws {
         let exp = expectation(description: "exp")
         handlers.syncCompleted = { _, result in
@@ -52,9 +33,29 @@ extension SyncServerTests where Self: XCTestCase {
         
         handlers.syncCompleted = nil
     }
+
+    func uploadExampleTextFile(sharingGroupUUID: UUID, localFile: URL = Self.exampleTextFileURL) throws -> some UploadableObject {
+        let fileUUID1 = UUID()
+        
+        // HERE
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(localFile), uuid: fileUUID1)
+        
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        try syncServer.queue(upload: upload)
+                
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        return upload
+    }
     
+    /*
     // Deletion complete with waiting for deferred part of the deletion.
-    func delete<DECL: DeclarableObject>(object: DECL) throws {
+    func delete(object: DeclarableObject) throws {
         let exp = expectation(description: "exp")
         handlers.deletionCompleted = { _ in
             logger.debug("delete: handlers.deletionCompleted")
@@ -86,6 +87,6 @@ extension SyncServerTests where Self: XCTestCase {
         }
         waitForExpectations(timeout: 10, handler: nil)
     }
+    */
 }
 
-*/

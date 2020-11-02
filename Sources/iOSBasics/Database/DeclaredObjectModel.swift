@@ -169,7 +169,7 @@ extension DeclaredObjectModel {
         }
     }
     
-    // The upload object must exist.
+    // The upload object must exist. Matches `UploadableObject` `fileLabel`'s against the `DeclaredObjectModel` `fileLabel`'s.
     static func lookup(upload: UploadableObject, db: Connection) throws -> DeclaredObjectModel {
         guard let declaredObject = try DeclaredObjectModel.fetchSingleRow(db: db,
             where: upload.objectType == DeclaredObjectModel.objectTypeField.description) else {
@@ -204,18 +204,6 @@ extension DeclaredObjectModel {
         for file in declaration.declaredFiles {
             let declared = try DeclaredFileModel(db: db, fileGroupUUID: declaration.fileGroupUUID, uuid: file.uuid, mimeType: file.mimeType, appMetaData: file.appMetaData, changeResolverName: file.changeResolverName)
             try declared.insert()
-        }
-    }
-
-    static func upsert<DECL: DeclarableObjectBasics>(object: DECL, db: Connection) throws -> DeclaredObjectModel {
-        if let entry = try DeclaredObjectModel.fetchSingleRow(db: db, where: DeclaredObjectModel.fileGroupUUIDField.description == object.fileGroupUUID) {
-            // The fields don't get updated with `DeclaredObjectModel`'s
-            return entry
-        }
-        else {
-            let entry = try DeclaredObjectModel(db: db, fileGroupUUID: object.fileGroupUUID, objectType: object.objectType, sharingGroupUUID: object.sharingGroupUUID)
-            try entry.insert()
-            return entry
         }
     }
 */

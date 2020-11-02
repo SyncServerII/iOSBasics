@@ -4,11 +4,65 @@ import ServerShared
 import iOSShared
 
 extension SyncServer {
+    private func matches(upload: UploadableObject, objectInfo: DirectoryObjectEntry.ObjectInfo) -> Bool {
+        return upload.fileGroupUUID == objectInfo.objectEntry.fileGroupUUID &&
+            upload.sharingGroupUUID == objectInfo.objectEntry.sharingGroupUUID
+    }
+    
+    // Is the fileLabel/UUID combination in the fileEntries?
+    private func fileLabelUUID(of upload: UploadableFile, in fileEntries:[DirectoryFileEntry]) throws -> DirectoryFileEntry? {
+        let filter = fileEntries.filter {$0.fileLabel == upload.fileLabel}
+        switch filter.count {
+        case 0:
+            // Before returning nil, make sure that the uuid in the upload doesn't occur in the fileEntries
+            let uuids = fileEntries.filter {$0.fileUUID == upload.uuid}
+            guard uuids.count == 0 else {
+                throw SyncServerError.matchingUUIDButNoFileLabel
+            }
+            return nil
+        case 1:
+            // Before returning this fileEntry, make sure the uuid matches that in the upload.
+            let fileEntry = filter[0]
+            guard fileEntry.fileUUID == upload.uuid else {
+                throw SyncServerError.noMatchingUUID
+            }
+            return fileEntry
+        default:
+            throw SyncServerError.tooManyObjects
+        }
+    }
+    
+    // Filters the `upload.uploads` of the passed `upload`.
+    // Returns the `UploadableFile`'s that have not yet been uploaded. Neither the uuid or the fileLabel of the returned `UploadableFile`'s have been uploaded already.
+    // For the non-returned UploadableFile`'s, they must match the fileLabel and uuid of the already uploaded file or an error is thrown.
+    private func newUploads(upload: UploadableObject, objectInfo: DirectoryObjectEntry.ObjectInfo) throws -> [UploadableFile] {
+        
+        var v0Uploads = [UploadableFile]()
+        
+        for upload in upload.uploads {
+            let fileEntry = try fileLabelUUID(of: upload, in: objectInfo.allFileEntries)
+            if fileEntry == nil {
+                // The fileLabel/UUID has not yet been uploaded.
+                v0Uploads += [upload]
+            }
+        }
+        
+        return v0Uploads
+    }
+    
     func queueHelper(upload: UploadableObject) throws {
         guard upload.uploads.count > 0 else {
             throw SyncServerError.noUploads
         }
         
+        guard let sharingEntry = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == upload.sharingGroupUUID) else {
+            throw SyncServerError.sharingGroupNotFound
+        }
+        
+        guard !sharingEntry.deleted else {
+            throw SyncServerError.sharingGroupDeleted
+        }
+
         // Make sure all files in the uploads have distinct uuid's
         guard Set<UUID>(upload.uploads.map {$0.uuid}).count == upload.uploads.count else {
             throw SyncServerError.uploadsDoNotHaveDistinctUUIDs
@@ -17,35 +71,40 @@ extension SyncServer {
         // Make sure this exact object type was registered previously
         let declaredObject = try DeclaredObjectModel.lookup(upload: upload, db: db)
 
-        if let objectEntry = try DirectoryObjectEntry.lookup(fileGroupUUID: upload.fileGroupUUID, db: db) {
-        
-            #warning("Make sure the object matches the one we're uploading. E.g., same sharing group?")
+        if let objectInfo = try DirectoryObjectEntry.lookup(fileGroupUUID: upload.fileGroupUUID, db: db) {
+            // This object instance has been uploaded before.
             
-            // This specific object has been uploaded before-- upload again.
-            try uploadExisting(upload: upload, objectModel: declaredObject, objectEntry: objectEntry)
+            objectInfo.objectEntry
+
+            guard matches(upload: upload, objectInfo: objectInfo) else {
+                throw SyncServerError.internalError("Upload did not match objectInfo")
+            }
+            
+            let v0Uploads = try newUploads(upload: upload, objectInfo: objectInfo)
+            
+            // If there is an active upload for this fileGroupUUID, then this upload will be locally queued for later processing. If there is not one, we'll trigger the upload now.
+            let activeUploadsForThisFileGroup = try UploadObjectTracker.anyUploadsWith(status: .uploading, fileGroupUUID: objectInfo.objectEntry.fileGroupUUID, db: db)
+        
+            // All files must be either v0 or vN
+            if v0Uploads.count == 0 {
+                try uploadExisting(upload: upload, objectModel: declaredObject, objectEntry: objectInfo, activeUploadsForThisFileGroup: activeUploadsForThisFileGroup)
+            }
+            else if v0Uploads.count == upload.uploads.count {
+                try uploadNew(upload: upload, objectType: declaredObject, objectEntryType: .existing(objectInfo.objectEntry), activeUploadsForThisFileGroup: activeUploadsForThisFileGroup)
+            }
+            else {
+                throw SyncServerError.someUploadFilesV0SomeVN
+            }
         }
         else {
             // This specific object has not been uploaded before-- upload for the first time.
-            try uploadNew(upload: upload, objectType: declaredObject)
+            try uploadNew(upload: upload, objectType: declaredObject, objectEntryType: .newInstance, activeUploadsForThisFileGroup: false)
         }
 
-        // Are there active uploads for this file group? Then defer. Otherwise, start it.
-        
-        // Is this the first upload for this file group?
-        
         // We should never try to upload a file that has an index (db info) from the server, but hasn't yet been downloaded. This doesn't seem to reflect a valid state: How can a user request an upload for a file they haven't yet seen?
         
-        
-
         /*
-        guard UPL.hasDistinctUUIDs(in: uploads) else {
-            throw SyncServerError.uploadsDoNotHaveDistinctUUIDs
-        }
-        
-        guard DECL.DeclaredFile.hasDistinctUUIDs(in: declaration.declaredFiles) else {
-            throw SyncServerError.declaredFilesDoNotHaveDistinctUUIDs
-        }
-        
+
         #warning("Seems like we ought to check the SharingEntry and make sure the sharing group in the declaration is not deleted")
             
         // Make sure all files in the uploads are in the declaration.
@@ -153,47 +212,59 @@ extension SyncServer {
         return (newObjectTrackerId, newObjectTracker)
     }
     
-    // This is an existing upload for the file group.
-    private func uploadExisting(upload: UploadableObject, objectModel: DeclaredObjectModel, objectEntry: DirectoryObjectEntry.ObjectInfo) throws {
+    // This is an upload for files already in the directory. i.e., a vN upload.
+    private func uploadExisting(upload: UploadableObject, objectModel: DeclaredObjectModel, objectEntry: DirectoryObjectEntry.ObjectInfo, activeUploadsForThisFileGroup: Bool) throws {
     
-        let existingFileLabels = Set<String>(objectEntry.allEntries.map {$0.fileLabel})
-        let currentUploadFileLabels = Set<String>(upload.uploads.map {$0.fileLabel})
-        
-        // All uploads need to be v0 or non-v0: Either all fileLabel's in the current upload are in the existing fileLabel's, or none of them are.
-        let allVN = existingFileLabels.union(currentUploadFileLabels).count == currentUploadFileLabels.count
-        let allV0 = existingFileLabels.intersection(currentUploadFileLabels).count == 0
-        
-        guard allVN || allV0 else {
-            throw SyncServerError.attemptToQueueUploadOfVNAndV0Files
-        }
-        
-        if allV0 {
-            // Need to make sure that all `currentUploadFileLabels` are in the DeclaredObjectModel.
-            let declarationFileLabels = Set<String>(try objectModel.getFiles().map {$0.fileLabel})
-            guard declarationFileLabels.union(currentUploadFileLabels).count == declarationFileLabels.count else {
-                throw SyncServerError.someFileLabelsNotInDeclaredObject
+        // These uploads must all have change resolvers since this is a vN upload.
+        for upload in upload.uploads {
+            let fileDeclaration = try objectModel.getFile(with: upload.fileLabel)
+            guard let _ = fileDeclaration.changeResolverName else {
+                throw SyncServerError.noChangeResolver
             }
         }
-            
-        // This is the upload of an existing file group. Are there any files currently uploading for this file group? If yes, queued for later. If yes, can trigger these now.
+        
+        // Every new upload needs new upload trackers.
+        let (_, newObjectTracker) = try createNewTrackers(fileGroupUUID: upload.fileGroupUUID, cloudStorageType: objectEntry.objectEntry.cloudStorageType, uploads: upload.uploads)
+        
+        // This is an upload for existing file instances.
+        try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- false)
+        
+        if activeUploadsForThisFileGroup {
+            delegator { [weak self] delegate in
+                guard let self = self else { return }
+                delegate.uploadQueue(self, event: .queued(fileGroupUUID: upload.fileGroupUUID))
+            }
+        } else {
+            for (index, uploadFile) in upload.uploads.enumerated() {
+                try singleUpload(objectType: objectModel, objectTracker: newObjectTracker, objectEntry: objectEntry.objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid, v0Upload: false, uploadIndex: Int32(index + 1), uploadCount: Int32(upload.uploads.count))
+            }
+        }
     }
     
-    // This is the first upload for the file group. i.e., the first upload for this specific object.
-    private func uploadNew(upload: UploadableObject, objectType: DeclaredObjectModel) throws {
-        // Need directory entries for this new specific object instance.
-        let objectEntry = try DirectoryObjectEntry.createNewInstance(upload: upload, objectType: objectType, db: db)
-        
+    // This is either the first upload for the file group. i.e., the first upload for this specific object. OR, it's the first upload for only some of the files in the file group.
+    private func uploadNew(upload: UploadableObject, objectType: DeclaredObjectModel, objectEntryType: DirectoryObjectEntry.ObjectEntryType, activeUploadsForThisFileGroup: Bool) throws {
         // The user must do at least one `sync` call prior to queuing an upload or this may throw an error.
         let cloudStorageType = try cloudStorageTypeForNewFile(sharingGroupUUID: upload.sharingGroupUUID)
+        
+        // Need directory entries for this new specific object instance.
+        let objectEntry = try DirectoryObjectEntry.createNewInstance(upload: upload, objectType: objectType, objectEntryType: objectEntryType, cloudStorageType: cloudStorageType, db: db)
         
         // Every new upload needs new upload trackers.
         let (_, newObjectTracker) = try createNewTrackers(fileGroupUUID: upload.fileGroupUUID, cloudStorageType: cloudStorageType, uploads: upload.uploads)
         
-        // Since this is the first upload for a new object instance, all uploads are v0.
+        // Since this is the first upload for a new object instance or at least for the specific files of the object, all uploads are v0.
         try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- true)
 
-        for (index, uploadFile) in upload.uploads.enumerated() {
-            try singleUpload(objectType: objectType, objectTracker: newObjectTracker, objectEntry: objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid, v0Upload: true, uploadIndex: Int32(index + 1), uploadCount: Int32(upload.uploads.count))
+        if activeUploadsForThisFileGroup {
+            delegator { [weak self] delegate in
+                guard let self = self else { return }
+                delegate.uploadQueue(self, event: .queued(fileGroupUUID: upload.fileGroupUUID))
+            }
+        }
+        else {
+            for (index, uploadFile) in upload.uploads.enumerated() {
+                try singleUpload(objectType: objectType, objectTracker: newObjectTracker, objectEntry: objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid, v0Upload: true, uploadIndex: Int32(index + 1), uploadCount: Int32(upload.uploads.count))
+            }
         }
     }
 }

@@ -13,7 +13,7 @@ extension SyncServer {
             let sharingGroups = try self.sharingGroups().filter
                 { $0.sharingGroupUUID == sharingGroupUUID}
             if sharingGroups.count == 0 {
-                throw SyncServerError.unknownSharingGroup
+                throw SyncServerError.sharingGroupNotFound
             }
             
             if sharingGroups.count > 1 {

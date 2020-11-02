@@ -9,12 +9,11 @@ import Foundation
 import SQLite
 
 extension SyncServer {
-/*
     func syncHelper(sharingGroupUUID: UUID? = nil) throws {
         getIndex(sharingGroupUUID: sharingGroupUUID)
         
         try triggerUploads()
-        try triggerDownloads()
+        // try triggerDownloads()
 
         // `checkOnDeferredUploads` and `checkOnDeferredDeletions` do networking calls *synchronously*. So run them asynchronously as to not block the caller for a long period of time.
         DispatchQueue.global().async {
@@ -27,6 +26,7 @@ extension SyncServer {
                     }
                 }
                 
+                /*
                 let count2 = try self.checkOnDeferredDeletions()
                 if count2 > 0 {
                     self.delegator { [weak self] delegate in
@@ -34,6 +34,7 @@ extension SyncServer {
                         delegate.deferredCompleted(self, operation: .deletion, numberCompleted: count2)
                     }
                 }
+                */
             } catch let error {
                 self.delegator { [weak self] delegate in
                     guard let self = self else { return }
@@ -116,5 +117,4 @@ extension SyncServer {
         
         return numberSuccessfullyCompleted
     }
-*/
 }
