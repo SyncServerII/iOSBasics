@@ -165,9 +165,13 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         
         // Wait for 2nd upload to complete.
         waitForUploadsToComplete(numberUploads: 1)
+        
+        XCTAssert(try UploadFileTracker.numberRows(db: database) == 0)
+        XCTAssert(try UploadObjectTracker.numberRows(db: database) == 0)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == 2)
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == 1)
     }
-    
-#if false
+
     func runQueueObject(fileHasBeenDeleted: Bool) throws {
         let fileUUID1 = UUID()
         let fileGroupUUID1 = UUID()
@@ -175,27 +179,27 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
-        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
-        let declarations = Set<FileDeclaration>([declaration])
-
-        let testObject = ObjectDeclaration(fileGroupUUID: fileGroupUUID1, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
             
         func object1(v0: Bool) throws {
-            let uploadables:Set<FileUpload>
+            let upload:ObjectUpload
             
             if v0 {
                 let commentFile = CommentFile()
                 let commentFileData = try commentFile.getData()
-                let uploadable = FileUpload(uuid: fileUUID1, dataSource: .data(commentFileData))
-                uploadables = Set<FileUpload>([uploadable])
+                let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID1)
+                upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
             }
             else {
                 let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
-                let uploadable = FileUpload(uuid: fileUUID1, dataSource: .data(comment.updateContents))
-                uploadables = Set<FileUpload>([uploadable])
+                let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(comment.updateContents), uuid: fileUUID1)
+                upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
             }
 
-            try syncServer.queue(uploads: uploadables, declaration: testObject)
+            try syncServer.queue(upload: upload)
         }
         
         var count = 0
@@ -206,12 +210,20 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         try object1(v0: true)
         
         if fileHasBeenDeleted {
-            guard let entry = try DirectoryEntry.fetchSingleRow(db: database, where: fileUUID1 == DirectoryEntry.fileUUIDField.description) else {
+            guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: database, where: fileUUID1 == DirectoryFileEntry.fileUUIDField.description) else {
                 throw DatabaseModelError.noObject
             }
             
-            try entry.update(setters:
-                DirectoryEntry.deletedLocallyField.description <- true
+            try fileEntry.update(setters:
+                DirectoryFileEntry.deletedLocallyField.description <- true
+            )
+            
+            guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: database, where: fileGroupUUID1 == DirectoryObjectEntry.fileGroupUUIDField.description) else {
+                throw DatabaseModelError.noObject
+            }
+            
+            try objectEntry.update(setters:
+                DirectoryObjectEntry.deletedLocallyField.description <- true
             )
         }
         
@@ -227,12 +239,17 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
             return
         }
         
+        if fileHasBeenDeleted {
+            XCTFail()
+            return
+        }
+        
         let objectCount = try DeclaredObjectModel.numberRows(db: database,
-            where: testObject.declObjectId == DeclaredObjectModel.fileGroupUUIDField.description)
+            where: objectType == DeclaredObjectModel.objectTypeField.description)
         XCTAssert(objectCount == 1)
         
-        let fileCount = try DeclaredFileModel.numberRows(db: database, where: testObject.declObjectId == DeclaredFileModel.fileGroupUUIDField.description)
-        XCTAssert(fileCount == 1)
+        let fileCount = try DirectoryFileEntry.numberRows(db: database, where: fileUUID1 == DirectoryFileEntry.fileUUIDField.description)
+        XCTAssert(fileCount == 1, "\(fileCount)")
 
         waitForUploadsToComplete(numberUploads: 1)
         XCTAssert(count == 1)
@@ -255,7 +272,8 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
 
         XCTAssert(try UploadFileTracker.numberRows(db: database) == 0)
         XCTAssert(try UploadObjectTracker.numberRows(db: database) == 0)
-        XCTAssert(try DirectoryEntry.numberRows(db: database) == 1)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == 1)
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == 1)
     }
     
     func testRunQueueObjectFileHasBeenDeletedFails() throws {
@@ -274,27 +292,27 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
-        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
-        let declarations = Set<FileDeclaration>([declaration])
-
-        let testObject = ObjectDeclaration(fileGroupUUID: fileGroupUUID1, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
             
         func object1(v0: Bool, v1Id: UUID = Foundation.UUID()) throws {
-            let uploadables:Set<FileUpload>
+            let upload:ObjectUpload
             
             if v0 {
                 let commentFile = CommentFile()
                 let commentFileData = try commentFile.getData()
-                let uploadable = FileUpload(uuid: fileUUID1, dataSource: .data(commentFileData))
-                uploadables = Set<FileUpload>([uploadable])
+                let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID1)
+                upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
             }
             else {
                 let comment = ExampleComment(messageString: "Example", id: v1Id.uuidString)
-                let uploadable = FileUpload(uuid: fileUUID1, dataSource: .data(comment.updateContents))
-                uploadables = Set<FileUpload>([uploadable])
+                let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(comment.updateContents), uuid: fileUUID1)
+                upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
             }
 
-            try syncServer.queue(uploads: uploadables, declaration: testObject)
+            try syncServer.queue(upload: upload)
         }
         
         var count = 0
@@ -309,10 +327,10 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         try object1(v0: false, v1Id: Foundation.UUID())
 
         let objectCount = try DeclaredObjectModel.numberRows(db: database,
-            where: testObject.declObjectId == DeclaredObjectModel.fileGroupUUIDField.description)
+            where: objectType == DeclaredObjectModel.objectTypeField.description)
         XCTAssert(objectCount == 1)
         
-        let fileCount = try DeclaredFileModel.numberRows(db: database, where: testObject.declObjectId == DeclaredFileModel.fileGroupUUIDField.description)
+        let fileCount = try DirectoryFileEntry.numberRows(db: database, where: fileUUID1 == DirectoryFileEntry.fileUUIDField.description)
         XCTAssert(fileCount == 1)
 
         waitForUploadsToComplete(numberUploads: 1)
@@ -352,7 +370,8 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
 
         XCTAssert(try UploadFileTracker.numberRows(db: database) == 0)
         XCTAssert(try UploadObjectTracker.numberRows(db: database) == 0)
-        XCTAssert(try DirectoryEntry.numberRows(db: database) == 1)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == 1)
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == 1)
     }
     
     func testVNAndV0UploadFails() throws {
@@ -364,53 +383,43 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         let sharingGroupUUID = try getSharingGroupUUID()
         let commentFile = CommentFile()
         
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
-        let declaration2 = FileDeclaration(uuid: fileUUID2, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
-        let declarations = Set<FileDeclaration>([declaration1, declaration2])
-
-        let testObject = ObjectDeclaration(fileGroupUUID: fileGroupUUID1, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeType: .text, changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
+        try syncServer.register(object: example)
         
         // v0 upload for fileUUID1
         let commentFileData = try commentFile.getData()
-        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .data(commentFileData))
-        let uploadables1 = Set<FileUpload>([uploadable1])
-        try syncServer.queue(uploads: uploadables1, declaration: testObject)
-
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID1)
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
+        try syncServer.queue(upload: upload)
         waitForUploadsToComplete(numberUploads: 1)
                 
         // vN + v0 upload attempt
         let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
         
         // v1
-        let uploadable2 = FileUpload(uuid: fileUUID1, dataSource: .data(comment.updateContents))
+        let file1v1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(comment.updateContents), uuid: fileUUID1)
         
         // v0
-        let uploadable3 = FileUpload(uuid: fileUUID2, dataSource: .copy(exampleTextFileURL))
-        let uploadables2 = Set<FileUpload>([uploadable2, uploadable3])
-        
+        let file2v0 = FileUpload(fileLabel: fileDeclaration2.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID2)
+
+        let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1v1, file2v0])
+
         // Fails because we're not allowing uploads of v0 and vN together within the same `queue` for the same file group.
         do {
-            try syncServer.queue(uploads: uploadables2, declaration: testObject)
-        } catch {
-            // Need to remove both of the url's for the failed uploads or the test will fail in the cleanup.
-            guard let fileTracker1 = try UploadFileTracker.fetchSingleRow(db: database, where: fileUUID1 == UploadFileTracker.fileUUIDField.description),
-                let localURL1 = fileTracker1.localURL else {
+            try syncServer.queue(upload: upload2)
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError,
+                syncServerError == SyncServerError.someUploadFilesV0SomeVN else {
                 XCTFail()
                 return
             }
-            
-            guard let fileTracker2 = try UploadFileTracker.fetchSingleRow(db: database, where: fileUUID2 == UploadFileTracker.fileUUIDField.description),
-                let localURL2 = fileTracker2.localURL else {
-                XCTFail()
-                return
-            }
-            
-            try FileManager.default.removeItem(at: localURL1)
-            try FileManager.default.removeItem(at: localURL2)
+
             return
         }
         
         XCTFail()
     }
-#endif
 }

@@ -87,8 +87,6 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             lhs.fileLabel == rhs.fileLabel
     }
     
-    /*
-    // Returns true iff the static or invariants parts of `self` and the fileInfo are the same.
     func sameInvariants(fileInfo: FileInfo) -> Bool {
         guard fileUUID.uuidString == fileInfo.fileUUID else {
             return false
@@ -97,14 +95,11 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
         guard fileGroupUUID.uuidString == fileInfo.fileGroupUUID else {
             return false
         }
-        
-        guard sharingGroupUUID.uuidString == fileInfo.sharingGroupUUID else {
-            return false
-        }
+
+        #warning("Put fileLabel in the comparison once we have it in FileInfo")
         
         return true
     }
-    */
     
     init(db: Connection,
         id: Int64! = nil,
@@ -225,7 +220,7 @@ extension DirectoryFileEntry {
             
             #warning("It seems I'll need to modify the server to enable a fileLabel to be uploaded and downloaded")
             
-            // `deletedLocally` is set to the same state as `deletedOnServer` because this is a file not yet known the local client. This just indicates that, if deleted on server already, the local client doesn't have to take any deletion actions for this file. If not deleted on the server, then the file isn't deleted locally either.
+            // `deletedLocally` is set to the same state as `deletedOnServer` because this is a file not yet known the local client. This just indicates that, if deleted on server already, the local client doesn't have to take any deletion actions for this file. If not deleted on the server, then the file isn't deleted locally either. 
             let entry = try DirectoryFileEntry(db: db, fileUUID: fileUUID, fileLabel: "TBD", fileGroupUUID: fileGroupUUID, fileVersion: nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, goneReason: nil)
             try entry.insert()
             resultEntry = entry

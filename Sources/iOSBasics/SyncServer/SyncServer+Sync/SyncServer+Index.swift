@@ -104,38 +104,33 @@ extension SyncServer {
             throw SyncServerError.internalError("Not at least one element")
         }
         
-        //try checkInvariants(fileIndex: fileIndex, sharingGroupUUID: sharingGroupUUID)
+        try checkInvariants(fileIndex: fileIndex, sharingGroupUUID: sharingGroupUUID)
         let fileGroups = Partition.array(fileIndex, using: \.fileGroupUUID)
         
         for fileGroup in fileGroups {
             guard fileGroup.count > 0 else {
                 throw SyncServerError.internalError("Not at least one element")
             }
-            
-            var objectType: String?
-            
+                        
             // All objectTypes across the fileGroup must be either nil, or the same string value
             let objectTypes = Set<String>(fileGroup.compactMap { $0.objectType })
-            var objectModel:DeclaredObjectModel?
+            
             switch objectTypes.count {
             case 0:
-                logger.warning("No object type for fileGroup: \(String(describing: fileGroup[0].fileGroupUUID))")
+                // For purposes of migration to final server we may want to weakend this, but for now, going require object types.
+                throw SyncServerError.internalError("No object type!")
             case 1:
-                objectType = objectTypes.first
-                objectModel = try DeclaredObjectModel.fetchSingleRow(db: db, where: DeclaredObjectModel.objectTypeField.description == objectType!)
+                break
             default:
                 throw SyncServerError.internalError("Not at least one element")
             }
             
             let firstFile = fileGroup[0]
             
+            // All files in fileGroup will have this fileGroupUUID due to partitioning.
             guard let fileGroupUUIDString = firstFile.fileGroupUUID,
                 let fileGroupUUID = UUID(uuidString: fileGroupUUIDString) else {
                 throw SyncServerError.internalError("Could not get fileGroupUUID field")
-            }
-            
-            guard sharingGroupUUID.uuidString == firstFile.sharingGroupUUID else {
-                throw SyncServerError.internalError("sharingGroupUUID didn't match")
             }
             
             let _ = try DirectoryObjectEntry.matchSert(fileInfo: firstFile, db: db)
@@ -166,13 +161,17 @@ extension SyncServer {
         }
     }
     
-    /*
     private func checkInvariants(fileIndex: [FileInfo], sharingGroupUUID: UUID) throws {
-        // Make sure all fileIndex's have the given sharing group.
-        guard (fileIndex.filter {$0.sharingGroupUUID == sharingGroupUUID.uuidString}).count == fileIndex.count else {
-            throw SyncServerError.internalError("Some of the files in the file index didn't have the downloaded sharing group.")
+        // All files must have the sharingGroupUUID
+        let sharingGroups = Set<String>(fileIndex.compactMap {$0.sharingGroupUUID})
+        guard sharingGroups.count == 1 else {
+            throw SyncServerError.internalError("Not just one sharing group")
         }
-
+        
+        guard sharingGroupUUID.uuidString == fileIndex[0].sharingGroupUUID else {
+            throw SyncServerError.internalError("sharingGroupUUID didn't match")
+        }
+        
         for file in fileIndex {
             guard let fileUUIDString = file.fileUUID,
                 let fileUUID = UUID(uuidString: fileUUIDString) else {
@@ -184,53 +183,50 @@ extension SyncServer {
                 throw SyncServerError.internalError("A file UUID string couldn't be converted to a UUID.")
             }
 
-            var hasDirectoryEntry = false
-            var hasDeclaredFile = false
-            var hasDeclaredObject = false
+            var hasFileEntry = false
+            var hasObjectEntry = false
 
             // If a fileIndex fileUUID has a DirectoryFileEntry or a DirectoryObjectEntry then their main (static) components must not have changed.
+            guard let objectType = file.objectType else {
+                throw SyncServerError.internalError("No object type!")
+            }
             
-            if let declaredObject = try DeclaredObjectModel.fetchSingleRow(db: db, where: DeclaredObjectModel.fileGroupUUIDField.description == fileGroupUUID) {
+            // We might want to weaken this later, but for initial testing, fail if we don't know about the declared object. One reason to weaken this later is for migration purposes. Some app instance could have been upgraded, but a current one doesn't yet know about a new object type.
+            guard let _ = try DeclaredObjectModel.fetchSingleRow(db: db, where: DeclaredObjectModel.objectTypeField.description == objectType) else {
+                throw SyncServerError.internalError("No declared object!")
+            }
+                        
+            #warning("When the server returns a file label, compare fields from FileDeclaration")
+            // declaredObject.getFile(with: file.fileLabel)
                 
-                hasDeclaredObject = true
+            if let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) {
                 
-                guard declaredObject.sameInvariants(fileInfo: file) else {
+                hasFileEntry = true
+                
+                guard fileEntry.sameInvariants(fileInfo: file) else {
                     throw SyncServerError.internalError("Invariants of a FileInfo changed.")
                 }
             }
             
-            if let entry = try DirectoryEntry.fetchSingleRow(db: db, where: DirectoryEntry.fileUUIDField.description == fileUUID) {
+            if let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) {
                 
-                hasDirectoryEntry = true
+                hasObjectEntry = true
                 
-                guard entry.sameInvariants(fileInfo: file) else {
+                guard objectEntry == file else {
                     throw SyncServerError.internalError("Invariants of a FileInfo changed.")
                 }
             }
-            
-            if let declaredFile = try DeclaredFileModel.fetchSingleRow(db: db, where: DeclaredFileModel.uuidField.description == fileUUID) {
-                
-                hasDeclaredFile = true
-                
-                guard declaredFile.sameInvariants(fileInfo: file) else {
-                    throw SyncServerError.internalError("Invariants of a FileInfo changed.")
-                }
-            }
-            
-            if hasDeclaredObject {
-                // Two possible cases with an existing declared object: Either this is a new file for the declared object (i.e., clients don't have to upload all files for a declared object at the same time), or it's known.
 
-                // Either we have both the directory entry and declared file or we have neither.
-                guard hasDirectoryEntry == hasDeclaredFile else {
-                    throw SyncServerError.internalError("Had declared object, but inconsistent state for declared file and directory entry.")
-                }
+            // Two possible cases with an existing declared object: Either this is a new file for the object (i.e., clients don't have to upload all files for a declared object at the same time), or it's known.
+            if hasObjectEntry {
+                // Either state for hasFileEntry is fine.
             }
             else {
-                guard hasDirectoryEntry == hasDeclaredFile && hasDeclaredFile == hasDeclaredObject else {
-                    throw SyncServerError.internalError("A FileInfo in the fileIndex had corrupted database objects.")
+                // Must *not* have a file entry.
+                guard !hasFileEntry else {
+                    throw SyncServerError.internalError("No object entry but have a file entry!")
                 }
             }
         }
     }
-    */
 }

@@ -18,6 +18,13 @@ class DirectoryObjectEntry: DatabaseModel, Equatable {
 
     static let cloudStorageTypeField = Field("cloudStorageType", \M.cloudStorageType)
     var cloudStorageType: CloudStorageType
+
+    // When a file group is deleted by the local client, the object is deleted along with all files.
+    static let deletedLocallyField = Field("deletedLocally", \M.deletedLocally)
+    var deletedLocally: Bool
+    
+    static let deletedOnServerField = Field("deletedOnServer", \M.deletedOnServer)
+    var deletedOnServer: Bool
         
     static func == (lhs: DirectoryObjectEntry, rhs: DirectoryObjectEntry) -> Bool {
         return lhs.id == rhs.id &&
@@ -39,7 +46,9 @@ class DirectoryObjectEntry: DatabaseModel, Equatable {
         objectType: String,
         fileGroupUUID: UUID,
         sharingGroupUUID: UUID,
-        cloudStorageType: CloudStorageType) throws {
+        cloudStorageType: CloudStorageType,
+        deletedLocally: Bool,
+        deletedOnServer: Bool) throws {
         
         self.db = db
         self.id = id
@@ -47,6 +56,8 @@ class DirectoryObjectEntry: DatabaseModel, Equatable {
         self.fileGroupUUID = fileGroupUUID
         self.sharingGroupUUID = sharingGroupUUID
         self.cloudStorageType = cloudStorageType
+        self.deletedLocally = deletedLocally
+        self.deletedOnServer = deletedOnServer
     }
     
     // MARK: DatabaseModel
@@ -55,9 +66,11 @@ class DirectoryObjectEntry: DatabaseModel, Equatable {
         try startCreateTable(db: db) { t in
             t.column(idField.description, primaryKey: true)
             t.column(objectTypeField.description)
-            t.column(fileGroupUUIDField.description)
+            t.column(fileGroupUUIDField.description, unique: true)
             t.column(sharingGroupUUIDField.description)
             t.column(cloudStorageTypeField.description)
+            t.column(deletedLocallyField.description)
+            t.column(deletedOnServerField.description)
         }
     }
     
@@ -67,7 +80,9 @@ class DirectoryObjectEntry: DatabaseModel, Equatable {
             objectType: row[Self.objectTypeField.description],
             fileGroupUUID: row[Self.fileGroupUUIDField.description],
             sharingGroupUUID: row[Self.sharingGroupUUIDField.description],
-            cloudStorageType: row[Self.cloudStorageTypeField.description]
+            cloudStorageType: row[Self.cloudStorageTypeField.description],
+            deletedLocally: row[Self.deletedLocallyField.description],
+            deletedOnServer: row[Self.deletedOnServerField.description]
         )
     }
     
@@ -76,7 +91,9 @@ class DirectoryObjectEntry: DatabaseModel, Equatable {
             Self.objectTypeField.description <- objectType,
             Self.fileGroupUUIDField.description <- fileGroupUUID,
             Self.sharingGroupUUIDField.description <- sharingGroupUUID,
-            Self.cloudStorageTypeField.description <- cloudStorageType
+            Self.cloudStorageTypeField.description <- cloudStorageType,
+            Self.deletedLocallyField.description <- deletedLocally,
+            Self.deletedOnServerField.description <- deletedOnServer
         )
     }
 }
@@ -112,7 +129,7 @@ extension DirectoryObjectEntry {
         case .existing(let existingObjectEntry):
             objectEntry = existingObjectEntry
         case .newInstance:
-            objectEntry = try DirectoryObjectEntry(db: db, objectType: upload.objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: upload.sharingGroupUUID, cloudStorageType: cloudStorageType)
+            objectEntry = try DirectoryObjectEntry(db: db, objectType: upload.objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: upload.sharingGroupUUID, cloudStorageType: cloudStorageType, deletedLocally: false, deletedOnServer: false)
             try objectEntry.insert()
         }
 
@@ -152,7 +169,7 @@ extension DirectoryObjectEntry {
             return entry
         }
         else {
-            let newEntry = try DirectoryObjectEntry(db: db, objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, cloudStorageType: cloudStorageType)
+            let newEntry = try DirectoryObjectEntry(db: db, objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, cloudStorageType: cloudStorageType, deletedLocally: false, deletedOnServer: false)
             try newEntry.insert()
             return newEntry
         }

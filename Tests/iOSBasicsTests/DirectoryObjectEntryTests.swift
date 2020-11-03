@@ -15,7 +15,7 @@ final class DirectoryObjectEntryTests: XCTestCase {
         set(logLevel: .trace)
         do {
             database = try Connection(.inMemory)
-            entry = try DirectoryObjectEntry(db: database, objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: UUID(), cloudStorageType: .Dropbox)
+            entry = try DirectoryObjectEntry(db: database, objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: UUID(), cloudStorageType: .Dropbox, deletedLocally: false, deletedOnServer: false)
         } catch {
             XCTFail()
             return
@@ -74,7 +74,7 @@ final class DirectoryObjectEntryTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileGroupUUID, the primary key.
-        let entry2 = try DirectoryObjectEntry(db: database, objectType: "Foobar2", fileGroupUUID: UUID(), sharingGroupUUID: UUID(), cloudStorageType: .Dropbox)
+        let entry2 = try DirectoryObjectEntry(db: database, objectType: "Foobar2", fileGroupUUID: UUID(), sharingGroupUUID: UUID(), cloudStorageType: .Dropbox, deletedLocally: false, deletedOnServer: false)
 
         try entry2.insert()
 

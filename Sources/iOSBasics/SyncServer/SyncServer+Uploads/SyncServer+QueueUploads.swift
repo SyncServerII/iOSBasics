@@ -74,7 +74,9 @@ extension SyncServer {
         if let objectInfo = try DirectoryObjectEntry.lookup(fileGroupUUID: upload.fileGroupUUID, db: db) {
             // This object instance has been uploaded before.
             
-            objectInfo.objectEntry
+            guard !objectInfo.objectEntry.deletedLocally && !objectInfo.objectEntry.deletedOnServer else {
+                throw SyncServerError.attemptToQueueADeletedFile
+            }
 
             guard matches(upload: upload, objectInfo: objectInfo) else {
                 throw SyncServerError.internalError("Upload did not match objectInfo")

@@ -39,30 +39,11 @@ public protocol UploadableFile: File {
 }
 
 extension UploadableFile {
-    public func compare<FILE: UploadableFile>(to other: FILE) -> Bool {
+    public func compare(to other: UploadableFile) -> Bool {
         return self.uuid == other.uuid &&
-            self.dataSource == other.dataSource
-    }
-    
-    public static func compare<FILE1: UploadableFile, FILE2: UploadableFile>(
-        first: Set<FILE1>, second: Set<FILE2>) -> Bool {
-        let firstUUIDs = Set<UUID>(first.map { $0.uuid })
-        let secondUUIDs = Set<UUID>(second.map { $0.uuid })
-        
-        guard firstUUIDs == secondUUIDs else {
-            return false
-        }
-        
-        for uuid in firstUUIDs {
-            guard let a = first.first(where: {$0.uuid == uuid}),
-                let b = second.first(where: {$0.uuid == uuid}) else {
-                return false
-            }
-            
-            return a.compare(to: b)
-        }
-        
-        return true
+            self.fileLabel == other.fileLabel &&
+            self.dataSource == other.dataSource &&
+            self.appMetaData == other.appMetaData
     }
 }
 
