@@ -143,7 +143,6 @@ extension SyncServer {
         }
     }
     
-/*
     // While a background request is a general method, we're actually only using them for upload deletions so far.
     func backgroundRequestCompletedHelper(_ delegated: AnyObject, result: Swift.Result<BackgroundRequestResult, Error>) {
 
@@ -235,7 +234,6 @@ extension SyncServer {
             reportError(error)
         }
     }
-*/
 }
 
 extension SyncServer {

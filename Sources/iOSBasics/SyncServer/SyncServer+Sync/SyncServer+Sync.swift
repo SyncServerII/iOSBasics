@@ -26,7 +26,6 @@ extension SyncServer {
                     }
                 }
                 
-                /*
                 let count2 = try self.checkOnDeferredDeletions()
                 if count2 > 0 {
                     self.delegator { [weak self] delegate in
@@ -34,7 +33,6 @@ extension SyncServer {
                         delegate.deferredCompleted(self, operation: .deletion, numberCompleted: count2)
                     }
                 }
-                */
             } catch let error {
                 self.delegator { [weak self] delegate in
                     guard let self = self else { return }

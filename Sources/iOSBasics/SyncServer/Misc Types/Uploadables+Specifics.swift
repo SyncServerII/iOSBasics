@@ -24,7 +24,7 @@ public struct ObjectUpload: UploadableObject {
     public let sharingGroupUUID: UUID
     public let uploads: [UploadableFile]
     
-    public static func ==(lhs: ObjectUpload, rhs: ObjectNeedsDownload) -> Bool {
+    public static func ==(lhs: ObjectUpload, rhs: DownloadObject) -> Bool {
         guard lhs.uploads.count == rhs.downloads.count else {
             return false
         }

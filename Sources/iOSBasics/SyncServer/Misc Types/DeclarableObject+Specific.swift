@@ -87,7 +87,7 @@ public struct ObjectToDownload: ObjectShouldBeDownloaded {
     }
 }
 
-public struct FileNeedsDownload: FileNeedingDownload {
+public struct DownloadFile: FileNeedingDownload {
     public let uuid: UUID
     public let fileVersion: FileVersionInt
     public let fileLabel: String
@@ -98,22 +98,22 @@ public struct FileNeedsDownload: FileNeedingDownload {
         self.fileLabel = fileLabel
     }
 
-    public static func ==(lhs: FileNeedsDownload, rhs: FileNeedsDownload) -> Bool {
+    public static func ==(lhs: DownloadFile, rhs: DownloadFile) -> Bool {
         return lhs.fileLabel == rhs.fileLabel &&
             lhs.uuid == rhs.uuid
     }
 
-    public static func ==(lhs: FileNeedsDownload, rhs: UploadableFile) -> Bool {
+    public static func ==(lhs: DownloadFile, rhs: UploadableFile) -> Bool {
         return lhs.fileLabel == rhs.fileLabel &&
             lhs.uuid == rhs.uuid
     }
 }
 
-public struct ObjectNeedsDownload: ObjectNeedingDownload {
+public struct DownloadObject: ObjectNeedingDownload {
     public let fileGroupUUID: UUID
-    public let downloads: [FileNeedsDownload]
+    public let downloads: [DownloadFile]
     
-    public init(fileGroupUUID: UUID, downloads: [FileNeedsDownload]) {
+    public init(fileGroupUUID: UUID, downloads: [DownloadFile]) {
         self.fileGroupUUID = fileGroupUUID
         self.downloads = downloads
     }

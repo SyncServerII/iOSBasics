@@ -4,7 +4,7 @@ import SQLite
 import ServerShared
 
 extension SyncServer {
-    func filesNeedingDownloadHelper(sharingGroupUUID: UUID) throws -> [ObjectNeedsDownload] {
+    func filesNeedingDownloadHelper(sharingGroupUUID: UUID) throws -> [DownloadObject] {
         let objectEntries = try DirectoryObjectEntry.fetch(db: db, where:
             DirectoryObjectEntry.sharingGroupUUIDField.description == sharingGroupUUID)
         guard objectEntries.count > 0 else {
@@ -26,22 +26,22 @@ extension SyncServer {
             return []
         }
         
-        var result = [ObjectNeedsDownload]()
+        var result = [DownloadObject]()
         
         let downloadGroups = Partition.array(allDownloads, using: \.fileGroupUUID)
         
         for downloadGroup in downloadGroups {
             let first = downloadGroup[0]
             
-            let fileDownloads = try downloadGroup.map { file -> FileNeedsDownload in
+            let fileDownloads = try downloadGroup.map { file -> DownloadFile in
                 guard let serverFileVersion = file.serverFileVersion else {
                     throw SyncServerError.internalError("Nil serverFileVersion")
                 }
                 
-                return FileNeedsDownload(uuid: file.fileUUID, fileVersion: serverFileVersion, fileLabel: file.fileLabel)
+                return DownloadFile(uuid: file.fileUUID, fileVersion: serverFileVersion, fileLabel: file.fileLabel)
             }
             
-            result += [ObjectNeedsDownload(fileGroupUUID: first.fileGroupUUID, downloads: fileDownloads)]
+            result += [DownloadObject(fileGroupUUID: first.fileGroupUUID, downloads: fileDownloads)]
         }
 
         return result

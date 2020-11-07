@@ -119,11 +119,9 @@ public class SyncServer {
         try queueHelper(download: download)
     }
     
-#if false
-    public func queue<DECL: DeclarableObject>(deletion object: DECL) throws {
-        try deleteHelper(object: object)
+    public func queue(deleteObject fileGroupUUID: UUID) throws {
+        try deleteHelper(object: fileGroupUUID)
     }
-#endif
 
     /* This performs a variety of actions:
     1) It triggers any next pending uploads. In general, after a set of uploads queued by your call(s) to the SyncServer `queue` uploads method, further uploads are not automatically initiated. It's up to the caller of this interface to call `sync` periodically to drive that. It's likely best that `sync` only be called while the app is in the foreground-- to avoid penalties (e.g., increased latencies) incurred by initating network requests, from other networking requests, while the app is in the background. Uploads are carried out using a background URLSession and so can run while the app is in the background.
@@ -155,7 +153,7 @@ public class SyncServer {
 #endif
 
     // The list of files returned here survive app relaunch. A given object declaration will appear at most once in the returned list.
-    public func objectsNeedingDownload(sharingGroupUUID: UUID) throws -> [ObjectNeedsDownload] {
+    public func objectsNeedingDownload(sharingGroupUUID: UUID) throws -> [DownloadObject] {
         let filtered = try sharingGroups().filter { $0.sharingGroupUUID == sharingGroupUUID }
         guard filtered.count == 1 else {
             throw SyncServerError.sharingGroupNotFound

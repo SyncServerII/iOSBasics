@@ -34,7 +34,6 @@ extension SyncServer: ServerAPIDelegate {
     }
     
     func backgroundRequestCompleted(_ delegated: AnyObject, result: Swift.Result<BackgroundRequestResult, Error>) {
-        #warning("FIX ME")
-        //backgroundRequestCompletedHelper(delegated, result: result)
+        backgroundRequestCompletedHelper(delegated, result: result)
     }
 }

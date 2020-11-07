@@ -19,7 +19,8 @@ public protocol FileNeedingDownload: FileShouldBeDownloaded {
     var fileLabel: String { get }
 }
 
-public protocol ObjectNeedingDownload: ObjectShouldBeDownloaded {
+public protocol ObjectNeedingDownload {
+    associatedtype FileDownload: FileNeedingDownload
     var fileGroupUUID: UUID {get}
     var downloads: [FileDownload] {get}
 }

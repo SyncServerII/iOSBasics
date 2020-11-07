@@ -274,7 +274,6 @@ enum SyncServerError: Error {
     }
 }
 
-/*
 extension SyncServer {
     func reportError(_ error: Error) {
         delegator { [weak self] delegate in
@@ -283,4 +282,3 @@ extension SyncServer {
         }
     }
 }
-*/

@@ -2,28 +2,29 @@
 import Foundation
 import SQLite
 
-/*
 extension SyncServer {
     // This currently only supports `deletionType` (see UploadDeletionTracker) of `fileGroupUUID`.
-    func deleteHelper<DECL: DeclarableObject>(object: DECL) throws {
-        // Ensure this DeclaredObject has been registered before.
-        let declarableObject:ObjectDeclaration = try DeclaredObjectModel.lookupDeclarableObject(fileGroupUUID: object.fileGroupUUID, db: db)
-        
-        guard declarableObject.declCompare(to: object) else {
-            throw SyncServerError.attemptToDeleteObjectWithInvalidDeclaration
+    func deleteHelper(object fileGroupUUID: UUID) throws {
+        guard let objectInfo = try DirectoryObjectEntry.lookup(fileGroupUUID: fileGroupUUID, db: db) else {
+            throw SyncServerError.noObject
         }
+        
+        guard !objectInfo.objectEntry.deletedLocally && !objectInfo.objectEntry.deletedOnServer else {
+            throw SyncServerError.attemptToDeleteAnAlreadyDeletedFile
+        }
+
+        let deletedFileEntries = objectInfo.allFileEntries.filter {$0.deletedLocally || $0.deletedOnServer}
         
         // Make sure no files deleted already.
-        let fileUUIDs = object.declaredFiles.map { $0.uuid }
-        guard !(try DirectoryEntry.anyFileIsDeleted(fileUUIDs: fileUUIDs, db: db)) else {
+        guard deletedFileEntries.count == 0 else {
             throw SyncServerError.attemptToDeleteAnAlreadyDeletedFile
         }
         
-        if let _ = try UploadDeletionTracker.fetchSingleRow(db: db, where: UploadDeletionTracker.uuidField.description == object.fileGroupUUID) {
+        if let _ = try UploadDeletionTracker.fetchSingleRow(db: db, where: UploadDeletionTracker.uuidField.description == objectInfo.objectEntry.fileGroupUUID) {
             throw SyncServerError.attemptToDeleteAnAlreadyDeletedFile
         }
         
-        let tracker = try UploadDeletionTracker(db: db, uuid: object.fileGroupUUID, deletionType: .fileGroupUUID, status: .notStarted)
+        let tracker = try UploadDeletionTracker(db: db, uuid: objectInfo.objectEntry.fileGroupUUID, deletionType: .fileGroupUUID, status: .notStarted)
         try tracker.insert()
         
         guard let trackerId = tracker.id else {
@@ -31,10 +32,10 @@ extension SyncServer {
         }
         
         let file = ServerAPI.DeletionFile.fileGroupUUID(
-            object.fileGroupUUID.uuidString)
+            objectInfo.objectEntry.fileGroupUUID.uuidString)
         
         // Queue the deletion request.
-        if let error = api.uploadDeletion(file: file, sharingGroupUUID: object.sharingGroupUUID.uuidString, trackerId: trackerId) {
+        if let error = api.uploadDeletion(file: file, sharingGroupUUID: objectInfo.objectEntry.sharingGroupUUID.uuidString, trackerId: trackerId) {
             // As with uploads and downloads, don't make this a fatal error. We can restart this later.
             delegator { [weak self] delegate in
                 guard let self = self else { return }
@@ -56,24 +57,7 @@ extension SyncServer {
                         <- .waitingForDeferredDeletion)
             }
             else {
-                guard tracker.deletionType == .fileGroupUUID else {
-                    reportError(SyncServerError.internalError("UploadDeletionTracker did not have expected fileGroupUUID type"))
-                    return
-                }
-                
-                let entries = try DirectoryEntry.fetch(db: db, where: DirectoryEntry.fileGroupUUIDField.description == tracker.uuid)
-
-                guard entries.count > 0 else {
-                    throw SyncServerError.internalError("UploadDeletionTracker did not have expected fileGroupUUID type")
-                }
-                
-                for entry in entries {
-                    try entry.update(setters: DirectoryEntry.deletedLocallyField.description <- true)
-                    try entry.update(setters: DirectoryEntry.deletedOnServerField.description <- true)
-                }
-                    
-                // Since we don't have a `deferredUploadId`, and thus can't wait for the deferred deletion, delete the tracker.
-                try tracker.delete()
+                try finishAfterDeletion(tracker: tracker) 
             }
         } catch let error {
             _ = try? tracker.update(setters:
@@ -151,19 +135,28 @@ extension SyncServer {
     
     private func finishAfterDeletion(tracker: UploadDeletionTracker) throws {
         guard tracker.deletionType == .fileGroupUUID else {
-            throw SyncServerError.internalError("Didn't have file group deletion type.")
+            reportError(SyncServerError.internalError("UploadDeletionTracker did not have expected fileGroupUUID type"))
+            return
         }
         
-        let entries = try DirectoryEntry.fetch(db: db, where:
-            DirectoryEntry.fileGroupUUIDField.description == tracker.uuid)
-        for entry in entries {
-            // Deletion commanded locally-- mark both flags as true.
-            try entry.update(setters:
-                DirectoryEntry.deletedLocallyField.description <- true,
-                DirectoryEntry.deletedOnServerField.description <- true)
+        let fileEntries = try DirectoryFileEntry.fetch(db: db, where: DirectoryFileEntry.fileGroupUUIDField.description == tracker.uuid)
+        guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == tracker.uuid) else {
+            throw SyncServerError.internalError("Could not find DirectoryObjectEntry")
+        }
+
+        guard fileEntries.count > 0 else {
+            throw SyncServerError.internalError("UploadDeletionTracker did not have expected fileGroupUUID type")
         }
         
+        for entry in fileEntries {
+            try entry.update(setters: DirectoryFileEntry.deletedLocallyField.description <- true,
+                DirectoryFileEntry.deletedOnServerField.description <- true)
+        }
+        
+        try objectEntry.update(setters: DirectoryObjectEntry.deletedLocallyField.description <- true,
+            DirectoryObjectEntry.deletedOnServerField.description <- true)
+            
+        // Since we don't have a `deferredUploadId`, and thus can't wait for the deferred deletion, delete the tracker.
         try tracker.delete()
     }
 }
-*/
