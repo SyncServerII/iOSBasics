@@ -3,55 +3,52 @@ import Foundation
 import SQLite
 import ServerShared
 
-/*
 extension SyncServer {
-    func filesNeedingDownloadHelper(sharingGroupUUID: UUID) throws -> [(ObjectDeclaration, Set<FileDownload>)] {
-    
-        let entries = try DirectoryEntry.fetch(db: db, where:
-            DirectoryEntry.sharingGroupUUIDField.description == sharingGroupUUID)
-        guard entries.count > 0 else {
+    func filesNeedingDownloadHelper(sharingGroupUUID: UUID) throws -> [ObjectNeedsDownload] {
+        let objectEntries = try DirectoryObjectEntry.fetch(db: db, where:
+            DirectoryObjectEntry.sharingGroupUUIDField.description == sharingGroupUUID)
+        guard objectEntries.count > 0 else {
             return []
         }
         
-        let download = entries.filter { $0.fileState == .needsDownload }
+        var allDownloads = [DirectoryFileEntry]()
         
-        guard download.count > 0 else {
-            // This is *not* an error case. There can be DirectoryEntry's, but that don't indicate a need for downloading.
+        let fileGroupUUIDs = objectEntries.map {$0.fileGroupUUID}
+        for fileGroupUUID in fileGroupUUIDs {
+            let fileEntries = try DirectoryFileEntry.fetch(db: db, where:
+                DirectoryFileEntry.fileGroupUUIDField.description == fileGroupUUID)
+            let downloads = fileEntries.filter { $0.fileState == .needsDownload }
+            allDownloads += downloads
+        }
+
+        guard allDownloads.count > 0 else {
+            // This is *not* an error case. There can be DirectoryFileEntry's, but that don't indicate a need for downloading.
             return []
         }
         
-        var result = [(ObjectDeclaration, Set<FileDownload>)]()
+        var result = [ObjectNeedsDownload]()
         
-        let downloadGroups = Partition.array(download, using: \.fileGroupUUID)
+        let downloadGroups = Partition.array(allDownloads, using: \.fileGroupUUID)
         
         for downloadGroup in downloadGroups {
             let first = downloadGroup[0]
-            let declaredObject:ObjectDeclaration = try DeclaredObjectModel.lookupDeclarableObject(fileGroupUUID: first.fileGroupUUID, db: db)
             
-            var downloads = Set<FileDownload>()
-            for entry in downloadGroup {
-                guard let serverFileVersion = entry.serverFileVersion else {
+            let fileDownloads = try downloadGroup.map { file -> FileNeedsDownload in
+                guard let serverFileVersion = file.serverFileVersion else {
                     throw SyncServerError.internalError("Nil serverFileVersion")
                 }
                 
-                let download = FileDownload(uuid: entry.fileUUID, fileVersion: serverFileVersion)
-                downloads.insert(download)
+                return FileNeedsDownload(uuid: file.fileUUID, fileVersion: serverFileVersion, fileLabel: file.fileLabel)
             }
             
-            let declaredFiles = Set<FileDeclaration>(declaredObject.declaredFiles.map {
-                return FileDeclaration(uuid: $0.uuid, mimeType: $0.mimeType, appMetaData: $0.appMetaData, changeResolverName: $0.changeResolverName)
-            })
-            
-            let declaration = ObjectDeclaration(fileGroupUUID: declaredObject.fileGroupUUID, objectType: declaredObject.objectType, sharingGroupUUID: declaredObject.sharingGroupUUID, declaredFiles: declaredFiles)
-            
-            result += [(declaration, downloads)]
+            result += [ObjectNeedsDownload(fileGroupUUID: first.fileGroupUUID, downloads: fileDownloads)]
         }
 
         return result
     }
     
-    func markAsDownloadedHelper<DWL: DownloadableFile>(file: DWL) throws {
-        guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where: DirectoryEntry.fileUUIDField.description == file.uuid) else {
+    func markAsDownloadedHelper<DWL: FileShouldBeDownloaded>(file: DWL) throws {
+        guard let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == file.uuid) else {
             throw SyncServerError.noObject
         }
         
@@ -64,7 +61,7 @@ extension SyncServer {
         }
         
         try entry.update(setters:
-            DirectoryEntry.fileVersionField.description <- file.fileVersion)
+            DirectoryFileEntry.fileVersionField.description <- file.fileVersion)
     }
 }
 
@@ -73,4 +70,4 @@ extension UUID: Comparable {
         return lhs.uuidString < rhs.uuidString
     }
 }
-*/
+

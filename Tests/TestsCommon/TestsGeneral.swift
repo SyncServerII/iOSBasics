@@ -247,6 +247,9 @@ extension APITests where Self: XCTestCase {
         }
         
         waitForExpectations(timeout: 10, handler: nil)
+        
+        handlers.extras.uploadCompleted = nil
+        handlers.error = nil
     }
     
     func waitForDownloadsToComplete(numberExpected: UInt, expectedResult: URL? = nil) {

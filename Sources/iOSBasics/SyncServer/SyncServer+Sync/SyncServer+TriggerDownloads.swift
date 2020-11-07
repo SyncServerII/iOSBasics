@@ -1,7 +1,7 @@
 import Foundation
+import SQLite
 
 extension SyncServer {
-/*
     // Re-check of queued downloads.
     func triggerDownloads() throws {
         let notStartedDownloads = try DownloadObjectTracker.allDownloadsWith(status: .notStarted, db: db)
@@ -43,14 +43,16 @@ extension SyncServer {
         // Now can actually trigger the downloads.
         
         for downloadObject in toTrigger {
-            let declaredObject:ObjectDeclaration = try DeclaredObjectModel.lookupDeclarableObject(fileGroupUUID: downloadObject.object.fileGroupUUID, db: db)
+            guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == downloadObject.object.fileGroupUUID) else {
+                throw SyncServerError.internalError("Could not get DirectoryObjectEntry")
+            }
             
             guard let objectId = downloadObject.object.id else {
                 throw SyncServerError.internalError("Could not get object id")
             }
             
             for file in downloadObject.files {
-                try singleDownload(fileUUID: file.fileUUID, fileVersion: file.fileVersion, tracker: file, objectTrackerId: objectId, sharingGroupUUID: declaredObject.sharingGroupUUID)
+                try singleDownload(fileUUID: file.fileUUID, fileVersion: file.fileVersion, tracker: file, objectTrackerId: objectId, sharingGroupUUID: objectEntry.sharingGroupUUID)
             }
         }
         
@@ -59,5 +61,4 @@ extension SyncServer {
             delegate.downloadQueue(self, event: .sync(numberDownloadsStarted: UInt(toTrigger.count)))
         }
     }
-    */
 }

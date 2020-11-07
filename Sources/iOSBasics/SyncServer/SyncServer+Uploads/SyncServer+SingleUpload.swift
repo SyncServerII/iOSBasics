@@ -37,7 +37,7 @@ extension SyncServer {
             }
                         
             let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: objectTracker.fileGroupUUID, objectType: objectType.objectType)
-            fileVersion = .v0(url: localURL, mimeType: fileDeclaration.mimeType, checkSum: checkSum, changeResolverName: fileDeclaration.changeResolverName, fileGroup: fileGroup, appMetaData: appMetaData)
+            fileVersion = .v0(url: localURL, mimeType: fileDeclaration.mimeType, checkSum: checkSum, changeResolverName: fileDeclaration.changeResolverName, fileGroup: fileGroup, appMetaData: appMetaData, fileLabel: fileDeclaration.fileLabel)
         }
         else {
             fileVersion = .vN(url: localURL)

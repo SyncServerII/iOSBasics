@@ -96,8 +96,10 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             return false
         }
 
-        #warning("Put fileLabel in the comparison once we have it in FileInfo")
-        
+        guard fileLabel == fileInfo.fileLabel else {
+            return false
+        }
+                
         return true
     }
     
@@ -218,10 +220,12 @@ extension DirectoryFileEntry {
                 throw DatabaseModelError.invalidUUID
             }
             
-            #warning("It seems I'll need to modify the server to enable a fileLabel to be uploaded and downloaded")
+            guard let fileLabel = fileInfo.fileLabel else {
+                throw DatabaseModelError.noFileLabel
+            }
             
             // `deletedLocally` is set to the same state as `deletedOnServer` because this is a file not yet known the local client. This just indicates that, if deleted on server already, the local client doesn't have to take any deletion actions for this file. If not deleted on the server, then the file isn't deleted locally either. 
-            let entry = try DirectoryFileEntry(db: db, fileUUID: fileUUID, fileLabel: "TBD", fileGroupUUID: fileGroupUUID, fileVersion: nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, goneReason: nil)
+            let entry = try DirectoryFileEntry(db: db, fileUUID: fileUUID, fileLabel: fileLabel, fileGroupUUID: fileGroupUUID, fileVersion: nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, goneReason: nil)
             try entry.insert()
             resultEntry = entry
         }
@@ -258,6 +262,20 @@ extension DirectoryFileEntry {
         
         return uploadVersion
     }
+    
+    static func anyFileIsDeleted(fileUUIDs: [UUID], db: Connection) throws -> Bool {
+        for fileUUID in fileUUIDs {
+            guard let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where: fileUUID == DirectoryFileEntry.fileUUIDField.description) else {
+                throw DatabaseModelError.noObject
+            }
+            
+            if entry.deletedLocally || entry.deletedOnServer {
+                return true
+            }
+        }
+        
+        return false
+    }
 }
 
 /*
@@ -283,20 +301,6 @@ extension DirectoryEntry {
         }
         
         return true
-    }
-    
-    static func anyFileIsDeleted(fileUUIDs: [UUID], db: Connection) throws -> Bool {
-        for fileUUID in fileUUIDs {
-            guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where: fileUUID == DirectoryEntry.fileUUIDField.description) else {
-                throw DatabaseModelError.noObject
-            }
-            
-            if entry.deletedLocally || entry.deletedOnServer {
-                return true
-            }
-        }
-        
-        return false
     }
     
     // It is an error for one of the uploadables to not be in the DirectoryEntry's

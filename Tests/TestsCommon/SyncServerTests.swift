@@ -37,7 +37,6 @@ extension SyncServerTests where Self: XCTestCase {
     func uploadExampleTextFile(sharingGroupUUID: UUID, localFile: URL = Self.exampleTextFileURL) throws -> some UploadableObject {
         let fileUUID1 = UUID()
         
-        // HERE
         let objectType = "Foo"
         let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])

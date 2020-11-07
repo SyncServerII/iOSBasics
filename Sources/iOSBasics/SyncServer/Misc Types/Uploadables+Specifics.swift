@@ -15,7 +15,7 @@ public struct FileUpload: UploadableFile {
     }
 }
 
-public struct ObjectUpload: UploadableObject {    
+public struct ObjectUpload: UploadableObject {
     public let objectType: String
     
     // This identifies the specific object instance.
@@ -23,4 +23,27 @@ public struct ObjectUpload: UploadableObject {
     
     public let sharingGroupUUID: UUID
     public let uploads: [UploadableFile]
+    
+    public static func ==(lhs: ObjectUpload, rhs: ObjectNeedsDownload) -> Bool {
+        guard lhs.uploads.count == rhs.downloads.count else {
+            return false
+        }
+        
+        // Sort the uploads and downloads to get them in cannonical order.
+        let uploads = lhs.uploads.sorted { (f1, f2) -> Bool in
+            return f1.fileLabel < f2.fileLabel
+        }
+        
+        let downloads = rhs.downloads.sorted { (f1, f2) -> Bool in
+            return f1.fileLabel < f2.fileLabel
+        }
+        
+        for (upload, download) in zip(uploads, downloads) {
+            guard download == upload else {
+                return false
+            }
+        }
+        
+        return lhs.fileGroupUUID == rhs.fileGroupUUID
+    }
 }

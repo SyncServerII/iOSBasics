@@ -59,7 +59,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         let commentDataURL1 = try FileUtils.copyDataToNewTemporary(data: commentFileData, config: config)
 
         let file1 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, version:
-            .v0(url: commentDataURL1, mimeType: MimeType.text, checkSum: dropboxCheckSum, changeResolverName: changeResolverName, fileGroup: nil, appMetaData: nil)
+            .v0(url: commentDataURL1, mimeType: MimeType.text, checkSum: dropboxCheckSum, changeResolverName: changeResolverName, fileGroup: nil, appMetaData: nil, fileLabel: UUID().uuidString)
         )
         
         guard let uploadResult1 = uploadFile(file: file1, uploadIndex: 1, uploadCount: 1) else {

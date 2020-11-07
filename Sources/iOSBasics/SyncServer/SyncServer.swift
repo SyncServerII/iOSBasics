@@ -112,14 +112,14 @@ public class SyncServer {
         try queueHelper(upload: upload)
     }
 
-#if false
     // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.
     // The files must have been uploaded by this client before, or be available because it was seen in `filesNeedingDownload`.
     // If you queue an object that has a fileGroupUUID which is already queued or in progress of downloading, your request will be queued.
-    func queue<DECL: DeclarableObject, DWL: DownloadableFile>(downloads: Set<DWL>, declaration: DECL) throws {
-        try queueHelper(downloads: downloads, declaration: declaration)
+    func queue<DWL: ObjectShouldBeDownloaded>(download: DWL) throws {
+        try queueHelper(download: download)
     }
     
+#if false
     public func queue<DECL: DeclarableObject>(deletion object: DECL) throws {
         try deleteHelper(object: object)
     }
@@ -152,22 +152,22 @@ public class SyncServer {
     public func markAsDeleted<DECL: DeclarableObject>(object: DECL) throws {
         try objectDeletedHelper(object: object)
     }
-        
+#endif
+
     // The list of files returned here survive app relaunch. A given object declaration will appear at most once in the returned list.
-    public func filesNeedingDownload(sharingGroupUUID: UUID) throws -> [(declaration: ObjectDeclaration, downloads: Set<FileDownload>)] {
+    public func objectsNeedingDownload(sharingGroupUUID: UUID) throws -> [ObjectNeedsDownload] {
         let filtered = try sharingGroups().filter { $0.sharingGroupUUID == sharingGroupUUID }
         guard filtered.count == 1 else {
-            throw SyncServerError.unknownSharingGroup
+            throw SyncServerError.sharingGroupNotFound
         }
         
         return try filesNeedingDownloadHelper(sharingGroupUUID: sharingGroupUUID)
     }
-    
+
     // Call this method so that, after you download a file, it doesn't appear again in `filesNeedingDownload` (for that file version).
-    public func markAsDownloaded<DWL: DownloadableFile>(file: DWL) throws {
+    public func markAsDownloaded<DWL: FileShouldBeDownloaded>(file: DWL) throws {
         try markAsDownloadedHelper(file: file)
     }
-#endif
 
     // MARK: Sharing
     

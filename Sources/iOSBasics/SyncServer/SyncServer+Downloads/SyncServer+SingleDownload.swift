@@ -10,7 +10,6 @@ import iOSShared
 import SQLite
 import ServerShared
 
-/*
 extension SyncServer {
     func singleDownload(fileUUID: UUID, fileVersion: FileVersionInt, tracker: DownloadFileTracker, objectTrackerId: Int64, sharingGroupUUID: UUID) throws {
         let file = FileObject(fileUUID: fileUUID.uuidString, fileVersion: fileVersion, trackerId: objectTrackerId)
@@ -27,4 +26,3 @@ extension SyncServer {
         }
     }
 }
-*/

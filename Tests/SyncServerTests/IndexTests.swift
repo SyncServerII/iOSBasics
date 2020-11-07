@@ -181,7 +181,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
         waitForExpectations(timeout: 10, handler: nil)
     }
     
-    #warning("FIXME")
+    #warning("FIXME-- when we have deletions working")
     /*
     func testMakeSureIndexUpdateForDeletedObjectHasDeletionFail() throws {
         try self.sync()

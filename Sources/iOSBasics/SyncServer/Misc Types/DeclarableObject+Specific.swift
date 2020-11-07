@@ -18,6 +18,12 @@ public struct FileDeclaration: DeclarableFile, Codable, Hashable {
         self.mimeType = mimeType
         self.changeResolverName = changeResolverName
     }
+    
+    public static func == (lhs: FileDeclaration, rhs: FileInfo) -> Bool {
+        return lhs.fileLabel == rhs.fileLabel &&
+            lhs.mimeType.rawValue == rhs.mimeType &&
+            lhs.changeResolverName == rhs.changeResolverName
+    }
 }
 
 /*
@@ -54,8 +60,9 @@ struct ObjectBasics: DeclarableObjectBasics {
     let objectType: String?
     let sharingGroupUUID: UUID
 }
+*/
 
-public struct FileDownload: DownloadableFile {
+public struct FileToDownload: FileShouldBeDownloaded {
     public let uuid: UUID
     public let fileVersion: FileVersionInt
     
@@ -63,8 +70,54 @@ public struct FileDownload: DownloadableFile {
         self.uuid = uuid
         self.fileVersion = fileVersion
     }
+
+    public static func ==(lhs: FileToDownload, rhs: FileToDownload) -> Bool {
+        return lhs.uuid == rhs.uuid &&
+            lhs.fileVersion == rhs.fileVersion
+    }
 }
-*/
+
+public struct ObjectToDownload: ObjectShouldBeDownloaded {
+    public let fileGroupUUID: UUID
+    public let downloads: [FileToDownload]
+    
+    public init(fileGroupUUID: UUID, downloads: [FileDownload]) {
+        self.fileGroupUUID = fileGroupUUID
+        self.downloads = downloads
+    }
+}
+
+public struct FileNeedsDownload: FileNeedingDownload {
+    public let uuid: UUID
+    public let fileVersion: FileVersionInt
+    public let fileLabel: String
+    
+    public init(uuid: UUID, fileVersion: FileVersionInt, fileLabel: String) {
+        self.uuid = uuid
+        self.fileVersion = fileVersion
+        self.fileLabel = fileLabel
+    }
+
+    public static func ==(lhs: FileNeedsDownload, rhs: FileNeedsDownload) -> Bool {
+        return lhs.fileLabel == rhs.fileLabel &&
+            lhs.uuid == rhs.uuid
+    }
+
+    public static func ==(lhs: FileNeedsDownload, rhs: UploadableFile) -> Bool {
+        return lhs.fileLabel == rhs.fileLabel &&
+            lhs.uuid == rhs.uuid
+    }
+}
+
+public struct ObjectNeedsDownload: ObjectNeedingDownload {
+    public let fileGroupUUID: UUID
+    public let downloads: [FileNeedsDownload]
+    
+    public init(fileGroupUUID: UUID, downloads: [FileNeedsDownload]) {
+        self.fileGroupUUID = fileGroupUUID
+        self.downloads = downloads
+    }
+}
 
 public struct ObjectDeclaration: DeclarableObject {
     // The type of object that this collection of files is representing.

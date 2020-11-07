@@ -101,7 +101,7 @@ extension SyncServer {
         
         // Each FileInfo must have a fileUUID and each fileUUID must be distinct.
         guard Set<String>(fileIndex.compactMap {$0.fileUUID}).count == fileIndex.count else {
-            throw SyncServerError.internalError("Not at least one element")
+            throw SyncServerError.internalError("fileUUID's were not distinct.")
         }
         
         try checkInvariants(fileIndex: fileIndex, sharingGroupUUID: sharingGroupUUID)
@@ -122,7 +122,7 @@ extension SyncServer {
             case 1:
                 break
             default:
-                throw SyncServerError.internalError("Not at least one element")
+                throw SyncServerError.internalError("Not one object type")
             }
             
             let firstFile = fileGroup[0]
@@ -192,13 +192,20 @@ extension SyncServer {
             }
             
             // We might want to weaken this later, but for initial testing, fail if we don't know about the declared object. One reason to weaken this later is for migration purposes. Some app instance could have been upgraded, but a current one doesn't yet know about a new object type.
-            guard let _ = try DeclaredObjectModel.fetchSingleRow(db: db, where: DeclaredObjectModel.objectTypeField.description == objectType) else {
+            guard let declaredObject = try DeclaredObjectModel.fetchSingleRow(db: db, where: DeclaredObjectModel.objectTypeField.description == objectType) else {
                 throw SyncServerError.internalError("No declared object!")
             }
-                        
-            #warning("When the server returns a file label, compare fields from FileDeclaration")
-            // declaredObject.getFile(with: file.fileLabel)
-                
+            
+            guard let fileLabel = file.fileLabel else {
+                throw SyncServerError.internalError("No fileLabel")
+            }
+
+            let fileDeclaration:FileDeclaration = try declaredObject.getFile(with: fileLabel)
+            
+            guard fileDeclaration == file else {
+                throw SyncServerError.internalError("FileDeclaration not the same as FileInfo")
+            }
+            
             if let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) {
                 
                 hasFileEntry = true

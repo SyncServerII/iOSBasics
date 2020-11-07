@@ -18,6 +18,6 @@ struct FileObject: Filenaming {
     let fileUUID: String!
     let fileVersion: FileVersionInt!
     
-    // A SQLLite id for the tracker object.
+    // A SQLLite id for the tracker object. i.e., for the DownloadObjectTracker
     let trackerId: Int64
 }

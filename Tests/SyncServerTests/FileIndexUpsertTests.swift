@@ -40,7 +40,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         try syncServer.upsert(fileIndex: [], sharingGroupUUID: UUID())
     }
     
-    func createFileInfo(fileUUID: UUID, fileGroupUUID:UUID, sharingGroupUUID:UUID, mimeType: MimeType, deleted: Bool, fileVersion: FileVersionInt, cloudStorageType: CloudStorageType, objectType: String) -> FileInfo {
+    func createFileInfo(fileUUID: UUID, fileGroupUUID:UUID, sharingGroupUUID:UUID, mimeType: MimeType, deleted: Bool, fileVersion: FileVersionInt, cloudStorageType: CloudStorageType, objectType: String, fileLabel: String) -> FileInfo {
     
         let fileInfo = FileInfo()
         fileInfo.fileUUID = fileUUID.uuidString
@@ -51,6 +51,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         fileInfo.fileVersion = fileVersion
         fileInfo.cloudStorageType = cloudStorageType.rawValue
         fileInfo.objectType = objectType
+        fileInfo.fileLabel = fileLabel
         
         return fileInfo
     }
@@ -77,7 +78,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let objectEntry = try DirectoryObjectEntry(db: database, objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: fileInfoSharingGroupUUID, cloudStorageType: cloudStorageType, deletedLocally: false, deletedOnServer: false)
         try objectEntry.insert()
         
-        let fileInfo = createFileInfo(fileUUID: UUID(), fileGroupUUID: UUID(), sharingGroupUUID: fileInfoSharingGroupUUID, mimeType: .text, deleted: true, fileVersion: 0, cloudStorageType: cloudStorageType, objectType: "Foo")
+        let fileInfo = createFileInfo(fileUUID: UUID(), fileGroupUUID: UUID(), sharingGroupUUID: fileInfoSharingGroupUUID, mimeType: .text, deleted: true, fileVersion: 0, cloudStorageType: cloudStorageType, objectType: "Foo", fileLabel: fileDeclaration.fileLabel)
         
         do {
             try syncServer.upsert(fileIndex: [fileInfo], sharingGroupUUID: sharingGroupUUID)
@@ -112,7 +113,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let declaredObject = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration])
         try declaredObject.insert()
         
-        let fileInfo = createFileInfo(fileUUID: fileUUID, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: true, fileVersion: 0, cloudStorageType: .Dropbox, objectType: objectType)
+        let fileInfo = createFileInfo(fileUUID: fileUUID, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: true, fileVersion: 0, cloudStorageType: .Dropbox, objectType: objectType, fileLabel: fileDeclaration.fileLabel)
         
         try syncServer.upsert(fileIndex: [fileInfo], sharingGroupUUID: sharingGroupUUID)
         
@@ -143,61 +144,58 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         XCTAssert(objectEntry.deletedOnServer == false)
     }
     
-#if false
     func testKnownFileInfoDoesNotAddOrChangeDatabaseRecords() throws {
         let sharingGroupUUID = UUID()
         let fileUUID = UUID()
         let fileGroupUUID = UUID()
+        let objectType = "Foo"
         
-        let fileInfo = createFileInfo(fileUUID: fileUUID, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: true, fileVersion: 0, cloudStorageType: .Dropbox, objectType: "Foo")
+        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let declaredObject = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration])
+        try declaredObject.insert()
+        
+        let fileInfo = createFileInfo(fileUUID: fileUUID, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: true, fileVersion: 0, cloudStorageType: .Dropbox, objectType: objectType, fileLabel: fileDeclaration.fileLabel)
         
         try syncServer.upsert(fileIndex: [fileInfo], sharingGroupUUID: sharingGroupUUID)
-        
-        guard let directoryEntry = try DirectoryEntry.fetchSingleRow(db: database, where: DirectoryEntry.fileUUIDField.description == fileUUID) else {
-            XCTFail()
-            return
-        }
-        
-        guard let declaredFile = try DeclaredFileModel.fetchSingleRow(db: database, where: DeclaredFileModel.uuidField.description == fileUUID) else {
-            XCTFail()
-            return
-        }
 
-        guard let declaredObject = try DeclaredObjectModel.fetchSingleRow(db: database, where: DeclaredObjectModel.fileGroupUUIDField.description == fileGroupUUID) else {
+        guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: database, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) else {
             XCTFail()
             return
         }
         
-        XCTAssert(try DirectoryEntry.numberRows(db: database) == 1)
+        guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: database, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == 1)
         XCTAssert(try DeclaredObjectModel.numberRows(db: database) == 1)
-        XCTAssert(try DeclaredFileModel.numberRows(db: database) == 1)
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == 1)
         
         // This simulates a second server `index` call for the same sharing group. It should not alter the database.
         try syncServer.upsert(fileIndex: [fileInfo], sharingGroupUUID: sharingGroupUUID)
 
-        XCTAssert(try DirectoryEntry.numberRows(db: database) == 1)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == 1)
         XCTAssert(try DeclaredObjectModel.numberRows(db: database) == 1)
-        XCTAssert(try DeclaredFileModel.numberRows(db: database) == 1)
-        
-        guard let directoryEntry2 = try DirectoryEntry.fetchSingleRow(db: database, where: DirectoryEntry.fileUUIDField.description == fileUUID) else {
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == 1)
+
+        guard let fileEntry2 = try DirectoryFileEntry.fetchSingleRow(db: database, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) else {
             XCTFail()
             return
         }
         
-        XCTAssert(directoryEntry == directoryEntry2)
-        
-        guard let declaredFile2 = try DeclaredFileModel.fetchSingleRow(db: database, where: DeclaredFileModel.uuidField.description == fileUUID) else {
+        guard let objectEntry2 = try DirectoryObjectEntry.fetchSingleRow(db: database, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) else {
             XCTFail()
             return
         }
         
-        XCTAssert(declaredFile == declaredFile2)
-        
-        guard let declaredObject2 = try DeclaredObjectModel.fetchSingleRow(db: database, where: DeclaredObjectModel.fileGroupUUIDField.description == fileGroupUUID) else {
+        guard let declaredObject2 = try DeclaredObjectModel.fetchSingleRow(db: database, where: DeclaredObjectModel.objectTypeField.description == objectType) else {
             XCTFail()
             return
         }
         
+        XCTAssert(fileEntry == fileEntry2)
+        XCTAssert(objectEntry == objectEntry2)
         XCTAssert(declaredObject == declaredObject2)
     }
     
@@ -205,29 +203,29 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let sharingGroupUUID = UUID()
         let fileUUID = UUID()
         let fileGroupUUID = UUID()
+        let objectType = "Foo"
         
-        let fileInfo = createFileInfo(fileUUID: fileUUID, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: false, fileVersion: 0, cloudStorageType: .Dropbox, objectType: "Foo")
+        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let declaredObject = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration])
+        try declaredObject.insert()
+        
+        let fileInfo = createFileInfo(fileUUID: fileUUID, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: false, fileVersion: 0, cloudStorageType: .Dropbox, objectType: objectType, fileLabel: fileDeclaration.fileLabel)
         
         try syncServer.upsert(fileIndex: [fileInfo], sharingGroupUUID: sharingGroupUUID)
         
-        guard let directoryEntry = try DirectoryEntry.fetchSingleRow(db: database, where: DirectoryEntry.fileUUIDField.description == fileUUID) else {
+        guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: database, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) else {
             XCTFail()
             return
         }
         
-        guard let declaredFile = try DeclaredFileModel.fetchSingleRow(db: database, where: DeclaredFileModel.uuidField.description == fileUUID) else {
-            XCTFail()
-            return
-        }
-
-        guard let declaredObject = try DeclaredObjectModel.fetchSingleRow(db: database, where: DeclaredObjectModel.fileGroupUUIDField.description == fileGroupUUID) else {
+        guard let declaredObject2 = try DeclaredObjectModel.fetchSingleRow(db: database, where: DeclaredObjectModel.objectTypeField.description == objectType) else {
             XCTFail()
             return
         }
         
-        XCTAssert(try DirectoryEntry.numberRows(db: database) == 1)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == 1)
         XCTAssert(try DeclaredObjectModel.numberRows(db: database) == 1)
-        XCTAssert(try DeclaredFileModel.numberRows(db: database) == 1)
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == 1)
         
         // This simulates a second server `index` call for the same sharing group. But, this time the fileInfo record has valid changes.
         fileInfo.deleted = true
@@ -235,40 +233,36 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         
         try syncServer.upsert(fileIndex: [fileInfo], sharingGroupUUID: sharingGroupUUID)
 
-        XCTAssert(try DirectoryEntry.numberRows(db: database) == 1)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == 1)
         XCTAssert(try DeclaredObjectModel.numberRows(db: database) == 1)
-        XCTAssert(try DeclaredFileModel.numberRows(db: database) == 1)
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == 1)
         
-        guard let directoryEntry2 = try DirectoryEntry.fetchSingleRow(db: database, where: DirectoryEntry.fileUUIDField.description == fileUUID) else {
+        guard let fileEntry2 = try DirectoryFileEntry.fetchSingleRow(db: database, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) else {
             XCTFail()
             return
         }
         
-        guard directoryEntry != directoryEntry2 else {
+        guard let objectEntry2 = try DirectoryObjectEntry.fetchSingleRow(db: database, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) else {
             XCTFail()
             return
         }
         
-        XCTAssert(directoryEntry2.serverFileVersion == fileInfo.fileVersion)
-        XCTAssert(directoryEntry2.fileVersion == nil)
-        XCTAssert(directoryEntry2.deletedOnServer)
-        XCTAssert(!directoryEntry2.deletedLocally)
-        
-        guard let declaredFile2 = try DeclaredFileModel.fetchSingleRow(db: database, where: DeclaredFileModel.uuidField.description == fileUUID) else {
+        guard let declaredObject3 = try DeclaredObjectModel.fetchSingleRow(db: database, where: DeclaredObjectModel.objectTypeField.description == objectType) else {
             XCTFail()
             return
         }
         
-        XCTAssert(declaredFile == declaredFile2)
-        
-        guard let declaredObject2 = try DeclaredObjectModel.fetchSingleRow(db: database, where: DeclaredObjectModel.fileGroupUUIDField.description == fileGroupUUID) else {
-            XCTFail()
-            return
-        }
+        XCTAssert(fileEntry2.serverFileVersion == fileInfo.fileVersion)
+        XCTAssert(fileEntry2.fileVersion == nil)
+        XCTAssert(fileEntry2.deletedOnServer)
+        XCTAssert(!fileEntry2.deletedLocally)
         
         XCTAssert(declaredObject == declaredObject2)
+        XCTAssert(declaredObject2 == declaredObject3)
+        
+        XCTAssert(objectEntry == objectEntry2)
     }
-
+    
     enum InvalidUpdate {
         case fileGroup
         case sharingGroup
@@ -282,8 +276,13 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let sharingGroupUUID = UUID()
         let fileUUID = UUID()
         let fileGroupUUID = UUID()
+        let objectType = "Foo"
         
-        let fileInfo = createFileInfo(fileUUID: fileUUID, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: false, fileVersion: 0, cloudStorageType: .Dropbox, objectType: "Foo")
+        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let declaredObject = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration])
+        try declaredObject.insert()
+        
+        let fileInfo = createFileInfo(fileUUID: fileUUID, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: false, fileVersion: 0, cloudStorageType: .Dropbox, objectType: objectType, fileLabel: fileDeclaration.fileLabel)
         
         try syncServer.upsert(fileIndex: [fileInfo], sharingGroupUUID: sharingGroupUUID)
         
@@ -338,8 +337,13 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let sharingGroupUUID = UUID()
         let fileUUID1 = UUID()
         let fileGroupUUID = UUID()
+        let objectType = "objectType"
         
-        let fileInfo1 = createFileInfo(fileUUID: fileUUID1, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: false, fileVersion: 0, cloudStorageType: .Dropbox, objectType: "Foo")
+        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let declaredObject = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration])
+        try declaredObject.insert()
+        
+        let fileInfo1 = createFileInfo(fileUUID: fileUUID1, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: false, fileVersion: 0, cloudStorageType: .Dropbox, objectType: "Foo", fileLabel: fileDeclaration.fileLabel)
         
         do {
             try syncServer.upsert(fileIndex: [fileInfo1, fileInfo1], sharingGroupUUID: sharingGroupUUID)
@@ -356,27 +360,32 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let fileUUID1 = UUID()
         let fileUUID2 = UUID()
         let fileGroupUUID = UUID()
+        let objectType = "objectType"
         
-        let fileInfo1 = createFileInfo(fileUUID: fileUUID1, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: false, fileVersion: 0, cloudStorageType: .Dropbox, objectType: "Foo")
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let declaredObject1 = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration1])
+        try declaredObject1.insert()
+        
+        let fileInfo1 = createFileInfo(fileUUID: fileUUID1, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: false, fileVersion: 0, cloudStorageType: .Dropbox, objectType: objectType, fileLabel: fileDeclaration1.fileLabel)
         
         // Add first fileUUID
         try syncServer.upsert(fileIndex: [fileInfo1], sharingGroupUUID: sharingGroupUUID)
         
-        XCTAssert(try DirectoryEntry.numberRows(db: database) == 1)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == 1)
         XCTAssert(try DeclaredObjectModel.numberRows(db: database) == 1)
-        XCTAssert(try DeclaredFileModel.numberRows(db: database) == 1)
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == 1)
         
         // An additional file for the same file group
         
-        let fileInfo2 = createFileInfo(fileUUID: fileUUID2, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: false, fileVersion: 0, cloudStorageType: .Dropbox, objectType: "Foo")
+        let fileInfo2 = createFileInfo(fileUUID: fileUUID2, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: false, fileVersion: 0, cloudStorageType: .Dropbox, objectType: objectType, fileLabel: fileDeclaration1.fileLabel)
         
         // Another fileUUID for the same initially declared object
 
         try syncServer.upsert(fileIndex: [fileInfo1, fileInfo2], sharingGroupUUID: sharingGroupUUID)
         
-        XCTAssert(try DirectoryEntry.numberRows(db: database) == 2)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == 2)
         XCTAssert(try DeclaredObjectModel.numberRows(db: database) == 1)
-        XCTAssert(try DeclaredFileModel.numberRows(db: database) == 2)
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == 1)
     }
     
     // Multiple file groups within the sharing group
@@ -387,15 +396,20 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let fileUUID2 = UUID()
         let fileGroupUUID1 = UUID()
         let fileGroupUUID2 = UUID()
+        
+        let objectType = "objectType"
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let declaredObject1 = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration1])
+        try declaredObject1.insert()
 
-        let fileInfo1 = createFileInfo(fileUUID: fileUUID1, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: false, fileVersion: 0, cloudStorageType: .Dropbox, objectType: "Foo")
-        let fileInfo2 = createFileInfo(fileUUID: fileUUID2, fileGroupUUID: fileGroupUUID2, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: false, fileVersion: 0, cloudStorageType: .Dropbox, objectType: "Foo")
+        let fileInfo1 = createFileInfo(fileUUID: fileUUID1, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: false, fileVersion: 0, cloudStorageType: .Dropbox, objectType: objectType, fileLabel: fileDeclaration1.fileLabel)
+        let fileInfo2 = createFileInfo(fileUUID: fileUUID2, fileGroupUUID: fileGroupUUID2, sharingGroupUUID: sharingGroupUUID, mimeType: .text, deleted: false, fileVersion: 0, cloudStorageType: .Dropbox, objectType: objectType, fileLabel: fileDeclaration1.fileLabel)
         
         try syncServer.upsert(fileIndex: [fileInfo1, fileInfo2], sharingGroupUUID: sharingGroupUUID)
         
-        XCTAssert(try DirectoryEntry.numberRows(db: database) == 2)
-        XCTAssert(try DeclaredObjectModel.numberRows(db: database) == 2)
-        XCTAssert(try DeclaredFileModel.numberRows(db: database) == 2)
+        XCTAssert(try DirectoryFileEntry.numberRows(db: database) == 2)
+        XCTAssert(try DeclaredObjectModel.numberRows(db: database) == 1)
+        XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == 2)
     }
-#endif
 }

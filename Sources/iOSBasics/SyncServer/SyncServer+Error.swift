@@ -42,12 +42,19 @@ enum SyncServerError: Error {
     case objectDoesNotHaveAllExistingFiles
     case duplicateFileLabel
     case someFileLabelsNotInDeclaredObject
+    case badFileLabel
     
     case someUploadFilesV0SomeVN
     case noChangeResolver
     
     static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
+        case badFileLabel:
+            guard case .badFileLabel = rhs else {
+                return false
+            }
+            return true
+            
         case sharingGroupDeleted:
             guard case .sharingGroupDeleted = rhs else {
                 return false

@@ -54,7 +54,8 @@ extension ServerAPI {
                 checkSum:String,
                 changeResolverName: String?,
                 fileGroup: FileGroup?,
-                appMetaData:AppMetaData?
+                appMetaData:AppMetaData?,
+                fileLabel: String
             )
             
             // Must have given a non-nil changeResolverName with v0
@@ -89,7 +90,7 @@ extension ServerAPI {
         let url:URL
         
         switch file.version {
-        case .v0(url: let v0URL, mimeType: let mimeType, checkSum: let checkSum, changeResolverName: let changeResolver, fileGroup: let fileGroup, appMetaData: let appMetaData):
+        case .v0(url: let v0URL, mimeType: let mimeType, checkSum: let checkSum, changeResolverName: let changeResolver, fileGroup: let fileGroup, appMetaData: let appMetaData, let fileLabel):
                     
             url = v0URL
             uploadRequest.checkSum = checkSum
@@ -98,6 +99,7 @@ extension ServerAPI {
             uploadRequest.mimeType = mimeType.rawValue
             uploadRequest.changeResolverName = changeResolver
             uploadRequest.appMetaData = appMetaData
+            uploadRequest.fileLabel = fileLabel
         case .vN(let vNURL):
             url = vNURL
         }
