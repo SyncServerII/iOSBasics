@@ -3,53 +3,55 @@ import Foundation
 import SQLite
 import ServerShared
 
-/*
 extension SyncServer {
-    func objectsNeedingDeletionHelper() throws -> [ObjectDeclaration] {
-        let entries = try DirectoryEntry.fetch(db: db, where: DirectoryEntry.deletedOnServerField.description == true &&
-            DirectoryEntry.deletedLocallyField.description == false)
+    func objectsNeedingLocalDeletionHelper() throws -> [UUID] {
+        let objectEntries = try DirectoryObjectEntry.fetch(db: db, where: DirectoryObjectEntry.deletedOnServerField.description == true &&
+            DirectoryObjectEntry.deletedLocallyField.description == false)
 
         // Objects are organized by file groups. So, partition these by file group.
-        let fileGroups = Partition.array(entries, using: \.fileGroupUUID)
+        let fileGroups = Partition.array(objectEntries, using: \.fileGroupUUID)
         
-        var objects = [ObjectDeclaration]()
+        var fileGroupUUIDs = [UUID]()
 
         for fileGroup in fileGroups {
             guard fileGroup.count > 0 else {
                 throw SyncServerError.internalError("No files in file group: Should not get here.")
             }
-            
-            let entry = fileGroup[0]
-            
-            let object = try DeclaredObjectModel.lookupDeclarableObject(fileGroupUUID: entry.fileGroupUUID, db: db)
-            
-            objects += [object]
+                        
+            fileGroupUUIDs += [fileGroup[0].fileGroupUUID]
         }
         
-        return objects
+        return fileGroupUUIDs
     }
     
-    public func objectDeletedHelper<DECL: DeclarableObject>(object: DECL) throws {
-        let lookupObject = try DeclaredObjectModel.lookupDeclarableObject(fileGroupUUID: object.fileGroupUUID, db: db)
-        guard lookupObject.declCompare(to: object) else {
-            throw SyncServerError.objectNotDeclared
+    public func objectDeletedLocallyHelper(object fileGroupUUID: UUID) throws {
+        guard let objectInfo = try DirectoryObjectEntry.lookup(fileGroupUUID: fileGroupUUID, db: db) else {
+            throw SyncServerError.noObject
         }
-                
-        let entries = try object.declaredFiles.map { file throws -> DirectoryEntry in
-            guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where: DirectoryEntry.fileUUIDField.description == file.uuid) else {
-                throw SyncServerError.internalError("Could not get DirectoryEntry")
+        
+        guard !objectInfo.objectEntry.deletedLocally else {
+            throw SyncServerError.attemptToDeleteAnAlreadyDeletedFile
+        }
+        
+        guard objectInfo.objectEntry.deletedOnServer else {
+            throw SyncServerError.attemptToDeleteAnAlreadyDeletedFile
+        }
+        
+        for fileEntry in objectInfo.allFileEntries {
+            guard !fileEntry.deletedLocally else {
+                throw SyncServerError.attemptToDeleteAnAlreadyDeletedFile
             }
-            return entry
+            
+            guard fileEntry.deletedOnServer else {
+                throw SyncServerError.attemptToDeleteAnAlreadyDeletedFile
+            }
         }
         
-        guard (entries.filter { $0.deletedOnServer }).count == entries.count else {
-            throw SyncServerError.fileNotDeletedOnServer
-        }
+        try objectInfo.objectEntry.update(setters: DirectoryObjectEntry.deletedLocallyField.description <- true)
         
-        for entry in entries {
-            try entry.update(setters:
-                DirectoryEntry.deletedLocallyField.description <- true)
+        for fileEntry in objectInfo.allFileEntries {
+            try fileEntry.update(setters:
+                DirectoryFileEntry.deletedLocallyField.description <- true)
         }
     }
 }
-*/

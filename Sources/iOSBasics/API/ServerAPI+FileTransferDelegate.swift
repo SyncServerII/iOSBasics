@@ -96,7 +96,7 @@ extension ServerAPI: FileTransferDelegate {
             let goneReason = GoneReason(rawValue: goneReasonRaw) {
             
             guard let fileUUIDString = file.fileUUID,
-                let fileUUID = UUID(uuidString: fileUUIDString) else {
+                let _ = UUID(uuidString: fileUUIDString) else {
                 delegate.uploadCompleted(self, file: file, result: .failure(ServerAPIError.badUUID))
                 return
             }

@@ -95,14 +95,14 @@ class DownloadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBas
         let sharingGroupUUID = try getSharingGroupUUID()
         let localFile = Self.exampleTextFileURL
         
-        let uploadableObject1 = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        let (uploadableObject1, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
         guard uploadableObject1.uploads.count == 1,
             let uploadableFile1 = uploadableObject1.uploads.first else {
             XCTFail()
             return
         }
         
-        let uploadableObject2 = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        let (uploadableObject2, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
         guard uploadableObject2.uploads.count == 1,
             let uploadableFile2 = uploadableObject2.uploads.first else {
             XCTFail()

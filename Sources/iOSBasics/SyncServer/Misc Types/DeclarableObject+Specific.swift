@@ -26,42 +26,6 @@ public struct FileDeclaration: DeclarableFile, Codable, Hashable {
     }
 }
 
-/*
-public struct FileUpload: UploadableFile {
-    public let uuid: UUID
-    public let dataSource: UploadDataSource
-    
-    public init(uuid: UUID, dataSource: UploadDataSource) {
-        self.uuid = uuid
-        self.dataSource = dataSource
-    }
-    
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(uuid)
-    }
-}
-
-public struct FileDeclaration: DeclarableFile {
-    public let uuid: UUID
-    public let mimeType: MimeType
-    public let appMetaData: String?
-    public let changeResolverName: String?
-    
-    public init(uuid: UUID, mimeType: MimeType, appMetaData: String?, changeResolverName: String?) {
-        self.uuid = uuid
-        self.mimeType = mimeType
-        self.appMetaData = appMetaData
-        self.changeResolverName = changeResolverName
-    }
-}
-
-struct ObjectBasics: DeclarableObjectBasics {
-    let fileGroupUUID: UUID
-    let objectType: String?
-    let sharingGroupUUID: UUID
-}
-*/
-
 public struct FileToDownload: FileShouldBeDownloaded {
     public let uuid: UUID
     public let fileVersion: FileVersionInt

@@ -119,7 +119,7 @@ public class SyncServer {
         try queueHelper(download: download)
     }
     
-    public func queue(deleteObject fileGroupUUID: UUID) throws {
+    public func queue(objectDeletion fileGroupUUID: UUID) throws {
         try deleteHelper(object: fileGroupUUID)
     }
 
@@ -138,19 +138,19 @@ public class SyncServer {
         try syncHelper(sharingGroupUUID: sharingGroupUUID)
     }
     
-#if false
     // MARK: Getting information: These are local operations that do not interact with the server.
 
     // Returns the same information as from the `downloadDeletion` delegate method-- other clients have removed these files.
-    public func objectsNeedingDeletion() throws -> [ObjectDeclaration] {
-        return try objectsNeedingDeletionHelper()
+    // Returns fileGroupUUID's of the objects needing local deletion-- they are deleted on the server but need local deletion.
+    public func objectsNeedingLocalDeletion() throws -> [UUID]  {
+        return try objectsNeedingLocalDeletionHelper()
     }
     
     // Clients need to call this method to indicate they have deleted objects returned from either the deletion delegates or from `objectsNeedingDeletion`.
-    public func markAsDeleted<DECL: DeclarableObject>(object: DECL) throws {
-        try objectDeletedHelper(object: object)
+    // These files must have been already deleted on the server.
+    public func markAsDeletedLocally(object fileGroupUUID: UUID) throws {
+        try objectDeletedLocallyHelper(object: fileGroupUUID)
     }
-#endif
 
     // The list of files returned here survive app relaunch. A given object declaration will appear at most once in the returned list.
     public func objectsNeedingDownload(sharingGroupUUID: UUID) throws -> [DownloadObject] {

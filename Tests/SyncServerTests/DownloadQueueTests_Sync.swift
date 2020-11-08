@@ -83,7 +83,7 @@ class DownloadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         
         let localFile = Self.exampleTextFileURL
         
-        let uploadableObject = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        let (uploadableObject, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
         guard uploadableObject.uploads.count == 1,
             let uploadFile = uploadableObject.uploads.first else {
             XCTFail()
@@ -120,7 +120,7 @@ class DownloadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         
         let localFile = Self.exampleTextFileURL
         
-        let uploadableObject = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        let (uploadableObject, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
         guard uploadableObject.uploads.count == 1,
             let uploadableFile = uploadableObject.uploads.first else {
             XCTFail()

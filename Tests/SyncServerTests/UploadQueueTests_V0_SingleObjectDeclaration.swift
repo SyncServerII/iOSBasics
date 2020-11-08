@@ -511,25 +511,20 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         XCTAssert(try UploadFileTracker.numberRows(db: database) == fileTrackerCount)
     }
     
-    #warning("Add this back in-- but perhaps in separate deletion testing")
-    /*
     func testUploadDeletedFileFails() throws {
         try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let localFile = Self.exampleTextFileURL
         
-        let declaration = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        let (uploadObject, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
 
-        
-        try delete(object: declaration)
+        try delete(object: uploadObject.fileGroupUUID)
         
         // Technically, this is wrong. Because we're trying to upload v1 of a file that doesn't have a change resolver. But the failure will be detected before that.
-        let uploadable1 = FileUpload(uuid: declaredFile.uuid, dataSource: .copy(exampleTextFileURL))
-        let uploadables = Set<FileUpload>([uploadable1])
         
         do {
-            try syncServer.queue(uploads: uploadables, declaration: declaration)
+            try syncServer.queue(upload: uploadObject)
         } catch let error {
             guard let error = error as? SyncServerError else {
                 XCTFail()
@@ -542,5 +537,4 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         
         XCTFail()
     }
-    */
 }

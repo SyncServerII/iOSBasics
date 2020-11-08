@@ -34,7 +34,7 @@ extension SyncServerTests where Self: XCTestCase {
         handlers.syncCompleted = nil
     }
 
-    func uploadExampleTextFile(sharingGroupUUID: UUID, localFile: URL = Self.exampleTextFileURL) throws -> some UploadableObject {
+    func uploadExampleTextFile(sharingGroupUUID: UUID, localFile: URL = Self.exampleTextFileURL) throws -> (ObjectUpload, ExampleDeclaration) {
         let fileUUID1 = UUID()
         
         let objectType = "Foo"
@@ -43,25 +43,24 @@ extension SyncServerTests where Self: XCTestCase {
         try syncServer.register(object: example)
         
         let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(localFile), uuid: fileUUID1)
-        
         let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        
         try syncServer.queue(upload: upload)
                 
         waitForUploadsToComplete(numberUploads: 1)
         
-        return upload
+        return (upload, example)
     }
     
-    /*
     // Deletion complete with waiting for deferred part of the deletion.
-    func delete(object: DeclarableObject) throws {
+    func delete(object fileGroupUUID: UUID) throws {
         let exp = expectation(description: "exp")
         handlers.deletionCompleted = { _ in
             logger.debug("delete: handlers.deletionCompleted")
             exp.fulfill()
         }
         
-        try syncServer.queue(deletion: object)
+        try syncServer.queue(objectDeletion: fileGroupUUID)
         waitForExpectations(timeout: 10, handler: nil)
         logger.debug("delete: Done queue deletion")
         
@@ -86,6 +85,5 @@ extension SyncServerTests where Self: XCTestCase {
         }
         waitForExpectations(timeout: 10, handler: nil)
     }
-    */
 }
 

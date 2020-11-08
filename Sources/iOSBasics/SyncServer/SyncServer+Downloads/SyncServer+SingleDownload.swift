@@ -1,9 +1,3 @@
-//
-//  File.swift
-//  
-//
-//  Created by Christopher G Prince on 9/18/20.
-//
 
 import Foundation
 import iOSShared

@@ -3,7 +3,7 @@ import Foundation
 import SQLite
 
 extension SyncServer {
-    // This currently only supports `deletionType` (see UploadDeletionTracker) of `fileGroupUUID`.
+    // This currently only supports a `deletionType` (see UploadDeletionTracker) of `fileGroupUUID`.
     func deleteHelper(object fileGroupUUID: UUID) throws {
         guard let objectInfo = try DirectoryObjectEntry.lookup(fileGroupUUID: fileGroupUUID, db: db) else {
             throw SyncServerError.noObject
@@ -57,7 +57,7 @@ extension SyncServer {
                         <- .waitingForDeferredDeletion)
             }
             else {
-                try finishAfterDeletion(tracker: tracker) 
+                try finishAfterDeletion(tracker: tracker)
             }
         } catch let error {
             _ = try? tracker.update(setters:
@@ -149,11 +149,13 @@ extension SyncServer {
         }
         
         for entry in fileEntries {
-            try entry.update(setters: DirectoryFileEntry.deletedLocallyField.description <- true,
+            try entry.update(setters:
+                DirectoryFileEntry.deletedLocallyField.description <- true,
                 DirectoryFileEntry.deletedOnServerField.description <- true)
         }
         
-        try objectEntry.update(setters: DirectoryObjectEntry.deletedLocallyField.description <- true,
+        try objectEntry.update(setters:
+            DirectoryObjectEntry.deletedLocallyField.description <- true,
             DirectoryObjectEntry.deletedOnServerField.description <- true)
             
         // Since we don't have a `deferredUploadId`, and thus can't wait for the deferred deletion, delete the tracker.

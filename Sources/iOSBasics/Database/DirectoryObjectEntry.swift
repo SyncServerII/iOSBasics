@@ -166,10 +166,15 @@ extension DirectoryObjectEntry {
             guard entry == fileInfo else {
                 throw DatabaseModelError.notMatching
             }
+            
+            if entry.deletedOnServer != fileInfo.deleted {
+                try entry.update(setters: DirectoryObjectEntry.deletedOnServerField.description <- fileInfo.deleted)
+            }
+            
             return entry
         }
         else {
-            let newEntry = try DirectoryObjectEntry(db: db, objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, cloudStorageType: cloudStorageType, deletedLocally: false, deletedOnServer: false)
+            let newEntry = try DirectoryObjectEntry(db: db, objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, cloudStorageType: cloudStorageType, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted)
             try newEntry.insert()
             return newEntry
         }

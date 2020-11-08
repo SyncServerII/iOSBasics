@@ -68,7 +68,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
 
     func testDeletionWithUnknownDeclaredObjectFails() throws {
         do {
-            try syncServer.queue(deleteObject: UUID())
+            try syncServer.queue(objectDeletion: UUID())
         } catch let error {
             guard let error = error as? SyncServerError else {
                 XCTFail()
@@ -106,7 +106,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         }
         
         do {
-            try syncServer.queue(deleteObject: deleteFileGroupUUID)
+            try syncServer.queue(objectDeletion: deleteFileGroupUUID)
         } catch let error {
             if withKnownFileGroupUUID {
                 XCTFail("\(error)")
@@ -175,7 +175,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         try syncServer.queue(upload: upload)
         waitForUploadsToComplete(numberUploads: 1)
         
-        try syncServer.queue(deleteObject: fileGroupUUID)
+        try syncServer.queue(objectDeletion: fileGroupUUID)
 
         let exp = expectation(description: "exp")
         handlers.deletionCompleted = { _ in
@@ -199,7 +199,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         
         if alreadyDeleted {
             do {
-                try syncServer.queue(deleteObject: fileGroupUUID)
+                try syncServer.queue(objectDeletion: fileGroupUUID)
             } catch {
                 return
             }
@@ -214,6 +214,71 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
     
     func testDeletionNotAlreadyDeleted() throws {
         try runDeletion(alreadyDeleted: false)
+    }
+    
+    func runDeletionImmediatelyAfter(alreadyDeleted: Bool) throws {
+        let fileUUID1 = UUID()
+
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        let fileGroupUUID = UUID()
+        
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        
+        try syncServer.queue(upload: upload)
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        try syncServer.queue(objectDeletion: fileGroupUUID)
+        
+        if alreadyDeleted {
+            var gotError = false
+            do {
+                try syncServer.queue(objectDeletion: fileGroupUUID)
+            } catch {
+                gotError = true
+            }
+            
+            if !gotError {
+                XCTFail()
+                return
+            }
+            
+            // Fall through to actually do the first queued deletion, otherwise the test will fail-- because of queued network objects.
+        }
+
+        let exp = expectation(description: "exp")
+        handlers.deletionCompleted = { _ in
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Wait for some period of time for the deferred deletion to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+
+        let exp2 = expectation(description: "exp2")
+        handlers.deferredCompleted = { _, operation, count in
+            XCTAssert(operation == .deletion)
+            XCTAssert(count == 1)
+            exp2.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+    }
+
+    func testDeletionImmediatelyAfter() throws {
+        try runDeletionImmediatelyAfter(alreadyDeleted: true)
+    }
+    
+    func testDeletionNotImmediatelyAfter() throws {
+        try runDeletionImmediatelyAfter(alreadyDeleted: false)
     }
     
     func testDeletionWithMultipleFilesInObject() throws {
@@ -236,7 +301,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         try syncServer.queue(upload: upload)
         waitForUploadsToComplete(numberUploads: 2)
         
-        try syncServer.queue(deleteObject: fileGroupUUID)
+        try syncServer.queue(objectDeletion: fileGroupUUID)
 
         let exp = expectation(description: "exp")
         handlers.deletionCompleted = { _ in

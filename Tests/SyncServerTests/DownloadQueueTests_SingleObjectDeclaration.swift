@@ -64,7 +64,7 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         
         let localFile = Self.exampleTextFileURL
         
-        let uploadableObject = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        let (uploadableObject, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
         guard uploadableObject.uploads.count == 1,
             let uploadableFile = uploadableObject.uploads.first else {
             XCTFail()
@@ -134,7 +134,7 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         
         let localFile = Self.exampleTextFileURL
         
-        let uploadableObject = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        let (uploadableObject, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
         guard uploadableObject.uploads.count == 1,
             let uploadFile = uploadableObject.uploads.first else {
             XCTFail()
@@ -168,7 +168,7 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         
         let localFile = Self.exampleTextFileURL
         
-        let uploadableObject = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        let (uploadableObject, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
         guard uploadableObject.uploads.count == 1,
             let uploadableFile = uploadableObject.uploads.first else {
             XCTFail()
@@ -201,7 +201,7 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         
         let localFile = Self.exampleTextFileURL
         
-        let uploadableObject = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        let (uploadableObject, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
         guard uploadableObject.uploads.count == 1,
             let uploadableFile = uploadableObject.uploads.first else {
             XCTFail()
@@ -332,28 +332,26 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         // Second download has been queued, but not downloaded.
     }
     
-    #warning("Add this back in once we get deletion.")
-    /*
     func testDownloadDeletedFileFails() throws {
         try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let localFile = Self.exampleTextFileURL
         
-        let uploadableObject = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+        let (uploadableObject, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
         guard uploadableObject.uploads.count == 1,
             let uploadableFile = uploadableObject.uploads.first else {
             XCTFail()
             return
         }
         
-        try delete(object: declaration)
+        try delete(object: uploadableObject.fileGroupUUID)
         
-        let downloadable1 = FileDownload(uuid: declaredFile.uuid, fileVersion: 0)
-        let downloadables = Set<FileDownload>([downloadable1])
+        let downloadable1 = FileToDownload(uuid: uploadableFile.uuid, fileVersion: 0)
+        let downloadObject = ObjectToDownload(fileGroupUUID: uploadableObject.fileGroupUUID, downloads: [downloadable1])
 
         do {
-            try syncServer.queue(downloads: downloadables, declaration: declaration)
+            try syncServer.queue(download: downloadObject)
         } catch let error {
             guard let syncServerError = error as? SyncServerError else {
                 XCTFail()
@@ -365,5 +363,4 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         
         XCTFail()
     }
-    */
 }
