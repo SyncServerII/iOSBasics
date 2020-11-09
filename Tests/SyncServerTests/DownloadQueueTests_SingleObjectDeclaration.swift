@@ -363,4 +363,58 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         
         XCTFail()
     }
+    
+    func runDownload(withDeletedSharingGroup: Bool) throws {
+        let sharingGroupUUID = try getSharingGroup(db: database)
+        
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+
+        try syncServer.queue(upload: upload)
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        if withDeletedSharingGroup {
+            let exp = expectation(description: "exp")
+            syncServer.removeFromSharingGroup(sharingGroupUUID: sharingGroupUUID) { error in
+                XCTAssertNil(error)
+                exp.fulfill()
+            }
+            waitForExpectations(timeout: 10, handler: nil)
+            
+            try self.sync()
+        }
+
+        let downloadable1 = FileToDownload(uuid: fileUpload1.uuid, fileVersion: 0)
+        let downloadObject = ObjectToDownload(fileGroupUUID: upload.fileGroupUUID, downloads: [downloadable1])
+        
+        do {
+            try syncServer.queue(download: downloadObject)
+        } catch let error {
+            if !withDeletedSharingGroup {
+                XCTFail("\(error)")
+            }
+            return
+        }
+        
+        if withDeletedSharingGroup {
+            XCTFail()
+            return
+        }
+        
+        waitForDownloadsToComplete(numberExpected: 1)
+    }
+    
+    func testDownloadWithDeletedSharingGroupFails() throws {
+        try runDownload(withDeletedSharingGroup: true)
+    }
+    
+    func testDownloadWithNonDeletedSharingGroupWorks() throws {
+        try runDownload(withDeletedSharingGroup: false)
+    }
 }

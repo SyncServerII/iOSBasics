@@ -90,10 +90,11 @@ public class SyncServer {
     // MARK: Declaring object types.
     
     // You must register all objects every time the app starts.
-    // Some of these can be for new objects, e.g., for the first time an app launching.
-    // Some of these can be for existing existing objects-- e.g., this will be the ongoing typical case.
-    // To provide a migration path, it is acceptable to extend specific existing DeclarableObject's with specific objectTypes by adding new DeclarableFile's, or to register entirely new DeclarableObject's.
-    // Older or deprecated DeclarableObject's should still be registered on each app launch, unless new downloads will never happen for those DeclarableObject's.
+    // Some of these can be for:
+    //  * new objects, e.g., for the first time an app launching.
+    //  * existing existing objects-- e.g., this will be the ongoing typical case.
+    // To provide a migration path, it is acceptable to extend specific existing DeclarableObject's (i.e., with specific objectTypes) by adding new DeclarableFile's, or to register entirely new DeclarableObject's.
+    // Older or deprecated DeclarableObject's should still be registered on each app launch, unless new downloads can never happen for those DeclarableObject's. They should never happen also even for existing files when an app is removed and re-installed too.
     // It is not acceptable to remove DeclarableFile's from existing DeclarableObject's.
     // This class keeps strong references to the passed objects.
     public func register(object: DeclarableObject & ObjectDownloadHandler) throws {
@@ -162,7 +163,7 @@ public class SyncServer {
         return try filesNeedingDownloadHelper(sharingGroupUUID: sharingGroupUUID)
     }
 
-    // Call this method so that, after you download a file, it doesn't appear again in `filesNeedingDownload` (for that file version).
+    // Call this method so that, after you download a file, it doesn't appear again in `objectsNeedingDownload` (for that file version).
     public func markAsDownloaded<DWL: FileShouldBeDownloaded>(file: DWL) throws {
         try markAsDownloadedHelper(file: file)
     }

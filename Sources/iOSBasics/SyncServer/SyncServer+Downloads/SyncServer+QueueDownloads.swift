@@ -19,6 +19,14 @@ extension SyncServer {
         guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == download.fileGroupUUID) else {
             throw SyncServerError.noObject
         }
+        
+        guard let sharingEntry = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == objectEntry.sharingGroupUUID) else {
+            throw SyncServerError.sharingGroupNotFound
+        }
+        
+        guard !sharingEntry.deleted else {
+            throw SyncServerError.sharingGroupDeleted
+        }
 
         guard !(try DirectoryFileEntry.anyFileIsDeleted(fileUUIDs: fileUUIDsToDownload, db: db)) else {
             throw SyncServerError.attemptToQueueADeletedFile

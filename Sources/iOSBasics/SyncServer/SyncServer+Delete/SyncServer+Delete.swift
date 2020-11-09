@@ -9,6 +9,14 @@ extension SyncServer {
             throw SyncServerError.noObject
         }
         
+        guard let sharingEntry = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == objectInfo.objectEntry.sharingGroupUUID) else {
+            throw SyncServerError.sharingGroupNotFound
+        }
+        
+        guard !sharingEntry.deleted else {
+            throw SyncServerError.sharingGroupDeleted
+        }
+        
         guard !objectInfo.objectEntry.deletedLocally && !objectInfo.objectEntry.deletedOnServer else {
             throw SyncServerError.attemptToDeleteAnAlreadyDeletedFile
         }

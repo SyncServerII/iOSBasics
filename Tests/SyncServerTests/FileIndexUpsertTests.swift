@@ -140,8 +140,8 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         XCTAssert(objectEntry.sharingGroupUUID == sharingGroupUUID)
         XCTAssert(objectEntry.objectType == objectType)
         XCTAssert(objectEntry.cloudStorageType.rawValue == fileInfo.cloudStorageType)
-        XCTAssert(objectEntry.deletedLocally == false)
-        XCTAssert(objectEntry.deletedOnServer == false)
+        XCTAssert(objectEntry.deletedLocally == fileInfo.deleted)
+        XCTAssert(objectEntry.deletedOnServer == fileInfo.deleted)
     }
     
     func testKnownFileInfoDoesNotAddOrChangeDatabaseRecords() throws {

@@ -348,4 +348,81 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         XCTAssert(fileEntry2.deletedLocally)
         XCTAssert(fileEntry2.deletedOnServer)
     }
+    
+    func runDeletion(withDeletedSharingGroup: Bool) throws {
+        let sharingGroupUUID = try getSharingGroup(db: database)
+        
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+
+        try syncServer.queue(upload: upload)
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        if withDeletedSharingGroup {
+            let exp = expectation(description: "exp")
+            syncServer.removeFromSharingGroup(sharingGroupUUID: sharingGroupUUID) { error in
+                XCTAssertNil(error)
+                exp.fulfill()
+            }
+            waitForExpectations(timeout: 10, handler: nil)
+            
+            try self.sync()
+        }
+
+        if !withDeletedSharingGroup {
+            let exp = expectation(description: "exp")
+            handlers.deletionCompleted = { _ in
+                exp.fulfill()
+            }
+        }
+        
+        do {
+            try syncServer.queue(objectDeletion: upload.fileGroupUUID)
+        } catch let error {
+            if !withDeletedSharingGroup {
+                XCTFail("\(error)")
+            }
+            return
+        }
+
+        if withDeletedSharingGroup {
+            XCTFail()
+            return
+        }
+            
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Wait for some period of time for the deferred deletion to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        let exp2 = expectation(description: "exp2")
+        handlers.syncCompleted = { _, _ in
+            exp2.fulfill()
+        }
+        
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+        
+        let exp3 = expectation(description: "exp2")
+        handlers.deferredCompleted = { _, operation, count in
+            XCTAssert(operation == .deletion)
+            XCTAssert(count == 1)
+            exp3.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+    }
+    
+    func testDeletionWithDeletedSharingGroupFails() throws {
+        try runDeletion(withDeletedSharingGroup: true)
+    }
+    
+    func testDeletionWithNonDeletedSharingGroupWorks() throws {
+        try runDeletion(withDeletedSharingGroup: false)
+    }
 }
