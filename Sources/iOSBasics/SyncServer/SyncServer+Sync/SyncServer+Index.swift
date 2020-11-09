@@ -117,8 +117,7 @@ extension SyncServer {
             
             switch objectTypes.count {
             case 0:
-                // For purposes of migration to final server we may want to weakend this, but for now, going require object types.
-                throw SyncServerError.internalError("No object type!")
+                logger.warning("No object type!")
             case 1:
                 break
             default:

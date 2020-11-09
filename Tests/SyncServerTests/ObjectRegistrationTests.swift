@@ -16,19 +16,20 @@ import ChangeResolvers
 
 class ExampleDeclaration: DeclarableObject, ObjectDownloadHandler {    
     func getFileLabel(appMetaData: String) -> String? {
-        assert(false)
-        return nil
+        return appMetaDataMapping?[appMetaData]
     }
     
     func objectWasDownloaded(object: DownloadObject) {
     }
     
+    let appMetaDataMapping: [String: String]?
     let declaredFiles: [DeclarableFile]
     let objectType: String
     
-    init(objectType: String, declaredFiles: [DeclarableFile]) {
+    init(objectType: String, declaredFiles: [DeclarableFile], appMetaDataMapping: [String: String]? = nil) {
         self.objectType = objectType
         self.declaredFiles = declaredFiles
+        self.appMetaDataMapping = appMetaDataMapping
     }
 }
 

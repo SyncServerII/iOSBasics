@@ -20,8 +20,8 @@ public struct FileDeclaration: DeclarableFile, Codable, Hashable {
     }
     
     public static func == (lhs: FileDeclaration, rhs: FileInfo) -> Bool {
-        return lhs.fileLabel == rhs.fileLabel &&
-            lhs.mimeType.rawValue == rhs.mimeType &&
+        // Not including fileLabel in comparison because fileLabel can be nil in FileInfo.
+        return lhs.mimeType.rawValue == rhs.mimeType &&
             lhs.changeResolverName == rhs.changeResolverName
     }
 }

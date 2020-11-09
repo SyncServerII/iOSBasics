@@ -15,6 +15,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
     var syncServer: SyncServer!
     var database: Connection!
     var config:Configuration!
+    var handlersObjectType: String?
     
     override func setUpWithError() throws {
         try super.setUpWithError()
@@ -34,8 +35,10 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         syncServer.helperDelegate = self
 
         handlers.objectType = { _, _ in
-            return nil
+            return self.handlersObjectType
         }
+        
+        handlersObjectType = nil
     }
 
     override func tearDownWithError() throws {
@@ -416,5 +419,133 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         XCTAssert(try DirectoryFileEntry.numberRows(db: database) == 2)
         XCTAssert(try DeclaredObjectModel.numberRows(db: database) == 1)
         XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == 2)
+    }
+    
+    func testMissingObjectType() throws {
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let sharingGroupUUID = UUID()
+        let fileGroupUUID = UUID()
+        let fileUUID = UUID()
+        
+        let fileInfo = FileInfo()
+        fileInfo.fileUUID = fileUUID.uuidString
+        fileInfo.fileGroupUUID = fileGroupUUID.uuidString
+        fileInfo.sharingGroupUUID = sharingGroupUUID.uuidString
+        fileInfo.mimeType = MimeType.text.rawValue
+        fileInfo.deleted = false
+        fileInfo.fileVersion = 0
+        fileInfo.cloudStorageType = CloudStorageType.Dropbox.rawValue
+        fileInfo.objectType = nil
+        fileInfo.fileLabel = "file1"
+        
+        // Must have some app meta data in order for the handler object type to be used.
+        fileInfo.appMetaData = "Something"
+        
+        handlersObjectType = objectType
+        
+        try syncServer.upsert(fileIndex: [fileInfo], sharingGroupUUID: sharingGroupUUID)
+        
+        guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: database, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) else {
+            XCTFail()
+            return
+        }
+        
+        guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: database, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(fileEntry.fileLabel == fileInfo.fileLabel)
+        XCTAssert(objectEntry.objectType == objectType)
+    }
+    
+    func testMissingFileLabel() throws {
+        let objectType = "Foo"
+        let fileLabel = "file1"
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1], appMetaDataMapping: ["a": fileLabel])
+        try syncServer.register(object: example)
+        
+        let sharingGroupUUID = UUID()
+        let fileGroupUUID = UUID()
+        let fileUUID = UUID()
+        
+        let fileInfo = FileInfo()
+        fileInfo.fileUUID = fileUUID.uuidString
+        fileInfo.fileGroupUUID = fileGroupUUID.uuidString
+        fileInfo.sharingGroupUUID = sharingGroupUUID.uuidString
+        fileInfo.mimeType = MimeType.text.rawValue
+        fileInfo.deleted = false
+        fileInfo.fileVersion = 0
+        fileInfo.cloudStorageType = CloudStorageType.Dropbox.rawValue
+        fileInfo.objectType = objectType
+        fileInfo.fileLabel = nil
+        
+        // Must have some app meta data in order for the handler object type to be used.
+        fileInfo.appMetaData = "a"
+                
+        try syncServer.upsert(fileIndex: [fileInfo], sharingGroupUUID: sharingGroupUUID)
+        
+        guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: database, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) else {
+            XCTFail()
+            return
+        }
+        
+        guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: database, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(fileEntry.fileLabel == fileLabel)
+        XCTAssert(objectEntry.objectType == objectType)
+    }
+    
+    func testMissingObjectTypeAndFileLabel() throws {
+        let objectType = "Foo"
+        let fileLabel = "file1"
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1], appMetaDataMapping: ["a": fileLabel])
+        try syncServer.register(object: example)
+        
+        let sharingGroupUUID = UUID()
+        let fileGroupUUID = UUID()
+        let fileUUID = UUID()
+        
+        let fileInfo = FileInfo()
+        fileInfo.fileUUID = fileUUID.uuidString
+        fileInfo.fileGroupUUID = fileGroupUUID.uuidString
+        fileInfo.sharingGroupUUID = sharingGroupUUID.uuidString
+        fileInfo.mimeType = MimeType.text.rawValue
+        fileInfo.deleted = false
+        fileInfo.fileVersion = 0
+        fileInfo.cloudStorageType = CloudStorageType.Dropbox.rawValue
+        fileInfo.objectType = nil
+        fileInfo.fileLabel = nil
+        
+        // Must have some app meta data in order for the handler object type to be used.
+        fileInfo.appMetaData = "a"
+        
+        handlersObjectType = objectType
+        
+        try syncServer.upsert(fileIndex: [fileInfo], sharingGroupUUID: sharingGroupUUID)
+        
+        guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: database, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) else {
+            XCTFail()
+            return
+        }
+        
+        guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: database, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(fileEntry.fileLabel == fileLabel)
+        XCTAssert(objectEntry.objectType == objectType)
     }
 }
