@@ -1,12 +1,28 @@
 
 import Foundation
+import ServerShared
 
 // Enable previously registered and downloaded DeclarableObjects to be handled.
 
 public protocol ObjectDownloadHandler {
-    // Helpers to deal with older version objects that don't have explicit objectType's / fileLabel's
-    func getObjectType(appMetaData: String) throws -> String
-    func getFileLabel(appMetaData: String) throws -> String
+    // Helper to deal with older version objects that don't have explicit fileLabel's
+    func getFileLabel(appMetaData: String) -> String?
     
     func objectWasDownloaded(object: DownloadObject)
 }
+
+extension FileInfo {
+    func getFileLabel(objectType: String, objectDeclarations:[String: ObjectDownloadHandler]) throws -> String {
+        if let fileLabel = fileLabel {
+            return fileLabel
+        } else if let appMetData = appMetaData,
+            let type = objectDeclarations[objectType],
+            let fileLabel = type.getFileLabel(appMetaData: appMetData) {
+            return fileLabel
+        }
+        else {
+            throw SyncServerError.internalError("No fileLabel")
+        }
+    }
+}
+

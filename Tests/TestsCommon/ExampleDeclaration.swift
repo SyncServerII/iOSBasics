@@ -2,17 +2,13 @@
 import Foundation
 @testable import iOSBasics
 
-class ExampleDeclaration: DeclarableObject, ObjectDownloadHandler {    
-    func getFileLabel(appMetaData: String) throws -> String {
+class ExampleDeclaration: DeclarableObject, ObjectDownloadHandler {
+    func getFileLabel(appMetaData: String) -> String? {
         assert(false)
-        return ""
+        return nil
     }
     
     func objectWasDownloaded(object: DownloadObject) {
-    }
-    
-    func getObjectType(appMetaData: String) throws -> String {
-        return ""
     }
     
     let declaredFiles: [DeclarableFile]

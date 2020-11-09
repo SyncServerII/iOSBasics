@@ -192,7 +192,7 @@ extension DirectoryFileEntry {
     
     // The `fileInfo` is assumed to come from the server.
     @discardableResult
-    static func upsert(fileInfo: FileInfo, db: Connection) throws ->
+    static func upsert(fileInfo: FileInfo, objectType: String, objectDeclarations:[String: ObjectDownloadHandler], db: Connection) throws ->
         (DirectoryFileEntry, markedForDeletion: Bool) {
         
         let resultEntry:DirectoryFileEntry
@@ -220,10 +220,8 @@ extension DirectoryFileEntry {
                 throw DatabaseModelError.invalidUUID
             }
             
-            guard let fileLabel = fileInfo.fileLabel else {
-                throw DatabaseModelError.noFileLabel
-            }
-            
+            let fileLabel = try fileInfo.getFileLabel(objectType: objectType, objectDeclarations: objectDeclarations)
+
             // `deletedLocally` is set to the same state as `deletedOnServer` because this is a file not yet known the local client. This just indicates that, if deleted on server already, the local client doesn't have to take any deletion actions for this file. If not deleted on the server, then the file isn't deleted locally either. 
             let entry = try DirectoryFileEntry(db: db, fileUUID: fileUUID, fileLabel: fileLabel, fileGroupUUID: fileGroupUUID, fileVersion: nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, goneReason: nil)
             try entry.insert()

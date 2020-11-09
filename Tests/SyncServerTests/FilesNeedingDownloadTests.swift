@@ -55,6 +55,11 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
             let url = config.temporaryFiles.directory.appendingPathComponent(filePath)
             try FileManager.default.removeItem(at: url)
         }
+        
+        syncServer.helperDelegate = self
+        handlers.objectType = { _, _ in
+            return nil
+        }
     }
 
     override func tearDownWithError() throws {
@@ -134,6 +139,10 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
+        handlers.objectType = { _, _ in
+            return nil
+        }
         
         // It's as if the app restarted-- need to re-register the object type.
         try syncServer.register(object: example)
@@ -188,6 +197,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
         
         try syncServer.register(object: example)
         
@@ -249,6 +259,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
         
         try syncServer.register(object: example)
         
@@ -313,6 +324,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
         
         try syncServer.register(object: example)
         

@@ -15,16 +15,12 @@ import ChangeResolvers
 @testable import TestsCommon
 
 class ExampleDeclaration: DeclarableObject, ObjectDownloadHandler {    
-    func getFileLabel(appMetaData: String) throws -> String {
+    func getFileLabel(appMetaData: String) -> String? {
         assert(false)
-        return ""
+        return nil
     }
     
     func objectWasDownloaded(object: DownloadObject) {
-    }
-    
-    func getObjectType(appMetaData: String) throws -> String {
-        return ""
     }
     
     let declaredFiles: [DeclarableFile]
@@ -79,6 +75,11 @@ class ObjectRegistrationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
             let url = config.temporaryFiles.directory.appendingPathComponent(filePath)
             try FileManager.default.removeItem(at: url)
         }
+        
+        syncServer.helperDelegate = self
+        handlers.objectType = { _, _ in
+            return nil
+        }
     }
 
     override func tearDownWithError() throws {
@@ -117,7 +118,10 @@ class ObjectRegistrationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
             return
         }
         
-        let declaration = syncServer.objectDeclarations[0]
+        guard let declaration = syncServer.objectDeclarations[example.objectType] else {
+            XCTFail()
+            return
+        }
         
         XCTAssert(declaration.equal(example))
     }
@@ -176,7 +180,10 @@ class ObjectRegistrationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
             return
         }
         
-        let declaration = syncServer.objectDeclarations[0]
+        guard let declaration = syncServer.objectDeclarations[objectType] else {
+            XCTFail()
+            return
+        }
         
         XCTAssert(declaration.equal(example2))
     }
@@ -204,7 +211,10 @@ class ObjectRegistrationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
             return
         }
         
-        let declaration = syncServer.objectDeclarations[0]
+        guard let declaration = syncServer.objectDeclarations[objectType] else {
+            XCTFail()
+            return
+        }
         
         XCTAssert(declaration.equal(example2))
     }
@@ -242,5 +252,19 @@ class ObjectRegistrationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
     
     func testRegisterWithNoDuplicateFileLabelWorks() throws {
         try runRegister(duplicateFileLabel: false)
+    }
+    
+    func testRegisterMultipleObjectTypesWorks() throws {
+        let objectType1 = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "one", mimeType: .text, changeResolverName: nil)
+        let files1 = [fileDeclaration1]
+        let example1 = ExampleDeclaration(objectType: objectType1, declaredFiles: files1)
+        try syncServer.register(object: example1)
+        
+        let objectType2 = "Foo2"
+        let fileDeclaration2 = FileDeclaration(fileLabel: "one", mimeType: .text, changeResolverName: nil)
+        let files2 = [fileDeclaration2]
+        let example2 = ExampleDeclaration(objectType: objectType2, declaredFiles: files2)
+        try syncServer.register(object: example2)
     }
 }

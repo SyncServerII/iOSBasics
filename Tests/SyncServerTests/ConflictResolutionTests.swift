@@ -14,7 +14,6 @@ import iOSSignIn
 import ChangeResolvers
 @testable import TestsCommon
 
-/*
 class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate, SyncServerTests {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!
@@ -60,6 +59,11 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
             let url = config.temporaryFiles.directory.appendingPathComponent(filePath)
             try FileManager.default.removeItem(at: url)
         }
+        
+        syncServer.helperDelegate = self
+        handlers.objectType = { _, _ in
+            return nil
+        }
     }
 
     override func tearDownWithError() throws {
@@ -75,18 +79,18 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         try self.sync(withSharingGroupUUID: nil)
         let sharingGroupUUID = try getSharingGroupUUID()
 
-        let declaration1 = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: nil)
-        let declarations = Set<FileDeclaration>([declaration1])
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
         
-        let object = ObjectDeclaration(fileGroupUUID: UUID(), objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
-
-        let uploadable1 = FileUpload(uuid: fileUUID1, dataSource: .copy(exampleTextFileURL))
-        let uploadables = Set<FileUpload>([uploadable1])
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [file1])
         
-        try syncServer.queue(uploads: uploadables, declaration: object)
+        try syncServer.queue(upload: upload)
         waitForUploadsToComplete(numberUploads: 1)
         
-        try syncServer.queue(deletion: object)
+        try syncServer.queue(objectDeletion: upload.fileGroupUUID)
 
         let exp = expectation(description: "exp")
         handlers.deletionCompleted = { _ in
@@ -110,53 +114,64 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         
         // Now, file is deleted on server. Cheat and mark our directory entry as non-deleted.
         
-        guard let entry = try DirectoryEntry.fetchSingleRow(db: database, where: DirectoryEntry.fileUUIDField.description == fileUUID1) else {
+        guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: database, where: DirectoryFileEntry.fileUUIDField.description == fileUUID1) else {
             XCTFail()
             return
         }
         
-        try entry.update(setters:
-            DirectoryEntry.deletedLocallyField.description <- false,
-            DirectoryEntry.deletedOnServerField.description <- false)
+        guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: database, where: DirectoryObjectEntry.fileGroupUUIDField.description == upload.fileGroupUUID) else {
+            XCTFail()
+            return
+        }
+        
+        try fileEntry.update(setters:
+            DirectoryFileEntry.deletedLocallyField.description <- false,
+            DirectoryFileEntry.deletedOnServerField.description <- false)
 
+        try objectEntry.update(setters:
+            DirectoryObjectEntry.deletedLocallyField.description <- false,
+            DirectoryObjectEntry.deletedOnServerField.description <- false)
+            
         let exp3 = expectation(description: "exp")
         handlers.deletionCompleted = { _ in
             exp3.fulfill()
         }
         
         // Note that this second delete works "out of the box" despite of the fact that we fooled ourselves (locally) into believing the file was not deleted. The server allows multiple deletions with no ill effect. (The second deletion does nothing).
-        try syncServer.queue(deletion: object)
+        try syncServer.queue(objectDeletion: upload.fileGroupUUID)
         waitForExpectations(timeout: 10, handler: nil)
     }
-    
+
     func testUploadAfterServerDeletionDoesNotFail() throws {
         let fileUUID1 = UUID()
         let fileGroupUUID1 = UUID()
         
         try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
-
-        let declaration = FileDeclaration(uuid: fileUUID1, mimeType: MimeType.text, appMetaData: nil, changeResolverName: CommentFile.changeResolverName)
-        let declarations = Set<FileDeclaration>([declaration])
-
-        let testObject = ObjectDeclaration(fileGroupUUID: fileGroupUUID1, objectType: "foo", sharingGroupUUID: sharingGroupUUID, declaredFiles: declarations)
+        
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
             
         func object1(v0: Bool) throws {
-            let uploadables:Set<FileUpload>
+            let upload:ObjectUpload
             
             if v0 {
                 let commentFile = CommentFile()
                 let commentFileData = try commentFile.getData()
-                let uploadable = FileUpload(uuid: fileUUID1, dataSource: .data(commentFileData))
-                uploadables = Set<FileUpload>([uploadable])
+
+                let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID1)
+                upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
             }
             else {
                 let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
-                let uploadable = FileUpload(uuid: fileUUID1, dataSource: .data(comment.updateContents))
-                uploadables = Set<FileUpload>([uploadable])
+                
+                let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(comment.updateContents), uuid: fileUUID1)
+                upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
             }
 
-            try syncServer.queue(uploads: uploadables, declaration: testObject)
+            try syncServer.queue(upload: upload)
         }
         
         try object1(v0: true)
@@ -166,7 +181,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         
         // Let's delete it.
         
-        try syncServer.queue(deletion: testObject)
+        try syncServer.queue(objectDeletion: fileGroupUUID1)
 
         let exp = expectation(description: "exp")
         handlers.deletionCompleted = { _ in
@@ -190,17 +205,25 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         
         // Now, file is deleted on server. Cheat and mark our directory entry as non-deleted.
         
-        guard let entry = try DirectoryEntry.fetchSingleRow(db: database, where: DirectoryEntry.fileUUIDField.description == fileUUID1) else {
+        guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: database, where: DirectoryFileEntry.fileUUIDField.description == fileUUID1) else {
             XCTFail()
             return
         }
         
-        try entry.update(setters:
-            DirectoryEntry.deletedLocallyField.description <- false,
-            DirectoryEntry.deletedOnServerField.description <- false)
+        guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: database, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID1) else {
+            XCTFail()
+            return
+        }
+        
+        try fileEntry.update(setters:
+            DirectoryFileEntry.deletedLocallyField.description <- false,
+            DirectoryFileEntry.deletedOnServerField.description <- false)
 
+        try objectEntry.update(setters:
+            DirectoryObjectEntry.deletedLocallyField.description <- false,
+            DirectoryObjectEntry.deletedOnServerField.description <- false)
+            
         try object1(v0: false)
         waitForUploadsToComplete(numberUploads: 1, gone: true)
     }
 }
-*/

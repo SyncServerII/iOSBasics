@@ -30,6 +30,8 @@ class DelegateHandlers {
     
     var error:((_ syncServer: SyncServer, _ error: ErrorEvent)->())?
     
+    var objectType:((_ caller: AnyObject, _ appMetaData: String) -> String?)?
+    
     var syncCompleted: ((SyncServer, SyncResult) -> ())?
     
     // Use extras.
@@ -44,7 +46,7 @@ class DelegateHandlers {
     // var downloadQueue: ((SyncServer, DownloadEvent) -> ())?
 }
 
-protocol Delegate: SyncServerDelegate, SyncServerCredentials {
+protocol Delegate: SyncServerDelegate, SyncServerCredentials, SyncServerHelpers {
     var handlers: DelegateHandlers { get }
 }
 
@@ -58,6 +60,10 @@ extension Delegate {
     func error(_ syncServer: SyncServer, error: ErrorEvent) {
         XCTFail("\(String(describing: error))")
         handlers.error?(syncServer, error)
+    }
+    
+    func objectType(_ caller: AnyObject, forAppMetaData appMetaData: String) -> String? {
+        return handlers.objectType?(caller, appMetaData)
     }
 
     func syncCompleted(_ syncServer: SyncServer, result: SyncResult) {

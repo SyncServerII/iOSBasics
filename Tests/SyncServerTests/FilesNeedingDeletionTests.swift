@@ -48,6 +48,11 @@ class FilesNeedingDeletionTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
             let url = config.temporaryFiles.directory.appendingPathComponent(filePath)
             try FileManager.default.removeItem(at: url)
         }
+        
+        syncServer.helperDelegate = self
+        handlers.objectType = { _, _ in
+            return nil
+        }
     }
 
     override func tearDownWithError() throws {
@@ -83,6 +88,10 @@ class FilesNeedingDeletionTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
+        handlers.objectType = { _, _ in
+            return nil
+        }
         
         try syncServer.register(object: example)
 
@@ -143,6 +152,10 @@ class FilesNeedingDeletionTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
+        handlers.objectType = { _, _ in
+            return nil
+        }
         
         try syncServer.register(object: example1)
         try syncServer.register(object: example2)
@@ -239,7 +252,11 @@ class FilesNeedingDeletionTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
-
+        syncServer.helperDelegate = self
+        handlers.objectType = { _, _ in
+            return nil
+        }
+        
         try syncServer.register(object: example1)
         try syncServer.register(object: example2)
         

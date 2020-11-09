@@ -9,9 +9,30 @@ public enum UUIDCollisionType {
     case device
 }
 
-protocol SyncServerCredentials: AnyObject {
+public protocol SyncServerCredentials: AnyObject {
     // This method may be called by the SyncServer using *any* queue.
     func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials
+}
+
+public protocol SyncServerHelpers: AnyObject {
+    // For older objects, maps appMetaData to objectType
+    func objectType(_ caller: AnyObject, forAppMetaData appMetaData: String) -> String?
+}
+
+extension SyncServerHelpers {
+    func getObjectType(file: FileInfo) throws -> String {
+        // If a fileIndex fileUUID has a DirectoryFileEntry or a DirectoryObjectEntry then their main (static) components must not have changed.
+        if let objectType = file.objectType {
+            return objectType
+        }
+        else if let appMetData = file.appMetaData,
+            let objectType = objectType(self, forAppMetaData: appMetData) {
+            return objectType
+        }
+        else {
+            throw SyncServerError.internalError("No object type!")
+        }
+    }
 }
 
 public enum SyncResult {

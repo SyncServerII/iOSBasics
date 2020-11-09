@@ -19,8 +19,9 @@ public class SyncServer {
         }
     }
 
-    // Set this before use of methods of this class.
-    weak var credentialsDelegate: SyncServerCredentials!
+    // Set these before use of methods of this class.
+    public weak var credentialsDelegate: SyncServerCredentials!
+    public weak var helperDelegate:SyncServerHelpers!
     
     // Use these to call delegate methods.
     private var _delegator: Delegator!
@@ -36,7 +37,8 @@ public class SyncServer {
     let dispatchQueue: DispatchQueue
     var signIns: SignIns
     
-    var objectDeclarations = [DeclarableObject & ObjectDownloadHandler]()
+    // Maps from objectType to `DeclarableObject & ObjectDownloadHandler`.
+    var objectDeclarations = [String: DeclarableObject & ObjectDownloadHandler]()
 
     /// Create a SyncServer instance.
     ///
@@ -51,7 +53,7 @@ public class SyncServer {
     ///         in state changes. This connects the iOSSignIn package to the
     ///         iOSBasics package.
     ///     - dispatchQueue: used to call `SyncServerDelegate` methods.
-    ///         (`SyncServerCredentials` methods may be called on any queue.)
+    ///         (`SyncServerCredentials` and `SyncServerHelpers` methods may be called on any queue.)
     ///         Also used for any callbacks defined on this interface.
     public init(hashingManager: HashingManager,
         db:Connection,

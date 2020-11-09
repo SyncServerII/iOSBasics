@@ -55,6 +55,11 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
             let url = config.temporaryFiles.directory.appendingPathComponent(filePath)
             try FileManager.default.removeItem(at: url)
         }
+        
+        syncServer.helperDelegate = self
+        handlers.objectType = { _, _ in
+            return nil
+        }
     }
 
     override func tearDownWithError() throws {
@@ -208,6 +213,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
         
         try syncServer.register(object: example)
 
@@ -262,6 +268,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
         
         try syncServer.register(object: example)
 

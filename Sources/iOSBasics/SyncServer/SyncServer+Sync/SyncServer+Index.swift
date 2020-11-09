@@ -133,12 +133,14 @@ extension SyncServer {
                 throw SyncServerError.internalError("Could not get fileGroupUUID field")
             }
             
-            let _ = try DirectoryObjectEntry.matchSert(fileInfo: firstFile, db: db)
+            let objectType = try helperDelegate.getObjectType(file: firstFile)
+
+            let _ = try DirectoryObjectEntry.matchSert(fileInfo: firstFile, objectType: objectType, db: db)
             
             var deletedCount = 0
             
             for file in fileGroup {
-                let (fileEntry, deleted) = try DirectoryFileEntry.upsert(fileInfo: file, db: db)
+                let (fileEntry, deleted) = try DirectoryFileEntry.upsert(fileInfo: file, objectType: objectType, objectDeclarations: objectDeclarations, db: db)
                 if deleted {
                     deletedCount += 1
                     delegator { [weak self] delegate in
@@ -186,19 +188,14 @@ extension SyncServer {
             var hasFileEntry = false
             var hasObjectEntry = false
 
-            // If a fileIndex fileUUID has a DirectoryFileEntry or a DirectoryObjectEntry then their main (static) components must not have changed.
-            guard let objectType = file.objectType else {
-                throw SyncServerError.internalError("No object type!")
-            }
+            let objectType = try helperDelegate.getObjectType(file: file)
             
             // We might want to weaken this later, but for initial testing, fail if we don't know about the declared object. One reason to weaken this later is for migration purposes. Some app instance could have been upgraded, but a current one doesn't yet know about a new object type.
             guard let declaredObject = try DeclaredObjectModel.fetchSingleRow(db: db, where: DeclaredObjectModel.objectTypeField.description == objectType) else {
                 throw SyncServerError.internalError("No declared object!")
             }
             
-            guard let fileLabel = file.fileLabel else {
-                throw SyncServerError.internalError("No fileLabel")
-            }
+            let fileLabel = try file.getFileLabel(objectType: objectType, objectDeclarations: objectDeclarations)
 
             let fileDeclaration:FileDeclaration = try declaredObject.getFile(with: fileLabel)
             

@@ -15,7 +15,7 @@ extension SyncServer {
         case .noMatch:            
             let newObject = try DeclaredObjectModel(db: db, object: object)
             try newObject.insert()
-            objectDeclarations += [object]
+            objectDeclarations[object.objectType] = object
             
         case .matchesWithSameFiles:
             break
@@ -24,10 +24,7 @@ extension SyncServer {
             try existingObject.update(setters:
                 DeclaredObjectModel.filesDataField.description <-
                     try DeclaredObjectModel.encode(files: newFiles))
-                    
-            // Need to remove the prior registered object and add this one.
-            objectDeclarations.removeAll(where: {$0.objectType == object.objectType})
-            objectDeclarations += [object]
+            objectDeclarations[object.objectType] = object
         }
     }
 }

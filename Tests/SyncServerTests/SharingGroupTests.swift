@@ -55,6 +55,11 @@ class SharingGroupTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITest
             let url = config.temporaryFiles.directory.appendingPathComponent(filePath)
             try FileManager.default.removeItem(at: url)
         }
+        
+        syncServer.helperDelegate = self
+        handlers.objectType = { _, _ in
+            return nil
+        }
     }
 
     override func tearDownWithError() throws {

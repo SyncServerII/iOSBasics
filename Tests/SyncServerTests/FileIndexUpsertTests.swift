@@ -31,6 +31,11 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
+
+        handlers.objectType = { _, _ in
+            return nil
+        }
     }
 
     override func tearDownWithError() throws {
