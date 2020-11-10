@@ -2,13 +2,12 @@
 import Foundation
 import ServerShared
 
-// Enable previously registered and downloaded DeclarableObjects to be handled.
-
+// Enable previously registered and downloaded DeclarableObjects to be handled. i.e., handles downloads for specific objectType's.
 public protocol ObjectDownloadHandler {
     // Helper to deal with older version objects that don't have explicit fileLabel's
     func getFileLabel(appMetaData: String) -> String?
     
-    func objectWasDownloaded(object: DownloadObject)
+    func objectWasDownloaded(object: DownloadedObject)
 }
 
 extension FileInfo {

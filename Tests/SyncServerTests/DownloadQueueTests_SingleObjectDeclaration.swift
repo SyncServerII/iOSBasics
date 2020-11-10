@@ -128,6 +128,68 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         try runDownload(withFiles: true)
     }
     
+    func testSingleDownloadUsingDownloadHandler() throws {
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let localFile = Self.exampleTextFileURL
+        
+        var uploadable: ObjectUpload!
+        var downloadHandlerCalled = false
+        
+        let (uploadableObject, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile) { downloadedObject in
+        
+            do {
+                try self.compare(uploadedFile: localFile, downloadObject: downloadedObject, to: uploadable, downloadHandlerCalled: &downloadHandlerCalled)
+            } catch let error {
+                XCTFail("\(error)")
+            }
+        }
+        
+        uploadable = uploadableObject
+        
+        guard uploadableObject.uploads.count == 1,
+            let uploadableFile = uploadableObject.uploads.first else {
+            XCTFail()
+            return
+        }
+        
+        let downloadable1 = FileToDownload(uuid: uploadableFile.uuid, fileVersion: 0)
+        
+        let downloadables = [downloadable1]
+        
+         let downloadObject = ObjectToDownload(fileGroupUUID: uploadableObject.fileGroupUUID, downloads: downloadables)
+        
+        try syncServer.queue(download: downloadObject)
+
+        let exp = expectation(description: "exp")
+        handlers.extras.downloadCompleted = { _, result in
+            switch result.downloadType {
+            case .gone:
+                XCTFail()
+                
+            case .success(let url):
+                do {
+                    let data1 = try Data(contentsOf: localFile)
+                    let data2 = try Data(contentsOf: url)
+                    XCTAssert(data1 == data2)
+                    try FileManager.default.removeItem(at: url)
+                } catch {
+                    XCTFail()
+                }
+            }
+            
+            exp.fulfill()
+        }
+        
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        XCTAssert(try DownloadFileTracker.numberRows(db: database) == 0)
+        XCTAssert(try DownloadObjectTracker.numberRows(db: database) == 0)
+        
+        XCTAssert(downloadHandlerCalled)
+    }
+    
     func testNonDistinctFileUUIDsInDownloadFilesFails() throws {
         try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()

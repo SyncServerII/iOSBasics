@@ -149,4 +149,94 @@ class DownloadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBas
         XCTAssert(try DownloadFileTracker.numberRows(db: database) == 0)
         XCTAssert(try DownloadObjectTracker.numberRows(db: database) == 0)
     }
+    
+    func testDifferentObjectTypeUsesDownloadHandlers() throws {
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        let localFile = Self.exampleTextFileURL
+        
+        let objectType1 = "Foo1"
+        let objectType2 = "Foo2"
+
+        var uploadable1: ObjectUpload!
+        var downloadHandlerCalled1 = false
+        
+        let (uploadableObject1, _) = try uploadExampleTextFile(objectType: objectType1, sharingGroupUUID: sharingGroupUUID, localFile: localFile) { downloadedObject in
+            do {
+                try self.compare(uploadedFile: localFile, downloadObject: downloadedObject, to: uploadable1, downloadHandlerCalled: &downloadHandlerCalled1)
+            } catch let error {
+                XCTFail("\(error)")
+            }
+        }
+        
+        uploadable1 = uploadableObject1
+        
+        guard uploadableObject1.uploads.count == 1,
+            let uploadableFile1 = uploadableObject1.uploads.first else {
+            XCTFail()
+            return
+        }
+        
+        var uploadable2: ObjectUpload!
+        var downloadHandlerCalled2 = false
+        
+        let (uploadableObject2, _) = try uploadExampleTextFile(objectType: objectType2, sharingGroupUUID: sharingGroupUUID, localFile: localFile) { downloadedObject in
+            do {
+                try self.compare(uploadedFile: localFile, downloadObject: downloadedObject, to: uploadable2, downloadHandlerCalled: &downloadHandlerCalled2)
+            } catch let error {
+                XCTFail("\(error)")
+            }
+        }
+        
+        uploadable2 = uploadableObject2
+
+        guard uploadableObject2.uploads.count == 1,
+            let uploadableFile2 = uploadableObject2.uploads.first else {
+            XCTFail()
+            return
+        }
+        
+        let downloadable1 = FileToDownload(uuid: uploadableFile1.uuid, fileVersion: 0)
+        let downloadObject1 = ObjectToDownload(fileGroupUUID: uploadableObject1.fileGroupUUID, downloads: [downloadable1])
+
+        let downloadable2 = FileToDownload(uuid: uploadableFile2.uuid, fileVersion: 0)
+        let downloadObject2 = ObjectToDownload(fileGroupUUID: uploadableObject2.fileGroupUUID, downloads: [downloadable2])
+
+        try syncServer.queue(download: downloadObject1)
+        try syncServer.queue(download: downloadObject2)
+
+        var count = 0
+        
+        let exp = expectation(description: "exp")
+        handlers.extras.downloadCompleted = { _, result in
+            count += 1
+            
+            switch result.downloadType {
+            case .gone:
+                XCTFail()
+                
+            case .success(let url):
+                do {
+                    let data1 = try Data(contentsOf: localFile)
+                    let data2 = try Data(contentsOf: url)
+                    XCTAssert(data1 == data2)
+                    try FileManager.default.removeItem(at: url)
+                } catch {
+                    XCTFail()
+                }
+            }
+            
+            if count == 2 {
+                exp.fulfill()
+            }
+        }
+        
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        XCTAssert(try DownloadFileTracker.numberRows(db: database) == 0)
+        XCTAssert(try DownloadObjectTracker.numberRows(db: database) == 0)
+        
+        XCTAssert(downloadHandlerCalled1)
+        XCTAssert(downloadHandlerCalled2)
+    }
 }

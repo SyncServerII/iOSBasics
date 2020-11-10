@@ -4,18 +4,22 @@ import Foundation
 
 class ExampleDeclaration: DeclarableObject, ObjectDownloadHandler {
     func getFileLabel(appMetaData: String) -> String? {
-        assert(false)
-        return nil
+        return appMetaDataMapping?[appMetaData]
     }
     
-    func objectWasDownloaded(object: DownloadObject) {
+    func objectWasDownloaded(object: DownloadedObject) {
+        self.objectWasDownloaded?(object)
     }
     
+    let appMetaDataMapping: [String: String]?
     let declaredFiles: [DeclarableFile]
     let objectType: String
-    
-    init(objectType: String, declaredFiles: [DeclarableFile]) {
+    let objectWasDownloaded:((DownloadedObject)->())?
+
+    init(objectType: String, declaredFiles: [DeclarableFile], appMetaDataMapping: [String: String]? = nil, objectWasDownloaded:((DownloadedObject)->())? = nil) {
         self.objectType = objectType
         self.declaredFiles = declaredFiles
+        self.appMetaDataMapping = appMetaDataMapping
+        self.objectWasDownloaded = objectWasDownloaded
     }
 }

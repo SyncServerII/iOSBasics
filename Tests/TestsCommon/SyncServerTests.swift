@@ -34,12 +34,36 @@ extension SyncServerTests where Self: XCTestCase {
         handlers.syncCompleted = nil
     }
 
-    func uploadExampleTextFile(sharingGroupUUID: UUID, localFile: URL = Self.exampleTextFileURL) throws -> (ObjectUpload, ExampleDeclaration) {
+    func compare(uploadedFile: URL, downloadObject: DownloadedObject, to uploadObject: ObjectUpload, downloadHandlerCalled: inout Bool) throws {
+        let localFileData = try Data(contentsOf: uploadedFile)
+
+        guard downloadObject.downloads.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        let downloadFile = downloadObject.downloads[0]
+        XCTAssert(downloadObject.fileGroupUUID == uploadObject.fileGroupUUID)
+        XCTAssert(uploadObject.uploads[0].fileLabel == downloadFile.fileLabel)
+        XCTAssert(uploadObject.uploads[0].uuid == downloadFile.uuid)
+        XCTAssert(downloadFile.fileVersion == 0)
+        
+        switch downloadFile.contents {
+        case .gone:
+            XCTFail()
+        case .download(let url):
+            let downloadedData = try Data(contentsOf: url)
+            XCTAssert(localFileData == downloadedData)
+        }
+        
+        downloadHandlerCalled = true
+    }
+    
+    func uploadExampleTextFile(objectType: String = "Foo", sharingGroupUUID: UUID, localFile: URL = Self.exampleTextFileURL, objectWasDownloaded:((DownloadedObject)->())? = nil) throws -> (ObjectUpload, ExampleDeclaration) {
         let fileUUID1 = UUID()
         
-        let objectType = "Foo"
         let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
-        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1], objectWasDownloaded: objectWasDownloaded)
         try syncServer.register(object: example)
         
         let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(localFile), uuid: fileUUID1)

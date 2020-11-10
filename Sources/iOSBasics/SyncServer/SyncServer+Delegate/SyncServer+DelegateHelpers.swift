@@ -102,7 +102,7 @@ extension SyncServer {
             switch downloadResult {
             case .gone(let objectTrackerId, let fileUUID, _):
                 do {
-                    try cleanupAfterDownloadCompleted(fileUUID: fileUUID, objectTrackerId: objectTrackerId)
+                    try cleanupAfterDownloadCompleted(fileUUID: fileUUID, url: nil, objectTrackerId: objectTrackerId)
                 } catch let error {
                     delegator { [weak self] delegate in
                         guard let self = self else { return }
@@ -120,7 +120,7 @@ extension SyncServer {
                 
             case .success(let objectTrackerId, let result):
                 do {
-                    try cleanupAfterDownloadCompleted(fileUUID: result.fileUUID, objectTrackerId: objectTrackerId)
+                    try cleanupAfterDownloadCompleted(fileUUID: result.fileUUID, url: result.url, objectTrackerId: objectTrackerId)
                 } catch let error {
                     delegator { [weak self] delegate in
                         guard let self = self else { return }
@@ -245,13 +245,18 @@ extension SyncServer {
         try objectTracker.delete()
     }
     
-    func cleanupAfterDownloadCompleted(fileUUID:UUID, objectTrackerId: Int64) throws {
+    func cleanupAfterDownloadCompleted(fileUUID:UUID, url: URL?, objectTrackerId: Int64) throws {
         // There can be more than one row in DownloadFileTracker with the same fileUUID here because we can queue the same download multiple times. Therefore, need to also search by objectTrackerId.
         guard let fileTracker = try DownloadFileTracker.fetchSingleRow(db: db, where: fileUUID == DownloadFileTracker.fileUUIDField.description &&
             objectTrackerId == DownloadFileTracker.downloadObjectTrackerIdField.description) else {
             throw SyncServerError.internalError("Problem in fetchSingleRow for DownloadFileTracker")
         }
-
+        
+        if let url = url {
+            try fileTracker.update(setters:
+                DownloadFileTracker.localURLField.description <- url)
+        }
+        
         guard let objectTracker = try DownloadObjectTracker.fetchSingleRow(db: db, where: fileTracker.downloadObjectTrackerId  == DownloadObjectTracker.idField.description) else {
             throw SyncServerError.internalError("Problem in fetchSingleRow for DownloadObjectTracker")
         }
@@ -264,6 +269,36 @@ extension SyncServer {
         let remainingUploads = fileTrackers.filter {$0.status != .downloaded}
         
         if remainingUploads.count == 0 {
+            guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == objectTracker.fileGroupUUID) else {
+                throw SyncServerError.internalError("Could not get DirectoryObjectEntry for DownloadObjectTracker")
+            }
+            
+            guard let downloadHandler = objectDeclarations[objectEntry.objectType] else {
+                throw SyncServerError.internalError("Could not get ObjectDownloadHandler for DownloadObjectTracker")
+            }
+
+            var downloadedFiles = [DownloadedFile]()
+            
+            for file in fileTrackers {
+                guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == file.fileUUID) else {
+                    throw SyncServerError.internalError("Could not get DirectoryFileEntry for DownloadObjectTracker")
+                }
+                
+                let contents:DownloadedFile.Contents
+                if let url = file.localURL {
+                    contents = .download(url)
+                }
+                else {
+                    contents = .gone
+                }
+                
+                let downloadFile = DownloadedFile(uuid: file.fileUUID, fileVersion: file.fileVersion, fileLabel: fileEntry.fileLabel, contents: contents)
+                downloadedFiles += [downloadFile]
+            }
+
+            let downloadObject = DownloadedObject(fileGroupUUID: objectTracker.fileGroupUUID, downloads: downloadedFiles)
+            downloadHandler.objectWasDownloaded(object: downloadObject)
+            
             try deleteDownloadTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
         }
     }

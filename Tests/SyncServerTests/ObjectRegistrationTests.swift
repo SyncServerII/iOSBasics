@@ -14,25 +14,6 @@ import iOSSignIn
 import ChangeResolvers
 @testable import TestsCommon
 
-class ExampleDeclaration: DeclarableObject, ObjectDownloadHandler {    
-    func getFileLabel(appMetaData: String) -> String? {
-        return appMetaDataMapping?[appMetaData]
-    }
-    
-    func objectWasDownloaded(object: DownloadObject) {
-    }
-    
-    let appMetaDataMapping: [String: String]?
-    let declaredFiles: [DeclarableFile]
-    let objectType: String
-    
-    init(objectType: String, declaredFiles: [DeclarableFile], appMetaDataMapping: [String: String]? = nil) {
-        self.objectType = objectType
-        self.declaredFiles = declaredFiles
-        self.appMetaDataMapping = appMetaDataMapping
-    }
-}
-
 class ObjectRegistrationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate, SyncServerTests {
     var deviceUUID: UUID!
     var hashingManager: HashingManager!

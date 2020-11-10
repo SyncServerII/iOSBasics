@@ -83,6 +83,36 @@ public struct DownloadObject: ObjectNeedingDownload {
     }
 }
 
+public struct DownloadedFile: FileNeedingDownload {
+    public let uuid: UUID
+    public let fileVersion: FileVersionInt
+    public let fileLabel: String
+    
+    public enum Contents {
+        case gone
+        case download(URL)
+    }
+    
+    public let contents: Contents
+    
+    public init(uuid: UUID, fileVersion: FileVersionInt, fileLabel: String, contents: DownloadedFile.Contents) {
+        self.uuid = uuid
+        self.fileVersion = fileVersion
+        self.fileLabel = fileLabel
+        self.contents = contents
+    }
+}
+
+public struct DownloadedObject: ObjectNeedingDownload {
+    public let fileGroupUUID: UUID
+    public let downloads: [DownloadedFile]
+    
+    public init(fileGroupUUID: UUID, downloads: [DownloadedFile]) {
+        self.fileGroupUUID = fileGroupUUID
+        self.downloads = downloads
+    }
+}
+
 public struct ObjectDeclaration: DeclarableObject {
     // The type of object that this collection of files is representing.
     // E.g., a Neebla image or Neebla URL as above. This is optional only to grandfather in early versions of Neebla. New object declarations must have this non-nil.
