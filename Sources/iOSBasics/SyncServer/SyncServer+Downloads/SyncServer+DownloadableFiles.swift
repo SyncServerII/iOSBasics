@@ -47,7 +47,7 @@ extension SyncServer {
         return result
     }
     
-    func markAsDownloadedHelper<DWL: FileShouldBeDownloaded>(file: DWL) throws {
+    func markAsDownloadedHelper<DWL: DownloadableFile>(file: DWL) throws {
         guard let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == file.uuid) else {
             throw SyncServerError.noObject
         }

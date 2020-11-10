@@ -4,7 +4,7 @@ import SQLite
 import iOSShared
 
 extension SyncServer {
-    func queueHelper<DWL: ObjectShouldBeDownloaded>(download: DWL) throws {
+    func queueHelper<DWL: DownloadableObject>(download: DWL) throws {
         guard download.downloads.count > 0 else {
             throw SyncServerError.noDownloads
         }
@@ -66,7 +66,7 @@ extension SyncServer {
     
     // Add a new tracker into DownloadObjectTracker, and one for each new download.
     // The order and length of the elements returned in the [DownloadFileTracker] array is the same as in the downloads array.
-    private func createNewTrackers<DWL: FileShouldBeDownloaded>(fileGroupUUID: UUID, downloads: [DWL]) throws -> (newObjectTrackerId: Int64, DownloadObjectTracker, [DownloadFileTracker]) {
+    private func createNewTrackers<DWL: DownloadableFile>(fileGroupUUID: UUID, downloads: [DWL]) throws -> (newObjectTrackerId: Int64, DownloadObjectTracker, [DownloadFileTracker]) {
     
         let newObjectTracker = try DownloadObjectTracker(db: db, fileGroupUUID: fileGroupUUID)
         try newObjectTracker.insert()

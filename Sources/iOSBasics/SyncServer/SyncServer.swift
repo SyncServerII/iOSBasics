@@ -118,7 +118,7 @@ public class SyncServer {
     // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.
     // The files must have been uploaded by this client before, or be available because it was seen in `filesNeedingDownload`.
     // If you queue an object that has a fileGroupUUID which is already queued or in progress of downloading, your request will be queued.
-    func queue<DWL: ObjectShouldBeDownloaded>(download: DWL) throws {
+    func queue<DWL: DownloadableObject>(download: DWL) throws {
         try queueHelper(download: download)
     }
     
@@ -166,7 +166,7 @@ public class SyncServer {
     }
 
     // Call this method so that, after you download a file, it doesn't appear again in `objectsNeedingDownload` (for that file version).
-    public func markAsDownloaded<DWL: FileShouldBeDownloaded>(file: DWL) throws {
+    public func markAsDownloaded<DWL: DownloadableFile>(file: DWL) throws {
         try markAsDownloadedHelper(file: file)
     }
 

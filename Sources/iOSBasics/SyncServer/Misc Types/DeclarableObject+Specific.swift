@@ -26,7 +26,7 @@ public struct FileDeclaration: DeclarableFile, Codable, Hashable {
     }
 }
 
-public struct FileToDownload: FileShouldBeDownloaded {
+public struct FileToDownload: DownloadableFile {
     public let uuid: UUID
     public let fileVersion: FileVersionInt
     
@@ -41,7 +41,7 @@ public struct FileToDownload: FileShouldBeDownloaded {
     }
 }
 
-public struct ObjectToDownload: ObjectShouldBeDownloaded {
+public struct ObjectToDownload: DownloadableObject {
     public let fileGroupUUID: UUID
     public let downloads: [FileToDownload]
     
@@ -51,7 +51,7 @@ public struct ObjectToDownload: ObjectShouldBeDownloaded {
     }
 }
 
-public struct DownloadFile: FileNeedingDownload {
+public struct DownloadFile: DownloadingFile {
     public let uuid: UUID
     public let fileVersion: FileVersionInt
     public let fileLabel: String
@@ -73,7 +73,7 @@ public struct DownloadFile: FileNeedingDownload {
     }
 }
 
-public struct DownloadObject: ObjectNeedingDownload {
+public struct DownloadObject: DownloadingObject {
     public let fileGroupUUID: UUID
     public let downloads: [DownloadFile]
     
@@ -83,7 +83,7 @@ public struct DownloadObject: ObjectNeedingDownload {
     }
 }
 
-public struct DownloadedFile: FileNeedingDownload {
+public struct DownloadedFile: DownloadingFile {
     public let uuid: UUID
     public let fileVersion: FileVersionInt
     public let fileLabel: String
@@ -103,7 +103,7 @@ public struct DownloadedFile: FileNeedingDownload {
     }
 }
 
-public struct DownloadedObject: ObjectNeedingDownload {
+public struct DownloadedObject: DownloadingObject {
     public let fileGroupUUID: UUID
     public let downloads: [DownloadedFile]
     
