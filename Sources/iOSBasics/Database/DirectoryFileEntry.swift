@@ -1,6 +1,7 @@
 import SQLite
 import Foundation
 import ServerShared
+import iOSShared
 
 // Represents a file the iOSBasics client knows about in regards to the current signed in user. Used to represent a directory of all files for the current signed in user.
 // The collection of `DirectoryFileEntry`'s with the same fileGroupUUID (and necessarily having the same `objectType` and `sharingGroupUUID`) comprises an instance of a specific DeclarableObject
@@ -200,7 +201,7 @@ extension DirectoryFileEntry {
         
         guard let fileUUIDString = fileInfo.fileUUID,
             let fileUUID = UUID(uuidString: fileUUIDString) else {
-            throw DatabaseModelError.invalidUUID
+            throw DatabaseError.invalidUUID
         }
 
         if let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) {
@@ -217,7 +218,7 @@ extension DirectoryFileEntry {
         else {            
             guard let fileGroupUUIDString = fileInfo.fileGroupUUID,
                 let fileGroupUUID = UUID(uuidString: fileGroupUUIDString) else {
-                throw DatabaseModelError.invalidUUID
+                throw DatabaseError.invalidUUID
             }
             
             let fileLabel = try fileInfo.getFileLabel(objectType: objectType, objectDeclarations: objectDeclarations)
@@ -234,7 +235,7 @@ extension DirectoryFileEntry {
     static func fileVersion(fileUUID: UUID, db: Connection) throws -> FileVersionInt? {
         guard let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where:
             fileUUID == DirectoryFileEntry.fileUUIDField.description) else {
-            throw DatabaseModelError.noObject
+            throw DatabaseError.noObject
         }
         
         return entry.fileVersion
@@ -264,7 +265,7 @@ extension DirectoryFileEntry {
     static func anyFileIsDeleted(fileUUIDs: [UUID], db: Connection) throws -> Bool {
         for fileUUID in fileUUIDs {
             guard let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where: fileUUID == DirectoryFileEntry.fileUUIDField.description) else {
-                throw DatabaseModelError.noObject
+                throw DatabaseError.noObject
             }
             
             if entry.deletedLocally || entry.deletedOnServer {

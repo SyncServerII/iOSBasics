@@ -3,6 +3,7 @@
 import SQLite
 import Foundation
 import ServerShared
+import iOSShared
 
 class WorkingParameters: DatabaseModel {
     let db: Connection
@@ -57,7 +58,7 @@ extension WorkingParameters {
     static func singleton(db: Connection) throws -> WorkingParameters {
         let rows = try WorkingParameters.fetch(db: db)
         guard rows.count == 1 else {
-            throw DatabaseModelError.notExactlyOneRow
+            throw DatabaseError.notExactlyOneRow
         }
         
         return rows[0]

@@ -31,7 +31,7 @@ class DeclaredObjectModel: DatabaseModel, DeclarableObjectBasics, Equatable {
     func getFile(with fileLabel: String) throws -> FileDeclaration {
         let file = try getFiles().filter {$0.fileLabel == fileLabel}
         guard file.count == 1 else {
-            throw DatabaseModelError.notExactlyOneWithFileLabel
+            throw DatabaseError.notExactlyOneWithFileLabel
         }
         
         return file[0]
@@ -54,7 +54,7 @@ class DeclaredObjectModel: DatabaseModel, DeclarableObjectBasics, Equatable {
         self.objectType = objectType
         
         guard files.count > 0 else {
-            throw DatabaseModelError.noFileDeclarations
+            throw DatabaseError.noFileDeclarations
         }
         
         _filesData = try Self.encode(files: files)
@@ -67,7 +67,7 @@ class DeclaredObjectModel: DatabaseModel, DeclarableObjectBasics, Equatable {
         self.id = id
         
         guard object.declaredFiles.count > 0 else {
-            throw DatabaseModelError.noFileDeclarations
+            throw DatabaseError.noFileDeclarations
         }
         
         let files = object.declaredFiles.map {
@@ -120,7 +120,7 @@ extension DeclaredObjectModel {
     // Get a DeclarableObject to represent the DeclaredObjectModel and its component declared files. throws DatabaseModelError.noObject if no object found.
     static func lookup(objectType: String, db: Connection) throws -> ObjectDeclaration {
         guard let model = try DeclaredObjectModel.fetchSingleRow(db: db, where: objectType == DeclaredObjectModel.objectTypeField.description) else {
-            throw DatabaseModelError.noObject
+            throw DatabaseError.noObject
         }
         
         return ObjectDeclaration(objectType: objectType, declaredFiles: try model.getFiles())

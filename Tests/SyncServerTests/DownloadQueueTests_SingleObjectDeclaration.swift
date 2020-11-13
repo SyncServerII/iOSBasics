@@ -245,12 +245,12 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         do {
             try syncServer.queue(download: downloadObject)
         } catch let error {
-            guard let databaseModelError = error as? DatabaseModelError else {
+            guard let databaseModelError = error as? DatabaseError else {
                 XCTFail()
                 return
             }
             
-            XCTAssert(databaseModelError == DatabaseModelError.noObject)
+            XCTAssert(databaseModelError == DatabaseError.noObject)
             return
         }
         

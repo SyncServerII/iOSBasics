@@ -160,11 +160,11 @@ class DeclaredObjectModelTests: XCTestCase {
         do {
             let _ = try DeclaredObjectModel.lookup(objectType: "foo", db: database)
         } catch let error {
-            guard let error = error as? DatabaseModelError else {
+            guard let error = error as? DatabaseError else {
                 XCTFail()
                 return
             }
-            XCTAssert(error == DatabaseModelError.noObject)
+            XCTAssert(error == DatabaseError.noObject)
             return
         }
 

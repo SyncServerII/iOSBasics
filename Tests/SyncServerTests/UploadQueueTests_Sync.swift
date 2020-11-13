@@ -216,7 +216,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         
         if fileHasBeenDeleted {
             guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: database, where: fileUUID1 == DirectoryFileEntry.fileUUIDField.description) else {
-                throw DatabaseModelError.noObject
+                throw DatabaseError.noObject
             }
             
             try fileEntry.update(setters:
@@ -224,7 +224,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
             )
             
             guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: database, where: fileGroupUUID1 == DirectoryObjectEntry.fileGroupUUIDField.description) else {
-                throw DatabaseModelError.noObject
+                throw DatabaseError.noObject
             }
             
             try objectEntry.update(setters:

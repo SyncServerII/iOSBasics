@@ -1,6 +1,7 @@
 import SQLite
 import Foundation
 import ServerShared
+import iOSShared
 
 class NetworkCache: DatabaseModel {
     let db: Connection

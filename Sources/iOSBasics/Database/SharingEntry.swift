@@ -4,6 +4,7 @@
 import SQLite
 import Foundation
 import ServerShared
+import iOSShared
 
 class SharingEntry: DatabaseModel {
     enum SharingEntryError: Error {
@@ -101,7 +102,7 @@ extension SharingEntry {
     static func upsert(sharingGroup: ServerShared.SharingGroup, db: Connection) throws {
         guard let sharingGroupUUIDString = sharingGroup.sharingGroupUUID,
               let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString) else {
-            throw DatabaseModelError.invalidUUID
+            throw DatabaseError.invalidUUID
         }
 
         if let sharingEntry = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID) {

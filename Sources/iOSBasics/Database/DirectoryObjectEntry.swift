@@ -2,6 +2,7 @@
 import Foundation
 import SQLite
 import ServerShared
+import iOSShared
 
 class DirectoryObjectEntry: DatabaseModel, Equatable {
     let db: Connection
@@ -145,22 +146,22 @@ extension DirectoryObjectEntry {
     static func matchSert(fileInfo: FileInfo, objectType: String, db: Connection) throws -> DirectoryObjectEntry {
         guard let fileGroupUUIDString = fileInfo.fileGroupUUID,
               let fileGroupUUID = UUID(uuidString: fileGroupUUIDString) else {
-            throw DatabaseModelError.invalidUUID
+            throw DatabaseError.invalidUUID
         }
         
         guard let sharingGroupUUIDString = fileInfo.sharingGroupUUID,
               let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString) else {
-            throw DatabaseModelError.invalidUUID
+            throw DatabaseError.invalidUUID
         }
         
         guard let cloudStorageTypeString = fileInfo.cloudStorageType,
             let cloudStorageType = CloudStorageType(rawValue: cloudStorageTypeString) else {
-            throw DatabaseModelError.badCloudStorageType
+            throw DatabaseError.badCloudStorageType
         }
         
         if let entry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) {
             guard entry == fileInfo else {
-                throw DatabaseModelError.notMatching
+                throw DatabaseError.notMatching
             }
             
             if entry.deletedOnServer != fileInfo.deleted {

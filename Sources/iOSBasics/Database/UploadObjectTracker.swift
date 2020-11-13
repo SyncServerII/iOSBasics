@@ -8,6 +8,7 @@
 import SQLite
 import Foundation
 import ServerShared
+import iOSShared
 
 // A record is added each time the SyncServer `queue` method is called.
 
