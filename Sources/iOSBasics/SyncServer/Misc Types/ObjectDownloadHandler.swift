@@ -7,7 +7,7 @@ public protocol ObjectDownloadHandler {
     // Helper to deal with older version objects that don't have explicit fileLabel's
     func getFileLabel(appMetaData: String) -> String?
     
-    func objectWasDownloaded(object: DownloadedObject)
+    func objectWasDownloaded(object: DownloadedObject) throws
 }
 
 extension FileInfo {

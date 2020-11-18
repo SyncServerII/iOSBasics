@@ -7,7 +7,7 @@ class ExampleDeclaration: DeclarableObject, ObjectDownloadHandler {
         return appMetaDataMapping?[appMetaData]
     }
     
-    func objectWasDownloaded(object: DownloadedObject) {
+    func objectWasDownloaded(object: DownloadedObject) throws {
         self.objectWasDownloaded?(object)
     }
     

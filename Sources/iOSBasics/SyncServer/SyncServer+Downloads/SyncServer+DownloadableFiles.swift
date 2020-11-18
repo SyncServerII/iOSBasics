@@ -41,7 +41,7 @@ extension SyncServer {
                 return DownloadFile(uuid: file.fileUUID, fileVersion: serverFileVersion, fileLabel: file.fileLabel)
             }
             
-            result += [DownloadObject(fileGroupUUID: first.fileGroupUUID, downloads: fileDownloads)]
+            result += [DownloadObject(sharingGroupUUID: sharingGroupUUID, fileGroupUUID: first.fileGroupUUID, downloads: fileDownloads)]
         }
 
         return result
@@ -62,6 +62,16 @@ extension SyncServer {
         
         try entry.update(setters:
             DirectoryFileEntry.fileVersionField.description <- file.fileVersion)
+    }
+    
+    func markAsDownloadedHelper<DWL: DownloadableObject>(object: DWL) throws {
+        guard let _ = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == object.fileGroupUUID) else {
+            throw SyncServerError.noObject
+        }
+        
+        for file in object.downloads {
+            try markAsDownloaded(file: file)
+        }
     }
 }
 

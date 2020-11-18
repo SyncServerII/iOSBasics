@@ -77,30 +77,6 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         XCTFail()
     }
     
-    func syncToGetSharingGroupUUID() throws -> UUID {
-        let exp = expectation(description: "exp")
-        handlers.syncCompleted = { _, result in
-            guard case .noIndex = result else {
-                XCTFail()
-                exp.fulfill()
-                return
-            }
-            exp.fulfill()
-        }
-        
-        try syncServer.sync()
-        waitForExpectations(timeout: 10, handler: nil)
-        handlers.syncCompleted = nil
-
-        let groups = try syncServer.sharingGroups()
-        
-        guard groups.count > 0 else {
-            throw SyncServerError.internalError("Testing Error")
-        }
-        
-        return groups[0].sharingGroupUUID
-    }
-    
     func testFilesNeedingDownloadKnownSharingGroupWorks() throws {
         let sharingGroupUUID = try syncToGetSharingGroupUUID()
         

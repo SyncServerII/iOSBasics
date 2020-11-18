@@ -74,10 +74,12 @@ public struct DownloadFile: DownloadingFile {
 }
 
 public struct DownloadObject: DownloadingObject {
+    public let sharingGroupUUID: UUID
     public let fileGroupUUID: UUID
     public let downloads: [DownloadFile]
     
-    public init(fileGroupUUID: UUID, downloads: [DownloadFile]) {
+    public init(sharingGroupUUID: UUID, fileGroupUUID: UUID, downloads: [DownloadFile]) {
+        self.sharingGroupUUID = sharingGroupUUID
         self.fileGroupUUID = fileGroupUUID
         self.downloads = downloads
     }
@@ -90,6 +92,8 @@ public struct DownloadedFile: DownloadingFile {
     
     public enum Contents {
         case gone
+        
+        // When returned to the client, this file needs to be moved or copied to a client location for persistence.
         case download(URL)
     }
     
@@ -104,10 +108,14 @@ public struct DownloadedFile: DownloadingFile {
 }
 
 public struct DownloadedObject: DownloadingObject {
+    // Has a sharingGroupUUID because `DownloadedObject` is used in the `ObjectDownloadHandler` `objectWasDownloaded` method and that method needs to know the sharing group.
+    public let sharingGroupUUID: UUID
+    
     public let fileGroupUUID: UUID
     public let downloads: [DownloadedFile]
     
-    public init(fileGroupUUID: UUID, downloads: [DownloadedFile]) {
+    public init(sharingGroupUUID: UUID, fileGroupUUID: UUID, downloads: [DownloadedFile]) {
+        self.sharingGroupUUID = sharingGroupUUID
         self.fileGroupUUID = fileGroupUUID
         self.downloads = downloads
     }

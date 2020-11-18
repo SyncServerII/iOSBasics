@@ -1,9 +1,3 @@
-//
-//  DeclaredObjectModel.swift
-//  
-//
-//  Created by Christopher G Prince on 9/1/20.
-//
 
 import Foundation
 import SQLite

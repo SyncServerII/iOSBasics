@@ -295,9 +295,9 @@ extension SyncServer {
                 let downloadFile = DownloadedFile(uuid: file.fileUUID, fileVersion: file.fileVersion, fileLabel: fileEntry.fileLabel, contents: contents)
                 downloadedFiles += [downloadFile]
             }
-
-            let downloadObject = DownloadedObject(fileGroupUUID: objectTracker.fileGroupUUID, downloads: downloadedFiles)
-            downloadHandler.objectWasDownloaded(object: downloadObject)
+            
+            let downloadObject = DownloadedObject(sharingGroupUUID: objectEntry.sharingGroupUUID, fileGroupUUID: objectTracker.fileGroupUUID, downloads: downloadedFiles)
+            try downloadHandler.objectWasDownloaded(object: downloadObject)
             
             try deleteDownloadTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
         }

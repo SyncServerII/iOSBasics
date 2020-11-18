@@ -118,7 +118,7 @@ public class SyncServer {
     // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.
     // The files must have been uploaded by this client before, or be available because it was seen in `filesNeedingDownload`.
     // If you queue an object that has a fileGroupUUID which is already queued or in progress of downloading, your request will be queued.
-    func queue<DWL: DownloadableObject>(download: DWL) throws {
+    public func queue<DWL: DownloadableObject>(download: DWL) throws {
         try queueHelper(download: download)
     }
     
@@ -156,6 +156,7 @@ public class SyncServer {
     }
 
     // The list of files returned here survive app relaunch. A given object declaration will appear at most once in the returned list.
+    // TODO: `DownloadObject` has a sharingGroupUUID member, but we're passing a sharingGroupUUID-- so that's not really needed.
     public func objectsNeedingDownload(sharingGroupUUID: UUID) throws -> [DownloadObject] {
         let filtered = try sharingGroups().filter { $0.sharingGroupUUID == sharingGroupUUID }
         guard filtered.count == 1 else {
@@ -165,7 +166,12 @@ public class SyncServer {
         return try filesNeedingDownloadHelper(sharingGroupUUID: sharingGroupUUID)
     }
 
-    // Call this method so that, after you download a file, it doesn't appear again in `objectsNeedingDownload` (for that file version).
+    // Call this method so that, after you download an object, it doesn't appear again in `objectsNeedingDownload` (for those file versions).
+    public func markAsDownloaded<DWL: DownloadableObject>(object: DWL) throws {
+        try markAsDownloadedHelper(object: object)
+    }
+    
+    // Call this method so that, after you download an file, it doesn't appear again in `objectsNeedingDownload` (for that file version).
     public func markAsDownloaded<DWL: DownloadableFile>(file: DWL) throws {
         try markAsDownloadedHelper(file: file)
     }
@@ -189,7 +195,7 @@ public class SyncServer {
         }
     }
     
-    public func updateSharingGroup(sharingGroupUUID: UUID, newSharingGroupName: String, completion:@escaping (Error?)->()) {
+    public func updateSharingGroup(sharingGroupUUID: UUID, newSharingGroupName: String?, completion:@escaping (Error?)->()) {
         updateSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, newSharingGroupName: newSharingGroupName) { [weak self] error in
             self?.dispatchQueue.async {
                 completion(error)

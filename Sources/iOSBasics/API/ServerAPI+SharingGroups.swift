@@ -46,7 +46,7 @@ extension ServerAPI {
         }
     }
     
-    func updateSharingGroup(sharingGroup: UUID, newSharingGroupName: String, completion:@escaping (Error?)->()) {
+    func updateSharingGroup(sharingGroup: UUID, newSharingGroupName: String?, completion:@escaping (Error?)->()) {
         let endpoint = ServerEndpoints.updateSharingGroup
                 
         let updateSharingGroup = UpdateSharingGroupRequest()

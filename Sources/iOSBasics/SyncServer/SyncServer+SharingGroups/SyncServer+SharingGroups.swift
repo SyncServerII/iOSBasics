@@ -39,7 +39,7 @@ extension SyncServer {
         }
     }
     
-    func updateSharingGroupHelper(sharingGroupUUID: UUID, newSharingGroupName: String, completion:@escaping (Error?)->()) {
+    func updateSharingGroupHelper(sharingGroupUUID: UUID, newSharingGroupName: String?, completion:@escaping (Error?)->()) {
         
         do {
             guard let _ = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID) else {

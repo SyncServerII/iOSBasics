@@ -24,6 +24,13 @@ public struct ObjectUpload: UploadableObject {
     public let sharingGroupUUID: UUID
     public let uploads: [UploadableFile]
     
+    public init(objectType: String, fileGroupUUID: UUID, sharingGroupUUID: UUID, uploads: [UploadableFile]) {
+        self.objectType = objectType
+        self.fileGroupUUID = fileGroupUUID
+        self.sharingGroupUUID = sharingGroupUUID
+        self.uploads = uploads
+    }
+    
     public static func ==(lhs: ObjectUpload, rhs: DownloadObject) -> Bool {
         guard lhs.uploads.count == rhs.downloads.count else {
             return false
