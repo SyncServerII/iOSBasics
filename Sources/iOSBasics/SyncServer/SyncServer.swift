@@ -142,6 +142,22 @@ public class SyncServer {
     }
     
     // MARK: Getting information: These are local operations that do not interact with the server.
+    
+    public enum QueueType {
+        case upload
+        case deletion
+        case download
+    }
+    
+    // Is a particular file group being uploaded, deleted, or downloaded?
+    public func isQueued(_ queueType: QueueType, fileGroupUUID: UUID) throws -> Bool {
+        return try isQueuedHelper(queueType, fileGroupUUID: fileGroupUUID)
+    }
+    
+    // Return the number of queued objects of the particular type, across sharing groups.
+    public func numberQueued(_ queueType: QueueType) throws -> Int {
+        return try numberQueuedHelper(queueType)
+    }
 
     // Returns the same information as from the `downloadDeletion` delegate method-- other clients have removed these files.
     // Returns fileGroupUUID's of the objects needing local deletion-- they are deleted on the server but need local deletion.
@@ -156,6 +172,7 @@ public class SyncServer {
     }
 
     // The list of files returned here survive app relaunch. A given object declaration will appear at most once in the returned list.
+    // If a specific fileGroupUUID is already being downloaded, or queued for download, then `DownloadObject`'s with this fileGroupUUID will not be returned.
     // TODO: `DownloadObject` has a sharingGroupUUID member, but we're passing a sharingGroupUUID-- so that's not really needed.
     public func objectsNeedingDownload(sharingGroupUUID: UUID) throws -> [DownloadObject] {
         let filtered = try sharingGroups().filter { $0.sharingGroupUUID == sharingGroupUUID }

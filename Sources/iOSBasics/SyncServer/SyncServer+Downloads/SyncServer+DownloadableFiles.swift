@@ -33,6 +33,12 @@ extension SyncServer {
         for downloadGroup in downloadGroups {
             let first = downloadGroup[0]
             
+            // Is this fileGroupUUID currently being downloaded or queued for download?
+            let existingObjectTracker = try DownloadObjectTracker.fetch(db: db, where: DownloadObjectTracker.fileGroupUUIDField.description == first.fileGroupUUID)
+            guard existingObjectTracker.count == 0 else {
+                continue
+            }
+
             let fileDownloads = try downloadGroup.map { file -> DownloadFile in
                 guard let serverFileVersion = file.serverFileVersion else {
                     throw SyncServerError.internalError("Nil serverFileVersion")
@@ -71,6 +77,10 @@ extension SyncServer {
         
         for file in object.downloads {
             try markAsDownloaded(file: file)
+        }
+        
+        delegator { delegate in
+            delegate.objectMarkedAsDownloaded(self, fileGroupUUID: object.fileGroupUUID)
         }
     }
 }

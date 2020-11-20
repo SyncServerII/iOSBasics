@@ -106,6 +106,7 @@ extension ServerAPI: FileTransferDelegate {
         }
 
         if let resultError = self.checkForError(statusCode: statusCode, error: nil) {
+            logger.error("ServerAPI+FileTransferDelegate.uploadCompleted: \(resultError)")
             delegate.uploadCompleted(self, file: file, result: .failure(resultError))
             return
         }
@@ -146,6 +147,7 @@ extension ServerAPI: FileTransferDelegate {
         }
 
         if let resultError = self.checkForError(statusCode: statusCode, error: nil) {
+            logger.error("backgroundRequestCompleted: \(resultError)")
             delegate.backgroundRequestCompleted(self, result: .failure(resultError))
             return
         }

@@ -107,6 +107,7 @@ extension ServerAPI {
         guard uploadRequest.valid() else {
             let file = FileObject(fileUUID: file.fileUUID, fileVersion: nil, trackerId: file.uploadObjectTrackerId)
             let error = ServerAPIError.couldNotCreateRequest
+            logger.error("ServerAPI+Files.uploadFile: \(error)")
             delegate.uploadCompleted(self, file: file, result: .failure(error))
             return error
         }
@@ -149,6 +150,7 @@ extension ServerAPI {
             }
             
             if let error = self.checkForError(statusCode: httpStatus, error: error) {
+                logger.error("getUploadsResults: \(error)")
                 completion(.failure(error))
                 return
             }

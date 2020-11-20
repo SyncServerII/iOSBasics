@@ -120,6 +120,10 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
     // 1/2/18; Because of this issue I've just now changed how the server upload response gives it's results-- the values now come back in an HTTP header key, just like the download.
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         // This assumes this delegate method is called *before* the didCompleteWithError method.
+        guard data.count > 0 else {
+            return
+        }
+        
         do {
             let json = try JSONSerialization.jsonObject(with: data, options: JSONSerialization.ReadingOptions(rawValue: UInt(0)))
             if let uploadTask = dataTask as? URLSessionUploadTask,
@@ -127,7 +131,8 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
                 try backgroundCache.cacheUploadResult(taskIdentifer: uploadTask.taskIdentifier, uploadBody: jsonDict)
             }
         } catch let error {
-            logger.warning("Could not do JSON conversion: \(error); data.count: \(data.count)")
+            let str = String(data: data, encoding: .utf8)
+            logger.warning("Could not do JSON conversion: \(error); data.count: \(data.count); string: \(String(describing: str))")
         }
     }
     

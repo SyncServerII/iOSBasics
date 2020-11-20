@@ -264,6 +264,7 @@ class Networking: NSObject {
         } catch let error {
             task.cancel()
             let file = FileObject(fileUUID: fileUUID, fileVersion: nil, trackerId: uploadObjectTrackerId)
+            logger.error("Networking.uploadCompleted: \(error)")
             delegate.uploadCompleted(self, file: file, result: .failure(error))
             return error
         }

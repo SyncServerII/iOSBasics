@@ -14,8 +14,8 @@ class DelegateHandlers {
          
         var downloadQueued:((SyncServer) -> ())?
         var downloadCompleted:((SyncServer, DownloadResult) -> ())?
+        var objectMarkedAsDownloaded:((SyncServer, _ fileGroupUUID: UUID)->())?
         var downloadSync:((SyncServer, _ numberDownloadsStarted: UInt) -> ())?
-
     }
     let extras = Extras()
     
@@ -79,6 +79,10 @@ extension Delegate {
         case .sync(let numberDownloadsStarted):
             handlers.extras.downloadSync?(syncServer, numberDownloadsStarted)
         }
+    }
+    
+    func objectMarkedAsDownloaded(_ syncServer: SyncServer, fileGroupUUID: UUID) {
+        handlers.extras.objectMarkedAsDownloaded?(syncServer, fileGroupUUID)
     }
     
     // A uuid that was initially generated on the client

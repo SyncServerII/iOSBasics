@@ -114,7 +114,7 @@ public protocol SyncServerDelegate: AnyObject {
     
     // Called after the `sync` method is successful. If nil sharing group was given, the result is .noResult. If non-nil sharing group, the index is given.
     func syncCompleted(_ syncServer: SyncServer, result: SyncResult)
-
+    
     // A uuid that was initially generated on the client 
     func uuidCollision(_ syncServer: SyncServer, type: UUIDCollisionType, from: UUID, to: UUID)
     
@@ -122,6 +122,8 @@ public protocol SyncServerDelegate: AnyObject {
     
     func uploadQueue(_ syncServer: SyncServer, event: UploadEvent)
     func downloadQueue(_ syncServer: SyncServer, event: DownloadEvent)
+    
+    func objectMarkedAsDownloaded(_ syncServer: SyncServer, fileGroupUUID: UUID)
 
     // Request to server for upload deletion completed successfully.
     func deletionCompleted(_ syncServer: SyncServer)
