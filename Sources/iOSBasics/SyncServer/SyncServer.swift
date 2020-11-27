@@ -154,7 +154,7 @@ public class SyncServer {
         return try isQueuedHelper(queueType, fileGroupUUID: fileGroupUUID)
     }
     
-    // Return the number of queued objects of the particular type, across sharing groups.
+    // Return the number of queued objects (not files) of the particular type, across sharing groups.
     public func numberQueued(_ queueType: QueueType) throws -> Int {
         return try numberQueuedHelper(queueType)
     }

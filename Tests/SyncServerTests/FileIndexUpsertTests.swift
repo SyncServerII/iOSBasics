@@ -48,7 +48,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         try syncServer.upsert(fileIndex: [], sharingGroupUUID: UUID())
     }
     
-    func createFileInfo(fileUUID: UUID, fileGroupUUID:UUID, sharingGroupUUID:UUID, mimeType: MimeType, deleted: Bool, fileVersion: FileVersionInt, cloudStorageType: CloudStorageType, objectType: String, fileLabel: String) -> FileInfo {
+    func createFileInfo(fileUUID: UUID, fileGroupUUID:UUID, sharingGroupUUID:UUID, mimeType: MimeType, deleted: Bool, fileVersion: FileVersionInt, cloudStorageType: CloudStorageType, objectType: String, fileLabel: String, creationDate: Date = Date()) -> FileInfo {
     
         let fileInfo = FileInfo()
         fileInfo.fileUUID = fileUUID.uuidString
@@ -60,6 +60,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         fileInfo.cloudStorageType = cloudStorageType.rawValue
         fileInfo.objectType = objectType
         fileInfo.fileLabel = fileLabel
+        fileInfo.creationDate = creationDate
         
         return fileInfo
     }
@@ -441,6 +442,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         fileInfo.cloudStorageType = CloudStorageType.Dropbox.rawValue
         fileInfo.objectType = nil
         fileInfo.fileLabel = "file1"
+        fileInfo.creationDate = Date()
         
         // Must have some app meta data in order for the handler object type to be used.
         fileInfo.appMetaData = "Something"
@@ -485,6 +487,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         fileInfo.cloudStorageType = CloudStorageType.Dropbox.rawValue
         fileInfo.objectType = objectType
         fileInfo.fileLabel = nil
+        fileInfo.creationDate = Date()
         
         // Must have some app meta data in order for the handler object type to be used.
         fileInfo.appMetaData = "a"
@@ -527,6 +530,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         fileInfo.cloudStorageType = CloudStorageType.Dropbox.rawValue
         fileInfo.objectType = nil
         fileInfo.fileLabel = nil
+        fileInfo.creationDate = Date()
         
         // Must have some app meta data in order for the handler object type to be used.
         fileInfo.appMetaData = "a"

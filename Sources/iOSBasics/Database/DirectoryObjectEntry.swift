@@ -134,8 +134,10 @@ extension DirectoryObjectEntry {
             try objectEntry.insert()
         }
 
+        let creationDate = Date()
+        
         for file in upload.uploads {
-            let fileEntry = try DirectoryFileEntry(db: db, fileUUID: file.uuid, fileLabel: file.fileLabel, fileGroupUUID: upload.fileGroupUUID, fileVersion: nil, serverFileVersion: nil, deletedLocally: false, deletedOnServer: false, goneReason: nil)
+            let fileEntry = try DirectoryFileEntry(db: db, fileUUID: file.uuid, fileLabel: file.fileLabel, fileGroupUUID: upload.fileGroupUUID, fileVersion: nil, serverFileVersion: nil, deletedLocally: false, deletedOnServer: false, creationDate: creationDate, goneReason: nil)
             try fileEntry.insert()
         }
         

@@ -279,9 +279,23 @@ extension SyncServer {
 
             var downloadedFiles = [DownloadedFile]()
             
+            // This assertion is to ensure we have at least one creationDate
+            guard fileTrackers.count > 0 else {
+                throw SyncServerError.internalError("Somehow there were no file trackers!")
+            }
+            
+            var creationDate: Date!
+            
             for file in fileTrackers {
                 guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == file.fileUUID) else {
                     throw SyncServerError.internalError("Could not get DirectoryFileEntry for DownloadObjectTracker")
+                }
+                
+                if creationDate == nil {
+                    creationDate = fileEntry.creationDate
+                }
+                else {
+                    creationDate = min(creationDate, fileEntry.creationDate)
                 }
                 
                 let contents:DownloadedFile.Contents
@@ -296,7 +310,7 @@ extension SyncServer {
                 downloadedFiles += [downloadFile]
             }
             
-            let downloadObject = DownloadedObject(sharingGroupUUID: objectEntry.sharingGroupUUID, fileGroupUUID: objectTracker.fileGroupUUID, downloads: downloadedFiles)
+            let downloadObject = DownloadedObject(sharingGroupUUID: objectEntry.sharingGroupUUID, fileGroupUUID: objectTracker.fileGroupUUID, creationDate: creationDate, downloads: downloadedFiles)
             try downloadHandler.objectWasDownloaded(object: downloadObject)
             
             try deleteDownloadTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)

@@ -23,5 +23,6 @@ public protocol DownloadingObject {
     associatedtype FileDownload: DownloadingFile
     var sharingGroupUUID: UUID {get}
     var fileGroupUUID: UUID {get}
+    var creationDate: Date {get}
     var downloads: [FileDownload] {get}
 }

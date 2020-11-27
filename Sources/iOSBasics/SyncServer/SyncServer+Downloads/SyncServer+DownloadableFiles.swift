@@ -39,6 +39,10 @@ extension SyncServer {
                 continue
             }
 
+            guard let creationDate = (downloadGroup.map { $0.creationDate }.min()) else {
+                throw SyncServerError.internalError("Could not get creationDate")
+            }
+            
             let fileDownloads = try downloadGroup.map { file -> DownloadFile in
                 guard let serverFileVersion = file.serverFileVersion else {
                     throw SyncServerError.internalError("Nil serverFileVersion")
@@ -47,7 +51,7 @@ extension SyncServer {
                 return DownloadFile(uuid: file.fileUUID, fileVersion: serverFileVersion, fileLabel: file.fileLabel)
             }
             
-            result += [DownloadObject(sharingGroupUUID: sharingGroupUUID, fileGroupUUID: first.fileGroupUUID, downloads: fileDownloads)]
+            result += [DownloadObject(sharingGroupUUID: sharingGroupUUID, fileGroupUUID: first.fileGroupUUID, creationDate: creationDate, downloads: fileDownloads)]
         }
 
         return result
@@ -81,7 +85,11 @@ extension SyncServer {
             // This is an error: There must be an object if there are file for the file group.
             throw DatabaseError.noObject
         }
-                
+              
+        guard let creationDate = (downloads.map { $0.creationDate }.min()) else {
+            throw SyncServerError.internalError("Could not get creationDate")
+        }
+
         let fileDownloads = try downloads.map { file -> DownloadFile in
             guard let serverFileVersion = file.serverFileVersion else {
                 throw SyncServerError.internalError("Nil serverFileVersion")
@@ -90,7 +98,7 @@ extension SyncServer {
             return DownloadFile(uuid: file.fileUUID, fileVersion: serverFileVersion, fileLabel: file.fileLabel)
         }
             
-        return DownloadObject(sharingGroupUUID: objectEntry.sharingGroupUUID, fileGroupUUID: fileGroupUUID, downloads: fileDownloads)
+        return DownloadObject(sharingGroupUUID: objectEntry.sharingGroupUUID, fileGroupUUID: fileGroupUUID, creationDate: creationDate, downloads: fileDownloads)
     }
     
     func markAsDownloadedHelper<DWL: DownloadableFile>(file: DWL) throws {

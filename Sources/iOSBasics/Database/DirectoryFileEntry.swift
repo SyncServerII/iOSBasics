@@ -76,6 +76,9 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
     static let goneReasonField = Field("goneReason", \M.goneReason)
     var goneReason: String?
     
+    static let creationDateField = Field("creationDate", \M.creationDate)
+    var creationDate: Date
+    
     static func == (lhs: DirectoryFileEntry, rhs: DirectoryFileEntry) -> Bool {
         return lhs.id == rhs.id &&
             lhs.fileUUID == rhs.fileUUID &&
@@ -85,7 +88,8 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             lhs.deletedLocally == rhs.deletedLocally &&
             lhs.deletedOnServer == rhs.deletedOnServer &&
             lhs.goneReason == rhs.goneReason &&
-            lhs.fileLabel == rhs.fileLabel
+            lhs.fileLabel == rhs.fileLabel &&
+            lhs.creationDate == rhs.creationDate
     }
     
     func sameInvariants(fileInfo: FileInfo) -> Bool {
@@ -98,6 +102,20 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
         }
 
         guard fileLabel == fileInfo.fileLabel else {
+            return false
+        }
+        
+        guard let fileInfoCreationDate = fileInfo.creationDate else {
+            return false
+        }
+
+        /* Some variation and get failures without this. e.g.,
+        ▿ 2020-11-27 04:45:15 +0000
+            - timeIntervalSinceReferenceDate : 628145115.4990001
+        ▿ some : 2020-11-27 04:45:15 +0000
+            - timeIntervalSinceReferenceDate : 628145115.498967
+        */
+        guard Calendar.current.compare(creationDate, to: fileInfoCreationDate, toGranularity: .second) == .orderedSame else {
             return false
         }
                 
@@ -113,6 +131,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
         serverFileVersion: FileVersionInt?,
         deletedLocally: Bool,
         deletedOnServer: Bool,
+        creationDate: Date,
         goneReason: String? = nil) throws {
         
         if let goneReason = goneReason {
@@ -131,6 +150,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
         self.deletedLocally = deletedLocally
         self.deletedOnServer = deletedOnServer
         self.goneReason = goneReason
+        self.creationDate = creationDate
     }
     
     // MARK: DatabaseModel
@@ -146,6 +166,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             t.column(deletedLocallyField.description)
             t.column(deletedOnServerField.description)
             t.column(goneReasonField.description)
+            t.column(creationDateField.description)
         }
     }
     
@@ -159,6 +180,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             serverFileVersion: row[Self.serverFileVersionField.description],
             deletedLocally: row[Self.deletedLocallyField.description],
             deletedOnServer: row[Self.deletedOnServerField.description],
+            creationDate: row[Self.creationDateField.description],
             goneReason: row[Self.goneReasonField.description]
         )
     }
@@ -172,6 +194,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             Self.serverFileVersionField.description <- serverFileVersion,
             Self.deletedLocallyField.description <- deletedLocally,
             Self.deletedOnServerField.description <- deletedOnServer,
+            Self.creationDateField.description <- creationDate,
             Self.goneReasonField.description <- goneReason
         )
     }
@@ -221,10 +244,14 @@ extension DirectoryFileEntry {
                 throw DatabaseError.invalidUUID
             }
             
+            guard let creationDate = fileInfo.creationDate else {
+                throw DatabaseError.invalidCreationDate
+            }
+            
             let fileLabel = try fileInfo.getFileLabel(objectType: objectType, objectDeclarations: objectDeclarations)
 
             // `deletedLocally` is set to the same state as `deletedOnServer` because this is a file not yet known the local client. This just indicates that, if deleted on server already, the local client doesn't have to take any deletion actions for this file. If not deleted on the server, then the file isn't deleted locally either. 
-            let entry = try DirectoryFileEntry(db: db, fileUUID: fileUUID, fileLabel: fileLabel, fileGroupUUID: fileGroupUUID, fileVersion: nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, goneReason: nil)
+            let entry = try DirectoryFileEntry(db: db, fileUUID: fileUUID, fileLabel: fileLabel, fileGroupUUID: fileGroupUUID, fileVersion: nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, creationDate: creationDate, goneReason: nil)
             try entry.insert()
             resultEntry = entry
         }

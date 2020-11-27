@@ -15,4 +15,5 @@ enum DatabaseError: Error {
     case problemWithOtherMatchingAttributes
     case notMatching
     case noFileLabel
+    case invalidCreationDate
 }
