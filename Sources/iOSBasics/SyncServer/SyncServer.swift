@@ -182,6 +182,11 @@ public class SyncServer {
         
         return try filesNeedingDownloadHelper(sharingGroupUUID: sharingGroupUUID)
     }
+    
+    // Do any of the files of the object need downloading? Analogous to `objectsNeedingDownload`, but for just a single object in a sharing group.
+    public func objectNeedsDownload(fileGroupUUID: UUID) throws -> DownloadObject? {
+        return try objectNeedsDownloadHelper(object:fileGroupUUID)
+    }
 
     // Call this method so that, after you download an object, it doesn't appear again in `objectsNeedingDownload` (for those file versions).
     public func markAsDownloaded<DWL: DownloadableObject>(object: DWL) throws {

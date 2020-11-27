@@ -155,7 +155,7 @@ class ServerAPI {
     
     enum CheckCredsResult {
         case noUser
-        case user(UserId, accessToken:String?)
+        case user(userId:UserId, accessToken:String?)
     }
     
     func checkCreds(_ creds: GenericCredentials, completion: @escaping (Swift.Result<CheckCredsResult, Error>)->(Void)) {
@@ -176,7 +176,7 @@ class ServerAPI {
                 }
                 
                 let accessToken = response?[ServerConstants.httpResponseOAuth2AccessTokenKey] as? String
-                result = .user(checkCredsResponse.userId, accessToken: accessToken)
+                result = .user(userId: checkCredsResponse.userId, accessToken: accessToken)
             }
             
             if let result = result {

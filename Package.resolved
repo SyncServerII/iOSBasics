@@ -42,7 +42,7 @@
         "repositoryURL": "https://github.com/SyncServerII/ChangeResolvers.git",
         "state": {
           "branch": "master",
-          "revision": "b26ffad4ef058870f5007bbb7395f7abfd141487",
+          "revision": "30b73253204a79e036f133465005d5f16f923b9a",
           "version": null
         }
       },
@@ -78,7 +78,7 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSShared.git",
         "state": {
           "branch": "master",
-          "revision": "d027baff36b06b273eaf38ff0f846146821f7e95",
+          "revision": "3fde7515dc895f5ae5e53612c84837746f3e4b99",
           "version": null
         }
       },
@@ -87,7 +87,7 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSSignIn.git",
         "state": {
           "branch": "master",
-          "revision": "9b8bb1b2c88d536b905a813f01335113fd7806bc",
+          "revision": "854fbf5aa6c7aeb5490eb575a063061414a14b0b",
           "version": null
         }
       },

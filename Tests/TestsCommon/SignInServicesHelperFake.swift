@@ -5,6 +5,7 @@ import ServerShared
 
 // Integration point stub for iOSSignIn
 class SignInServicesHelperFake: SignInServicesHelper {
+    var userId: UserId?
     var cloudStorageType: CloudStorageType?
     var currentCredentials: GenericCredentials?
     var userType: UserType?

@@ -53,6 +53,46 @@ extension SyncServer {
         return result
     }
     
+    // Returns nil if the file (a) doesn't need download or (b) if it's currently being downloaded or is queued for download. Returns non-nil otherwise.
+    func objectNeedsDownloadHelper(object fileGroupUUID: UUID) throws -> DownloadObject? {
+        let fileEntries = try DirectoryFileEntry.fetch(db: db, where:
+            DirectoryFileEntry.fileGroupUUIDField.description == fileGroupUUID)
+        guard fileEntries.count > 0 else {
+            // An existing file group must have at least one file entry.
+            throw DatabaseError.noObject
+        }
+        
+        let downloads = fileEntries.filter { $0.fileState == .needsDownload }
+        
+        if downloads.count == 0 {
+            // No files needing download for this file group.
+            return nil
+        }
+        
+        let existingObjectTracker = try DownloadObjectTracker.fetch(db: db, where: DownloadObjectTracker.fileGroupUUIDField.description == fileGroupUUID)
+        
+        guard existingObjectTracker.count == 0 else {
+            // There are existing download trackers for this file group.
+            return nil
+        }
+        
+        guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where:
+            DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) else {
+            // This is an error: There must be an object if there are file for the file group.
+            throw DatabaseError.noObject
+        }
+                
+        let fileDownloads = try downloads.map { file -> DownloadFile in
+            guard let serverFileVersion = file.serverFileVersion else {
+                throw SyncServerError.internalError("Nil serverFileVersion")
+            }
+            
+            return DownloadFile(uuid: file.fileUUID, fileVersion: serverFileVersion, fileLabel: file.fileLabel)
+        }
+            
+        return DownloadObject(sharingGroupUUID: objectEntry.sharingGroupUUID, fileGroupUUID: fileGroupUUID, downloads: fileDownloads)
+    }
+    
     func markAsDownloadedHelper<DWL: DownloadableFile>(file: DWL) throws {
         guard let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == file.uuid) else {
             throw SyncServerError.noObject
