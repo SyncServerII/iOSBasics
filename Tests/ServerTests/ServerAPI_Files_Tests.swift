@@ -51,6 +51,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         case uploadFile
     }
     
+    // 11/28/20; This uploads a file with a nil file group.
     @discardableResult
     func fileUpload(upload: FileUpload = .normal) throws -> ServerAPI.File {
         // Get ready for test.
@@ -93,11 +94,13 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
     }
     
     func testFileUpload() throws {
+        // 11/28/20; Uploads a file with a nil file group.
         try fileUpload()
     }
     
     func testFileUploadWithAppMetaData() throws {
         let appMetaData = AppMetaData(contents: "foobly")
+        // 11/28/20; Uploads a file with a nil file group.
         try fileUpload(upload: .appMetaData(appMetaData))
     }
     
@@ -262,6 +265,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
     }
     
     func testDeleteV0File() throws {
+        // 11/28/20; Uploads a file with a nil file group.
         let upload = try fileUpload()
         
         let file:ServerAPI.DeletionFile = .fileUUID(upload.fileUUID)

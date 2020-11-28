@@ -39,6 +39,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         XCTAssert(handlers.user.addUser())
     }
     
+    // 11/28/20; Uploads a file with a nil file group.
     @discardableResult
     func fileUpload(comment:ExampleComment) throws -> ServerAPI.File? {        
         let fileUUID = UUID()
@@ -111,11 +112,13 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
     
     func testVNFileUploadWorks() throws {
         let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
+        // 11/28/20; Uploads a file with a nil file group.
         try fileUpload(comment: comment)
     }
     
     func testVNFileDownloadWorks() throws {
         let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
+        // 11/28/20; Uploads a file with a nil file group.
         guard let file = try fileUpload(comment: comment) else {
             XCTFail()
             return

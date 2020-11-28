@@ -168,12 +168,12 @@ extension APITests where Self: XCTestCase {
             exp.fulfill()
         }
         
-        waitForExpectations(timeout: 10, handler: nil)
+        waitForExpectations(timeout: 20, handler: nil)
 
         return returnResult
     }
     
-    func delayedGetUploadsResults(delay: TimeInterval = 8, deferredUploadId:Int64) -> DeferredUploadStatus? {
+    func delayedGetUploadsResults(delay: TimeInterval = 10, deferredUploadId:Int64) -> DeferredUploadStatus? {
         // Wait for a bit, before polling server to see if the upload is done.
         let exp = expectation(description: "Deferred Upload")
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {

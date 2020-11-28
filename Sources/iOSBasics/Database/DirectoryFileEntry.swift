@@ -75,9 +75,14 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
     
     static let goneReasonField = Field("goneReason", \M.goneReason)
     var goneReason: String?
-    
+
+    // When an object is uploaded/created on this client, the `creationDate` is just approximately at the start. The server sets the final `creationDate`. A locally created object has `updateCreationDate` == true, and `updateCreationDate` is reset once the date is updated from the server.
     static let creationDateField = Field("creationDate", \M.creationDate)
     var creationDate: Date
+
+    // See `creationDate`.
+    static let updateCreationDateField = Field("updateCreationDate", \M.updateCreationDate)
+    var updateCreationDate: Bool
     
     static func == (lhs: DirectoryFileEntry, rhs: DirectoryFileEntry) -> Bool {
         return lhs.id == rhs.id &&
@@ -106,6 +111,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
         }
         
         guard let fileInfoCreationDate = fileInfo.creationDate else {
+            logger.error("No creation date in file info!")
             return false
         }
 
@@ -115,10 +121,14 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
         ▿ some : 2020-11-27 04:45:15 +0000
             - timeIntervalSinceReferenceDate : 628145115.498967
         */
-        guard Calendar.current.compare(creationDate, to: fileInfoCreationDate, toGranularity: .second) == .orderedSame else {
-            return false
+
+        if !updateCreationDate {
+            guard Date.approximatelyEqual(creationDate, fileInfoCreationDate, threshold: 1) else {
+                logger.error("creationDate: \(creationDate.timeIntervalSinceReferenceDate); fileInfoCreationDate: \(fileInfoCreationDate.timeIntervalSinceReferenceDate)")
+                return false
+            }
         }
-                
+        
         return true
     }
     
@@ -132,6 +142,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
         deletedLocally: Bool,
         deletedOnServer: Bool,
         creationDate: Date,
+        updateCreationDate: Bool,
         goneReason: String? = nil) throws {
         
         if let goneReason = goneReason {
@@ -151,6 +162,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
         self.deletedOnServer = deletedOnServer
         self.goneReason = goneReason
         self.creationDate = creationDate
+        self.updateCreationDate = updateCreationDate
     }
     
     // MARK: DatabaseModel
@@ -167,6 +179,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             t.column(deletedOnServerField.description)
             t.column(goneReasonField.description)
             t.column(creationDateField.description)
+            t.column(updateCreationDateField.description)
         }
     }
     
@@ -181,6 +194,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             deletedLocally: row[Self.deletedLocallyField.description],
             deletedOnServer: row[Self.deletedOnServerField.description],
             creationDate: row[Self.creationDateField.description],
+            updateCreationDate: row[Self.updateCreationDateField.description],
             goneReason: row[Self.goneReasonField.description]
         )
     }
@@ -195,6 +209,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             Self.deletedLocallyField.description <- deletedLocally,
             Self.deletedOnServerField.description <- deletedOnServer,
             Self.creationDateField.description <- creationDate,
+            Self.updateCreationDateField.description <- updateCreationDate,
             Self.goneReasonField.description <- goneReason
         )
     }
@@ -226,6 +241,10 @@ extension DirectoryFileEntry {
             let fileUUID = UUID(uuidString: fileUUIDString) else {
             throw DatabaseError.invalidUUID
         }
+        
+        guard let creationDate = fileInfo.creationDate else {
+            throw DatabaseError.invalidCreationDate
+        }
 
         if let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) {
             try entry.update(setters: DirectoryFileEntry.serverFileVersionField.description <- fileInfo.fileVersion)
@@ -236,6 +255,14 @@ extension DirectoryFileEntry {
                 )
                 markedForDeletion = true
             }
+            
+            if entry.updateCreationDate {
+                try entry.update(setters:
+                    DirectoryFileEntry.creationDateField.description <- creationDate,
+                    DirectoryFileEntry.updateCreationDateField.description <- false
+                )
+            }
+            
             resultEntry = entry
         }
         else {            
@@ -244,14 +271,10 @@ extension DirectoryFileEntry {
                 throw DatabaseError.invalidUUID
             }
             
-            guard let creationDate = fileInfo.creationDate else {
-                throw DatabaseError.invalidCreationDate
-            }
-            
             let fileLabel = try fileInfo.getFileLabel(objectType: objectType, objectDeclarations: objectDeclarations)
 
             // `deletedLocally` is set to the same state as `deletedOnServer` because this is a file not yet known the local client. This just indicates that, if deleted on server already, the local client doesn't have to take any deletion actions for this file. If not deleted on the server, then the file isn't deleted locally either. 
-            let entry = try DirectoryFileEntry(db: db, fileUUID: fileUUID, fileLabel: fileLabel, fileGroupUUID: fileGroupUUID, fileVersion: nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, creationDate: creationDate, goneReason: nil)
+            let entry = try DirectoryFileEntry(db: db, fileUUID: fileUUID, fileLabel: fileLabel, fileGroupUUID: fileGroupUUID, fileVersion: nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, creationDate: creationDate, updateCreationDate: false, goneReason: nil)
             try entry.insert()
             resultEntry = entry
         }
@@ -303,45 +326,3 @@ extension DirectoryFileEntry {
         return false
     }
 }
-
-/*
-extension DirectoryEntry {
-
-    
-    // Create a `DirectoryEntry` per file in `declaredFiles`.
-    static func createEntries<FILE: DeclarableFile>(for declaredFiles: Set<FILE>, fileGroupUUID: UUID, sharingGroupUUID: UUID, db: Connection) throws {
-        for file in declaredFiles {
-            // `fileVersion` is specifically nil-- until we get a first successful upload of v0.
-            let dirEntry = try DirectoryEntry(db: db, fileUUID: file.uuid, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, fileVersion: nil, serverFileVersion: nil, deletedLocally: false, deletedOnServer: false, goneReason: nil)
-            try dirEntry.insert()
-        }
-    }
-    
-    // See if there is exactly one DirectoryEntry per `DeclaredFileModel`
-    static func isOneEntryForEach(declaredModels: [DeclaredFileModel], db: Connection) throws -> Bool {
-        for file in declaredModels {
-            let rows = try DirectoryEntry.fetch(db: db, where: file.uuid == DirectoryEntry.fileUUIDField.description)
-            guard rows.count == 1 else {
-                return false
-            }
-        }
-        
-        return true
-    }
-    
-    // It is an error for one of the uploadables to not be in the DirectoryEntry's
-    static func lookupFor<UPL: UploadableFile>(uploadables: Set<UPL>, db: Connection) throws -> [DirectoryEntry] {
-        var result = [DirectoryEntry]()
-        
-        for uploadable in uploadables {
-            guard let entry = try DirectoryEntry.fetchSingleRow(db: db, where: DirectoryEntry.fileUUIDField.description == uploadable.uuid) else {
-                throw DatabaseModelError.notExactlyOneRow
-            }
-            
-            result += [entry]
-        }
-        
-        return result
-    }
-}
-*/
