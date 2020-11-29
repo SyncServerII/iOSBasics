@@ -196,7 +196,6 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
             XCTFail()
             return
         }
-        //let uploadableFile = uploadable.uploads[0]
         
         let exp = expectation(description: "exp")
         handlers.deletionCompleted = { _ in
@@ -362,5 +361,111 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
         XCTAssert(fileEntry2.deletedOnServer)
         XCTAssert(!objectEntry2.deletedLocally)
         XCTAssert(objectEntry2.deletedOnServer)
+    }
+    
+    func testMakeSureSyncAfterUploadUpdatesCreationDate() throws {
+        let startDate = Date()
+        
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        let (uploadable, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
+        
+        guard uploadable.uploads.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: database, where: DirectoryFileEntry.fileUUIDField.description == uploadable.uploads[0].uuid) else {
+            XCTFail()
+            return
+        }
+        
+        var fileInfo = [FileInfo]()
+        
+        let exp = expectation(description: "exp2")
+
+        handlers.syncCompleted = { _, result in
+            guard case .index(_, let index) = result else {
+                XCTFail()
+                exp.fulfill()
+                return
+            }
+            
+            fileInfo = index
+            
+            exp.fulfill()
+        }
+
+        // Fetch the database state again.
+        try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        let filter = fileInfo.filter {$0.fileUUID == uploadable.uploads[0].uuid.uuidString}
+        guard filter.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        guard let serverCreationDate = filter[0].creationDate else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(Date.approximatelyEqual(serverCreationDate, startDate, threshold: 5), "object.creationDate: \(serverCreationDate.timeIntervalSince1970); startDate: \(startDate.timeIntervalSince1970)")
+        
+        // This isn't really a logical assertion, but more of a practical assertion. Logically, the server creation date should be after the locally created entry *prior* to the sync. But, with clocks and data transfer precision changes, this isn't really a logical check.
+        XCTAssert(fileEntry.creationDate != serverCreationDate)
+        
+        XCTAssert(Date.approximatelyEqual(serverCreationDate, fileEntry.creationDate, threshold: 5))
+        
+        guard let fileEntryAfter = try DirectoryFileEntry.fetchSingleRow(db: database, where: DirectoryFileEntry.fileUUIDField.description == uploadable.uploads[0].uuid) else {
+            XCTFail()
+            return
+        }
+
+        // Ensure that the database creationDate was updated.
+        XCTAssert(fileEntry.creationDate != fileEntryAfter.creationDate)
+    }
+    
+    func testMakeSureIndexForDownloadableFileHasCreationDate() throws {
+        let startDate = Date()
+        
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        let (uploadable, example) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
+        
+        guard uploadable.uploads.count == 1 else {
+            XCTFail()
+            return
+        }
+                
+        // Reset the database show a state *as if* another client instance had done the upload/deleteion.
+        database = try Connection(.inMemory)
+        let fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
+        let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, configuration: config, signIns: fakeSignIns)
+        syncServer.delegate = self
+        syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
+        
+        try syncServer.register(object: example)
+
+        let exp2 = expectation(description: "exp2")
+        handlers.syncCompleted = { _,_ in
+            exp2.fulfill()
+        }
+        
+        // Fetch the database state again.
+        try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        guard let object = try syncServer.objectNeedsDownload(fileGroupUUID: uploadable.fileGroupUUID) else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(Date.approximatelyEqual(startDate, object.creationDate, threshold: 5), "object.creationDate: \(object.creationDate.timeIntervalSince1970); startDate: \(startDate.timeIntervalSince1970)")
     }
 }
