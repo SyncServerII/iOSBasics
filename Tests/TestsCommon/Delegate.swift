@@ -39,7 +39,7 @@ class DelegateHandlers {
 
     var deferredCompleted: ((SyncServer, DeferredOperation, _ numberCompleted: Int) -> ())?
         
-    var deletionCompleted: ((SyncServer) -> ())?
+    var deletionCompleted: ((SyncServer, _ fileGroupUUID: UUID) -> ())?
     var downloadDeletion: ((SyncServer, DownloadDeletion) -> ())?
     
     // Use Extras
@@ -107,9 +107,9 @@ extension Delegate {
         handlers.deferredCompleted?(syncServer, operation, numberCompleted)
     }
     
-    func deletionCompleted(_ syncServer: SyncServer) {
+    func deletionCompleted(_ syncServer: SyncServer, forObjectWith fileGroupUUID: UUID) {
         logger.debug("handlers: deletionCompleted")
-        handlers.deletionCompleted?(syncServer)
+        handlers.deletionCompleted?(syncServer, fileGroupUUID)
     }
     
     func downloadDeletion(_ syncServer: SyncServer, details: DownloadDeletion) {

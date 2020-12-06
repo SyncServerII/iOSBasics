@@ -93,7 +93,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         try syncServer.queue(objectDeletion: upload.fileGroupUUID)
 
         let exp = expectation(description: "exp")
-        handlers.deletionCompleted = { _ in
+        handlers.deletionCompleted = { _, _ in
             exp.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -133,7 +133,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
             DirectoryObjectEntry.deletedOnServerField.description <- false)
             
         let exp3 = expectation(description: "exp")
-        handlers.deletionCompleted = { _ in
+        handlers.deletionCompleted = { _, _ in
             exp3.fulfill()
         }
         
@@ -184,7 +184,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         try syncServer.queue(objectDeletion: fileGroupUUID1)
 
         let exp = expectation(description: "exp")
-        handlers.deletionCompleted = { _ in
+        handlers.deletionCompleted = { _, _ in
             exp.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)

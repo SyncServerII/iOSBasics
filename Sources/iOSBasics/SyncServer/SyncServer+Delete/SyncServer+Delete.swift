@@ -74,9 +74,14 @@ extension SyncServer {
             return
         }
         
+        // This is error reporting for the `delegate.deletionCompleted(self, forObjectWith: tracker.uuid)` call, which assumes it's dealing with a fileGroupUUID.
+        if tracker.deletionType != .fileGroupUUID {
+            reportError(SyncServerError.internalError("tracker.deletionType not fileGroupUUID!"))
+        }
+        
         self.delegator { [weak self] delegate in
             guard let self = self else { return }
-            delegate.deletionCompleted(self)
+            delegate.deletionCompleted(self, forObjectWith: tracker.uuid)
         }
     }
     

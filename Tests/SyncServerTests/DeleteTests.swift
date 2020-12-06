@@ -120,7 +120,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         }
 
         let exp = expectation(description: "exp")
-        handlers.deletionCompleted = { _ in
+        handlers.deletionCompleted = { _, _ in
             exp.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -178,7 +178,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         try syncServer.queue(objectDeletion: fileGroupUUID)
 
         let exp = expectation(description: "exp")
-        handlers.deletionCompleted = { _ in
+        handlers.deletionCompleted = { _, _ in
             exp.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -253,7 +253,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         }
 
         let exp = expectation(description: "exp")
-        handlers.deletionCompleted = { _ in
+        handlers.deletionCompleted = { _, _ in
             exp.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -304,7 +304,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         try syncServer.queue(objectDeletion: fileGroupUUID)
 
         let exp = expectation(description: "exp")
-        handlers.deletionCompleted = { _ in
+        handlers.deletionCompleted = { _, _ in
             exp.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -377,7 +377,7 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
 
         if !withDeletedSharingGroup {
             let exp = expectation(description: "exp")
-            handlers.deletionCompleted = { _ in
+            handlers.deletionCompleted = { _, _ in
                 exp.fulfill()
             }
         }

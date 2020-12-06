@@ -103,7 +103,8 @@ extension SyncServerTests where Self: XCTestCase {
     // Deletion complete with waiting for deferred part of the deletion.
     func delete(object fileGroupUUID: UUID) throws {
         let exp = expectation(description: "exp")
-        handlers.deletionCompleted = { _ in
+        handlers.deletionCompleted = { _, fgUUID in
+            XCTAssert(fileGroupUUID == fgUUID)
             logger.debug("delete: handlers.deletionCompleted")
             exp.fulfill()
         }

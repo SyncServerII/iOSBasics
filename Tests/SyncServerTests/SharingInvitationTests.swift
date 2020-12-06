@@ -1,7 +1,5 @@
 
 import XCTest
-
-import XCTest
 @testable import iOSBasics
 import SQLite
 import ServerShared

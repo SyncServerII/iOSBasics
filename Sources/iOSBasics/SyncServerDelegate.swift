@@ -126,7 +126,7 @@ public protocol SyncServerDelegate: AnyObject {
     func objectMarkedAsDownloaded(_ syncServer: SyncServer, fileGroupUUID: UUID)
 
     // Request to server for upload deletion completed successfully.
-    func deletionCompleted(_ syncServer: SyncServer)
+    func deletionCompleted(_ syncServer: SyncServer, forObjectWith fileGroupUUID: UUID)
 
     // Called when vN deferred upload(s), or deferred deletions, successfully completed, is/are detected.
     func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int)

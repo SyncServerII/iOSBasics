@@ -206,7 +206,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
         }
         
         let exp = expectation(description: "exp")
-        handlers.deletionCompleted = { _ in
+        handlers.deletionCompleted = { _, _ in
             exp.fulfill()
         }
         
@@ -261,7 +261,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
         }
 
         let exp = expectation(description: "exp")
-        handlers.deletionCompleted = { _ in
+        handlers.deletionCompleted = { _, _ in
             exp.fulfill()
         }
         
@@ -319,7 +319,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
         }
 
         let exp = expectation(description: "exp")
-        handlers.deletionCompleted = { _ in
+        handlers.deletionCompleted = { _, _ in
             exp.fulfill()
         }
         
