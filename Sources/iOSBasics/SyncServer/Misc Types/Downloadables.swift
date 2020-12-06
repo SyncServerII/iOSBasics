@@ -29,5 +29,6 @@ public protocol DownloadingObject {
 
 public protocol IndexableObject: DownloadingObject {
     var deleted: Bool {get}
+    var objectType: String {get}
 }
 

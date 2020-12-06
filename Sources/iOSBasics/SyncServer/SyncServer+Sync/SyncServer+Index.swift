@@ -243,6 +243,7 @@ extension Array where Element == FileInfo {
         case badUUID
         case badVersion
         case badLabel
+        case noObjectType
     }
     
     // Reformat an array of [FileInfo] objects to [IndexObject] so that client's don't need to aggregate files into objects.
@@ -298,11 +299,15 @@ extension Array where Element == FileInfo {
                 throw FileInfoError.badUUID
             }
             
+            guard let objectType = firstFile.objectType else {
+                throw FileInfoError.noObjectType
+            }
+            
             // If any of the files in the file group is deleted, going to consider the whole object deleted.
             let anyDeleted = fileGroup.filter {$0.deleted == true}
             let objectDeleted = anyDeleted.count > 0
             
-            indexObjects += [IndexObject(sharingGroupUUID: sharingGroupUUID, fileGroupUUID: fileGroupUUID, creationDate: objectCreationDate, deleted: objectDeleted, downloads: downloadFiles)]
+            indexObjects += [IndexObject(sharingGroupUUID: sharingGroupUUID, fileGroupUUID: fileGroupUUID, objectType: objectType, creationDate: objectCreationDate, deleted: objectDeleted, downloads: downloadFiles)]
         }
 
         return indexObjects

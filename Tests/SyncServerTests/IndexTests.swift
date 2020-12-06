@@ -167,6 +167,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
             XCTAssert(!index[0].deleted)
             XCTAssert(index[0].fileGroupUUID == uploadable.fileGroupUUID)
             XCTAssert(index[0].sharingGroupUUID == uploadable.sharingGroupUUID)
+            XCTAssert(index[0].objectType == uploadable.objectType)
 
             let indexFile = index[0].downloads[0]
             XCTAssert(uploadableFile.uuid == indexFile.uuid)

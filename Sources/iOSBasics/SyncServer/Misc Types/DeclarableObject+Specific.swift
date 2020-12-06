@@ -89,19 +89,21 @@ public struct DownloadObject: DownloadingObject {
 }
 
 public struct IndexObject: IndexableObject {
-    public var deleted: Bool
+    public let deleted: Bool
+    public let objectType: String
     public let sharingGroupUUID: UUID
     public let fileGroupUUID: UUID
     public let creationDate: Date
     
     public let downloads: [DownloadFile]
     
-    public init(sharingGroupUUID: UUID, fileGroupUUID: UUID, creationDate: Date, deleted: Bool, downloads: [DownloadFile]) {
+    public init(sharingGroupUUID: UUID, fileGroupUUID: UUID, objectType: String, creationDate: Date, deleted: Bool, downloads: [DownloadFile]) {
         self.sharingGroupUUID = sharingGroupUUID
         self.fileGroupUUID = fileGroupUUID
         self.creationDate = creationDate
         self.downloads = downloads
         self.deleted = deleted
+        self.objectType = objectType
     }
 }
 
