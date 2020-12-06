@@ -144,7 +144,7 @@ extension DirectoryObjectEntry {
         return objectEntry
     }
     
-    // If the DirectoryObjectEntry exists, it much match the `FileInfo`. If it doesn't exist, it's created.
+    // If the DirectoryObjectEntry exists, it must match the `FileInfo`. If it doesn't exist, it's created.
     static func matchSert(fileInfo: FileInfo, objectType: String, db: Connection) throws -> DirectoryObjectEntry {
         guard let fileGroupUUIDString = fileInfo.fileGroupUUID,
               let fileGroupUUID = UUID(uuidString: fileGroupUUIDString) else {

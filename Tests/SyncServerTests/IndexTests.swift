@@ -158,14 +158,21 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
             }
             
             XCTAssert(sharingGroupUUID == uuid)
-            guard index.count == 1 else {
+            guard index.count == 1, index[0].downloads.count == 1 else {
                 XCTFail()
                 exp.fulfill()
                 return
             }
             
-            XCTAssert(uploadableFile.uuid.uuidString == index[0].fileUUID)
-            
+            XCTAssert(!index[0].deleted)
+            XCTAssert(index[0].fileGroupUUID == uploadable.fileGroupUUID)
+            XCTAssert(index[0].sharingGroupUUID == uploadable.sharingGroupUUID)
+
+            let indexFile = index[0].downloads[0]
+            XCTAssert(uploadableFile.uuid == indexFile.uuid)
+            XCTAssert(uploadableFile.fileLabel == indexFile.fileLabel)
+            XCTAssert(indexFile.fileVersion == 0)
+
             guard let result = try? SharingEntry.fetchSingleRow(db: self.database, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID) else {
                 XCTFail()
                 exp.fulfill()
@@ -337,14 +344,31 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
             DirectoryObjectEntry.deletedLocallyField.description <- false,
             DirectoryObjectEntry.deletedOnServerField.description <- false)
         
+        var resultIndex = [IndexObject]()
+        
         let exp2 = expectation(description: "exp2")
-        handlers.syncCompleted = { _,_ in
+        handlers.syncCompleted = { _, result in
+            switch result {
+            case .index(sharingGroupUUID: _, index: let index):
+                resultIndex = index
+            case .noIndex:
+                XCTFail()
+            }
+            
             exp2.fulfill()
         }
         
         // Fetch the database state again.
         try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
         waitForExpectations(timeout: 10, handler: nil)
+        
+        let filter = resultIndex.filter {$0.downloads.contains(where: {$0.uuid == uploadFile.uuid})}
+        guard filter.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(filter[0].deleted)
         
         // The deleted state of the file should have been updated.
         guard let fileEntry2 = try DirectoryFileEntry.fetchSingleRow(db: database, where: DirectoryFileEntry.fileUUIDField.description == uploadFile.uuid) else {
@@ -381,7 +405,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
             return
         }
         
-        var fileInfo = [FileInfo]()
+        var fileInfo = [IndexObject]()
         
         let exp = expectation(description: "exp2")
 
@@ -401,16 +425,15 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
         try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
         waitForExpectations(timeout: 10, handler: nil)
         
-        let filter = fileInfo.filter {$0.fileUUID == uploadable.uploads[0].uuid.uuidString}
+        // Get the object from the index containing the download with fileUUID: `uploadable.uploads[0].uuid`
+        
+        let filter = fileInfo.filter {$0.downloads.contains(where: {$0.uuid == uploadable.uploads[0].uuid})}
         guard filter.count == 1 else {
             XCTFail()
             return
         }
         
-        guard let serverCreationDate = filter[0].creationDate else {
-            XCTFail()
-            return
-        }
+        let serverCreationDate = filter[0].creationDate
         
         XCTAssert(Date.approximatelyEqual(serverCreationDate, startDate, threshold: 5), "object.creationDate: \(serverCreationDate.timeIntervalSince1970); startDate: \(startDate.timeIntervalSince1970)")
         
@@ -467,5 +490,106 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
         }
         
         XCTAssert(Date.approximatelyEqual(startDate, object.creationDate, threshold: 5), "object.creationDate: \(object.creationDate.timeIntervalSince1970); startDate: \(startDate.timeIntervalSince1970)")
+    }
+
+    func testTwoFilesInOneObjectInIndexWorks() throws {
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+        let fileGroupUUID1 = UUID()
+
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        let objectType1 = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let example1 = ExampleDeclaration(objectType: objectType1, declaredFiles: [fileDeclaration1, fileDeclaration2])
+        try syncServer.register(object: example1)
+
+        let commentFile = CommentFile()
+        let commentFileData = try commentFile.getData()
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID1)
+        let file2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID2)
+        let upload1 = ObjectUpload(objectType: objectType1, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1, file2])
+        try syncServer.queue(upload: upload1)
+
+        waitForUploadsToComplete(numberUploads: 2)
+    
+        var fileInfo = [IndexObject]()
+        
+        let exp = expectation(description: "exp")
+
+        handlers.syncCompleted = { _, result in
+            guard case .index(_, let index) = result else {
+                XCTFail()
+                exp.fulfill()
+                return
+            }
+            
+            fileInfo = index
+            
+            exp.fulfill()
+        }
+
+        // Fetch the database state again.
+        try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        guard fileInfo.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(!fileInfo[0].deleted)
+        
+        guard fileInfo[0].downloads.count == 2 else {
+            XCTFail()
+            return
+        }
+    }
+    
+    func testTwoObjectsInIndexWorks() throws {
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        let (uploadable1, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
+        let (uploadable2, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
+        
+        var fileInfo = [IndexObject]()
+        
+        let exp = expectation(description: "exp")
+
+        handlers.syncCompleted = { _, result in
+            guard case .index(_, let index) = result else {
+                XCTFail()
+                exp.fulfill()
+                return
+            }
+            
+            fileInfo = index
+            
+            exp.fulfill()
+        }
+
+        // Fetch the database state again.
+        try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        guard fileInfo.count == 2 else {
+            XCTFail()
+            return
+        }
+        
+        let filter1 = fileInfo.filter {$0.fileGroupUUID == uploadable1.fileGroupUUID}
+        let filter2 = fileInfo.filter {$0.fileGroupUUID == uploadable2.fileGroupUUID}
+        
+        guard filter1.count == 1 else {
+            XCTFail()
+            return
+        }
+        guard filter2.count == 1 else {
+            XCTFail()
+            return
+        }
     }
 }

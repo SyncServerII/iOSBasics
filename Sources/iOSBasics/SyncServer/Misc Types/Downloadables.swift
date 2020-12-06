@@ -26,3 +26,8 @@ public protocol DownloadingObject {
     var creationDate: Date {get}
     var downloads: [FileDownload] {get}
 }
+
+public protocol IndexableObject: DownloadingObject {
+    var deleted: Bool {get}
+}
+

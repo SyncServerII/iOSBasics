@@ -25,8 +25,8 @@ extension SyncServerHelpers {
         if let objectType = file.objectType {
             return objectType
         }
-        else if let appMetData = file.appMetaData,
-            let objectType = objectType(self, forAppMetaData: appMetData) {
+        else if let appMetaData = file.appMetaData,
+            let objectType = objectType(self, forAppMetaData: appMetaData) {
             return objectType
         }
         else {
@@ -37,7 +37,7 @@ extension SyncServerHelpers {
 
 public enum SyncResult {
     case noIndex
-    case index(sharingGroupUUID: UUID, index: [FileInfo])
+    case index(sharingGroupUUID: UUID, index: [IndexObject])
 }
 
 public enum DeferredOperation {

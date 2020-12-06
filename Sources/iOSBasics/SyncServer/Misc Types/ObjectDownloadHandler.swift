@@ -14,9 +14,9 @@ extension FileInfo {
     func getFileLabel(objectType: String, objectDeclarations:[String: ObjectDownloadHandler]) throws -> String {
         if let fileLabel = fileLabel {
             return fileLabel
-        } else if let appMetData = appMetaData,
+        } else if let appMetaData = appMetaData,
             let type = objectDeclarations[objectType],
-            let fileLabel = type.getFileLabel(appMetaData: appMetData) {
+            let fileLabel = type.getFileLabel(appMetaData: appMetaData) {
             return fileLabel
         }
         else {

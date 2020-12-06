@@ -11,7 +11,7 @@ extension SyncServer {
             guard let self = self else { return }
 
             switch result {
-            case .success(let indexResult):                
+            case .success(let indexResult):
                 do {
                     try self.upsert(sharingGroups: indexResult.sharingGroups)
                 } catch {
@@ -38,8 +38,11 @@ extension SyncServer {
                     return
                 }
                 
+                let indexObjects:[IndexObject]
+                
                 do {
                     try self.upsert(fileIndex: fileIndex, sharingGroupUUID: sharingGroupUUID)
+                    indexObjects = try fileIndex.toIndexObjects()
                 } catch {
                     self.delegator { [weak self] delegate in
                         guard let self = self else { return }
@@ -50,7 +53,7 @@ extension SyncServer {
 
                 self.delegator { [weak self] delegate in
                     guard let self = self else { return }
-                    delegate.syncCompleted(self, result: .index(sharingGroupUUID: sharingGroupUUID, index: fileIndex))
+                    delegate.syncCompleted(self, result: .index(sharingGroupUUID: sharingGroupUUID, index: indexObjects))
                 }
                 
             case .failure(let error):
@@ -231,5 +234,77 @@ extension SyncServer {
                 }
             }
         }
+    }
+}
+
+extension Array where Element == FileInfo {
+    enum FileInfoError: Error {
+        case noCreationDate
+        case badUUID
+        case badVersion
+        case badLabel
+    }
+    
+    // Reformat an array of [FileInfo] objects to [IndexObject] so that client's don't need to aggregate files into objects.
+    func toIndexObjects() throws -> [IndexObject] {
+        guard count > 0 else {
+            return []
+        }
+        
+        let fileGroups = Partition.array(self, using: \.fileGroupUUID)
+        
+        var indexObjects = [IndexObject]()
+        
+        for fileGroup in fileGroups {
+            var downloadFiles = [DownloadFile]()
+
+            var creationDate: Date!
+            
+            for file in fileGroup {
+                guard let fileCreationDate = file.creationDate else {
+                    throw FileInfoError.noCreationDate
+                }
+                
+                if creationDate == nil {
+                    creationDate = fileCreationDate
+                }
+                else {
+                    creationDate = Swift.min(creationDate, fileCreationDate)
+                }
+                
+                guard let fileUUID = try UUID.from(file.fileUUID) else {
+                    throw FileInfoError.badUUID
+                }
+                
+                guard let fileVersion = file.fileVersion else {
+                    throw FileInfoError.badVersion
+                }
+                
+                guard let fileLabel = file.fileLabel else {
+                    throw FileInfoError.badLabel
+                }
+                
+                downloadFiles += [DownloadFile(uuid: fileUUID, fileVersion: fileVersion, fileLabel: fileLabel)]
+            }
+            
+            let firstFile = fileGroup[0]
+            
+            guard let objectCreationDate = creationDate else {
+                throw FileInfoError.noCreationDate
+            }
+            
+            guard let sharingGroupUUID = try UUID.from(firstFile.sharingGroupUUID),
+                let fileGroupUUID = try UUID.from(firstFile.fileGroupUUID) else {
+                throw FileInfoError.badUUID
+            }
+            
+            // If any of the files in the file group is deleted, going to consider the whole object deleted.
+            let anyDeleted = fileGroup.filter {$0.deleted == true}
+            let objectDeleted = anyDeleted.count > 0
+            
+            indexObjects += [IndexObject(sharingGroupUUID: sharingGroupUUID, fileGroupUUID: fileGroupUUID, creationDate: objectCreationDate, deleted: objectDeleted, downloads: downloadFiles)]
+        }
+
+        return indexObjects
     }
 }
