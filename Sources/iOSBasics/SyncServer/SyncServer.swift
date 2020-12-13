@@ -246,6 +246,7 @@ public class SyncServer {
         }
     }
     
+    // On success, automatically syncs index before returning.
     public func redeemSharingInvitation(sharingInvitationUUID:UUID, completion: @escaping (Swift.Result<RedeemResult, Error>)->()) {
 
         api.redeemSharingInvitation(sharingInvitationUUID: sharingInvitationUUID, cloudFolderName: configuration.cloudFolderName) { [weak self] result in
