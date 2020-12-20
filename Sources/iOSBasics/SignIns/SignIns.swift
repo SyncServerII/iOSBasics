@@ -94,7 +94,8 @@ public class SignIns {
                     case .failure(let error):
                         // 10/22/17; User is signing up. I.e., they don't have an account. Seems OK to sign them out.
                         self.signUserOut()
-                        self.showAlert(withTitle: "Alert!", message: "Error creating owning user: \(error)")
+                        self.showAlert(withTitle: "Alert!", message: "Error creating owning user.")
+                        logger.error("Error creating owning user: \(error)")
                         
                     case .success(let addUserResult):
                         switch addUserResult {
@@ -124,7 +125,7 @@ public class SignIns {
                 case .failure(let error):
                     // 10/22/17; The common situation here seems to be the user is signing up via a sharing invitation. They are not on the system yet in that case. Seems safe to sign them out.
                     self.signUserOut()
-                    let message = "Error creating sharing user: \(error)"
+                    let message = "Error creating sharing user."
                     self.showAlert(withTitle: "Alert!", message: message)
                     logger.error("signUserOut: Error in redeemSharingInvitation: \(error)")
                     

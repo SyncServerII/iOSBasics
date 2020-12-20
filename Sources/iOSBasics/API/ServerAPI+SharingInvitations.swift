@@ -4,14 +4,14 @@ import iOSShared
 
 extension ServerAPI {
     // The non-error result is the sharingInvitationUUID.
-    func createSharingInvitation(withPermission permission:Permission, sharingGroupUUID: UUID, numberAcceptors: UInt, allowSharingAcceptance: Bool, completion: @escaping (Result<UUID, Error>)->()) {
+    func createSharingInvitation(withPermission permission:Permission, sharingGroupUUID: UUID, numberAcceptors: UInt, allowSocialAcceptance: Bool, completion: @escaping (Result<UUID, Error>)->()) {
     
         let endpoint = ServerEndpoints.createSharingInvitation
 
         let invitationRequest = CreateSharingInvitationRequest()
         invitationRequest.permission = permission
         invitationRequest.sharingGroupUUID = sharingGroupUUID.uuidString
-        invitationRequest.allowSocialAcceptance = allowSharingAcceptance
+        invitationRequest.allowSocialAcceptance = allowSocialAcceptance
         invitationRequest.numberOfAcceptors = numberAcceptors
                 
         guard let parameters = invitationRequest.urlParameters() else {
