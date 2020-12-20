@@ -105,7 +105,7 @@ public class SignIns {
                             
                         case .userAlreadyExisted:
                             self.signUserOut()
-                            self.showAlert(withTitle: "Alert!", message: "That account has already been created -- please use the sign-in option.")
+                            self.showAlert(withTitle: "Alert!", message: "That account has already been created: Please use the sign-in option.")
                         }
                     }
                 }

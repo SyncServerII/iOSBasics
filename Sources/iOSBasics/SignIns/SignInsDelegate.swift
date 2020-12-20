@@ -3,7 +3,6 @@ import iOSSignIn
 import ServerShared
 
 /// These operations are with respect to the SyncServer and it's network API, and not specifically about the UI or the specific sign-ins (e.g., Dropbox, Facebook).
-/// It's for internal use in iOSBasics, but as of 9/27/20 is not currently used.
 protocol SignInsDelegate: AnyObject {
     // Using AnyObject instead of SignIns because SignIns is an internal type.
     
