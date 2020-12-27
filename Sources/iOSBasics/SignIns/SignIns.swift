@@ -63,7 +63,7 @@ public class SignIns {
                     }
                     
                 case .failure(let error):
-                    let message:Logger.Message = "Error checking for existing user: \(error)"
+                    let message:Logger.Message = "Error checking for existing user on server."
                     logger.error(message)
                     
                     // 10/22/17; It doesn't seem legit to sign user out if we're doing this during a launch sign-in. That is, the user was signed in last time the app launched. And this is a generic error (e.g., a network error). However, if we're not doing this during app launch, i.e., this is a sign-in request explicitly by the user, if that fails it means we're not already signed-in, so it's safe to force the sign out.
