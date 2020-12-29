@@ -151,6 +151,8 @@ extension SharingEntry {
             
             let deleted = sharingGroup.deleted ?? false
             
+            logger.info("Creating new SharingEntry: \(sharingGroupUUID); name: \(String(describing: sharingGroup.sharingGroupName))")
+            
             let newSharingEntry = try SharingEntry(db: db, permission: permission, deleted: deleted, sharingGroupName: sharingGroup.sharingGroupName, sharingGroupUUID: sharingGroupUUID, sharingGroupUsers: users, cloudStorageType: cloudStorageType)
             try newSharingEntry.insert()
         }

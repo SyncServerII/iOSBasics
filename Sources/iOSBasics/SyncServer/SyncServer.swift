@@ -209,6 +209,7 @@ public class SyncServer {
 
     // MARK: Sharing groups
 
+    // Also does a `sync` after successful creation.
     public func createSharingGroup(sharingGroupUUID: UUID, sharingGroupName: String? = nil, completion:@escaping (Error?)->()) {
         createSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, sharingGroupName: sharingGroupName) { [weak self] error in
             self?.dispatchQueue.async {
@@ -217,6 +218,7 @@ public class SyncServer {
         }
     }
     
+    // Also does a `sync` after successful update.
     public func updateSharingGroup(sharingGroupUUID: UUID, newSharingGroupName: String?, completion:@escaping (Error?)->()) {
         updateSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, newSharingGroupName: newSharingGroupName) { [weak self] error in
             self?.dispatchQueue.async {
@@ -225,7 +227,7 @@ public class SyncServer {
         }
     }
 
-    // Remove the current user from the sharing group.
+    // Remove the current user from the sharing group. Also does a `sync` after successful update.
     public func removeFromSharingGroup(sharingGroupUUID: UUID, completion:@escaping (Error?)->()) {
         removeFromSharingGroupHelper(sharingGroupUUID: sharingGroupUUID) { [weak self] error in
             self?.dispatchQueue.async {
