@@ -5,17 +5,7 @@ import ServerShared
 import iOSSignIn
 
 extension SyncServer {
-    func createSharingGroupHelper(sharingGroupUUID: UUID, sharingGroupName: String? = nil, completion: @escaping (Error?)->()) {
-        do {
-            guard try SharingEntry.numberRows(db: db) > 0 else {
-                completion(SyncServerError.sharingGroupsNotFound)
-                return
-            }
-        } catch let error {
-            completion(error)
-            return
-        }
-        
+    func createSharingGroupHelper(sharingGroupUUID: UUID, sharingGroupName: String? = nil, completion: @escaping (Error?)->()) {        
         do {
             let entry = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID)
             guard entry == nil else {
