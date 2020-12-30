@@ -35,7 +35,6 @@ enum SyncServerError: Error {
     case attemptToCreateExistingSharingGroup
     case sharingGroupNotFound
     case sharingGroupDeleted
-    case sharingGroupsNotFound
     
     case noCloudStorageType
     
@@ -105,12 +104,6 @@ enum SyncServerError: Error {
             
         case noCloudStorageType:
             guard case .noCloudStorageType = rhs else {
-                return false
-            }
-            return true
-            
-        case sharingGroupsNotFound:
-            guard case .sharingGroupsNotFound = rhs else {
                 return false
             }
             return true
