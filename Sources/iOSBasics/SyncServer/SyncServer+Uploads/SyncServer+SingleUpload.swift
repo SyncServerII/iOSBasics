@@ -49,7 +49,7 @@ extension SyncServer {
             // Not going to throw an error here. Because this method is used in the context of a loop, and some of the uploads may have started correctly.
             delegator { [weak self] delegate in
                 guard let self = self else { return }
-                delegate.error(self, error: .error(error))
+                delegate.userEvent(self, event: .error(error))
             }
         }
         else {

@@ -29,7 +29,7 @@ public class SignIns {
     private func showAlert(withTitle title: String, message: String) {
         delegator { [weak self] delegate in
             guard let self = self else { return }
-            delegate.error(self.syncServer, error: .showAlert(title: title, message: message))
+            delegate.userEvent(self.syncServer, event: .showAlert(title: title, message: message))
         }
     }
 

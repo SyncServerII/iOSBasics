@@ -92,7 +92,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
             exp.fulfill()
         }
         
-        handlers.error = { _, error in
+        handlers.userEvent = { _, error in
             XCTFail("\(String(describing: error))")
             exp.fulfill()
         }
@@ -126,7 +126,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
             exp.fulfill()
         }
         
-        handlers.error = { _, error in
+        handlers.userEvent = { _, error in
             XCTFail()
             exp.fulfill()
         }
@@ -184,7 +184,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
             exp.fulfill()
         }
         
-        handlers.error = { _, error in
+        handlers.userEvent = { _, error in
             XCTFail()
             exp.fulfill()
         }

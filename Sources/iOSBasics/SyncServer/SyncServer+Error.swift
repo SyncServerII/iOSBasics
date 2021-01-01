@@ -271,7 +271,7 @@ extension SyncServer {
     func reportError(_ error: Error) {
         delegator { [weak self] delegate in
             guard let self = self else { return }
-            delegate.error(self, error: .error(error))
+            delegate.userEvent(self, event: .error(error))
         }
     }
 }

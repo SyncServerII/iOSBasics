@@ -241,7 +241,7 @@ extension APITests where Self: XCTestCase {
             }
         }
         
-        handlers.error = { _, result in
+        handlers.userEvent = { _, result in
             XCTFail()
             exp.fulfill()
         }
@@ -249,7 +249,7 @@ extension APITests where Self: XCTestCase {
         waitForExpectations(timeout: 10, handler: nil)
         
         handlers.extras.uploadCompleted = nil
-        handlers.error = nil
+        handlers.userEvent = nil
     }
     
     func waitForDownloadsToComplete(numberExpected: UInt, expectedResult: URL? = nil) {

@@ -17,7 +17,7 @@ extension SyncServer {
                 } catch {
                     self.delegator { [weak self] delegate in
                         guard let self = self else { return }
-                        delegate.error(self, error: .error(error))
+                        delegate.userEvent(self, event: .error(error))
                     }
                     return
                 }
@@ -33,7 +33,7 @@ extension SyncServer {
                 guard let fileIndex = indexResult.fileIndex else {
                     self.delegator { [weak self] delegate in
                         guard let self = self else { return }
-                        delegate.error(self, error: .error(SyncServerError.internalError("Nil fileIndex but a sharing group was given.")))
+                        delegate.userEvent(self, event: .error(SyncServerError.internalError("Nil fileIndex but a sharing group was given.")))                        
                     }
                     return
                 }
@@ -46,7 +46,7 @@ extension SyncServer {
                 } catch {
                     self.delegator { [weak self] delegate in
                         guard let self = self else { return }
-                        delegate.error(self, error: .error(error))
+                        delegate.userEvent(self, event: .error(error))
                     }
                     return
                 }
@@ -59,7 +59,7 @@ extension SyncServer {
             case .failure(let error):
                 self.delegator { [weak self] delegate in
                     guard let self = self else { return }
-                    delegate.error(self, error: .error(error))
+                    delegate.userEvent(self, event: .error(error))
                 }
             }
         }

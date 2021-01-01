@@ -73,7 +73,7 @@ class SharingInvitationTests2: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let exp = expectation(description: "exp")
-        syncServer.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 1, allowSharingAcceptance: false) { result in
+        syncServer.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 1, allowSocialAcceptance: false) { result in
             switch result {
             case .success(let invitation):
                 logger.info("new invitation code: \(invitation)")
@@ -109,7 +109,7 @@ class SharingInvitationTests2: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         let permission:Permission = .write
         
         let exp3 = expectation(description: "exp")
-        syncServer.createSharingInvitation(withPermission: permission, sharingGroupUUID: newSharingGroupUUID, numberAcceptors: 1, allowSharingAcceptance: false) { result in
+        syncServer.createSharingInvitation(withPermission: permission, sharingGroupUUID: newSharingGroupUUID, numberAcceptors: 1, allowSocialAcceptance: false) { result in
             switch result {
             case .success(let invitation):
                 logger.info("new invitation code: \(invitation)")

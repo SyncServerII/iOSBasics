@@ -49,7 +49,7 @@ class SharingInvitationTests: XCTestCase, UserSetup, APITests, ServerAPIDelegato
         
         let exp = expectation(description: "exp")
         
-        api.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 1, allowSharingAcceptance: true) { result in
+        api.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 1, allowSocialAcceptance: true) { result in
             
             switch result {
             case .failure:

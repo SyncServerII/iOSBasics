@@ -72,7 +72,7 @@ class SharingInvitationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, AP
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let exp = expectation(description: "exp")
-        syncServer.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 2, allowSharingAcceptance: false) { result in
+        syncServer.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 2, allowSocialAcceptance: false) { result in
             switch result {
             case .success:
                 break
@@ -91,7 +91,7 @@ class SharingInvitationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, AP
         var code: UUID!
         
         let exp = expectation(description: "exp")
-        syncServer.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 2, allowSharingAcceptance: false) { result in
+        syncServer.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 2, allowSocialAcceptance: false) { result in
             switch result {
             case .success(let uuid):
                 code = uuid
@@ -122,7 +122,7 @@ class SharingInvitationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, AP
         var code: UUID!
         
         let exp = expectation(description: "exp")
-        syncServer.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 2, allowSharingAcceptance: false) { result in
+        syncServer.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 2, allowSocialAcceptance: false) { result in
             switch result {
             case .success(let uuid):
                 code = uuid

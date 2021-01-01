@@ -36,7 +36,7 @@ extension SyncServer {
             } catch let error {
                 self.delegator { [weak self] delegate in
                     guard let self = self else { return }
-                    delegate.error(self, error: .error(error))
+                    delegate.userEvent(self, event: .error(error))
                 }
             }
         }

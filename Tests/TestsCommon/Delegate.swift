@@ -28,7 +28,7 @@ class DelegateHandlers {
 
     var user:TestUser!
     
-    var error:((_ syncServer: SyncServer, _ error: ErrorEvent)->())?
+    var userEvent:((_ syncServer: SyncServer, _ event: UserEvent)->())?
     
     var objectType:((_ caller: AnyObject, _ appMetaData: String) -> String?)?
     
@@ -57,9 +57,9 @@ extension Delegate  {
 }
 
 extension Delegate {
-    func error(_ syncServer: SyncServer, error: ErrorEvent) {
-        XCTFail("\(String(describing: error))")
-        handlers.error?(syncServer, error)
+    func userEvent(_ syncServer: SyncServer, event: UserEvent){
+        XCTFail("\(String(describing: event))")
+        handlers.userEvent?(syncServer, event)
     }
     
     func objectType(_ caller: AnyObject, forAppMetaData appMetaData: String) -> String? {
