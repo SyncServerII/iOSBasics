@@ -6,10 +6,10 @@ import SQLite
 import Version
 
 extension SyncServer: ServerAPIDelegate {
-    func badServerVersion(_ delegated: AnyObject, serverVersion: Version?) {
+    func badVersion(_ delegated: AnyObject, version: BadVersion) {
         delegator { [weak self] delegate in
             guard let self = self else { return }
-            delegate.badServerVersion(self, serverVersion: serverVersion)
+            delegate.badVersion(self, version: version)
         }
     }
     

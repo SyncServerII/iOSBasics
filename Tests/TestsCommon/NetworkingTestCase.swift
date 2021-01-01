@@ -22,7 +22,7 @@ protocol ServerAPIDelegator: ServerAPIDelegate {
 }
 
 extension ServerAPIDelegator {
-    func badServerVersion(_ delegated: AnyObject, serverVersion: Version?) {
+    func badVersion(_ delegated: AnyObject, version: BadVersion) {
         XCTFail()
     }
     

@@ -13,21 +13,25 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
         var cache: NetworkCache!
         
         // With an HTTP or HTTPS request, we get HTTPURLResponse back. See https://developer.apple.com/reference/foundation/urlsession/1407613-datatask
-        let response = downloadTask.response as? HTTPURLResponse
+        let possiblyNilResponse = downloadTask.response as? HTTPURLResponse
 
-        logger.info("download completed: location: \( originalDownloadLocation);  status: \(String(describing: response?.statusCode))")
+        logger.info("download completed: location: \( originalDownloadLocation);  status: \(String(describing: possiblyNilResponse?.statusCode))")
 
         do {
             cache = try backgroundCache.lookupCache(taskIdentifer: downloadTask.taskIdentifier)
         } catch let error {
-            transferDelegate.error(self, file: nil, statusCode: response?.statusCode, error: error)
+            transferDelegate.error(self, file: nil, statusCode: possiblyNilResponse?.statusCode, error: error)
             return
         }
         
         let downloadFile = FileObject(fileUUID: cache.uuid.uuidString, fileVersion: cache.fileVersion, trackerId: cache.trackerId)
 
-        if response == nil {
-            transferDelegate.error(self, file: downloadFile, statusCode: response?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
+        guard let response = possiblyNilResponse else {
+            transferDelegate.error(self, file: downloadFile, statusCode: possiblyNilResponse?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
+            return
+        }
+        
+        guard versionsAreOK(headerFields: response.allHeaderFields) else {
             return
         }
 
@@ -38,28 +42,28 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
         }
         catch (let error) {
             logger.info("Could not move file: \(error)")
-            transferDelegate.error(self, file: downloadFile, statusCode: response?.statusCode, error: error)
+            transferDelegate.error(self, file: downloadFile, statusCode: response.statusCode, error: error)
             return
         }
 
         switch cache?.transfer {
         case .download:
             do {
-                try backgroundCache.cacheDownloadResult(taskIdentifer: downloadTask.taskIdentifier, response: response!, localURL: movedDownloadedFile)
+                try backgroundCache.cacheDownloadResult(taskIdentifer: downloadTask.taskIdentifier, response: response, localURL: movedDownloadedFile)
             } catch let error {
-                transferDelegate.error(self, file: downloadFile, statusCode: response?.statusCode, error: error)
+                transferDelegate.error(self, file: downloadFile, statusCode: response.statusCode, error: error)
             }
             
         case .request:
             do {
-                try backgroundCache.cacheRequestResult(taskIdentifer: downloadTask.taskIdentifier, response: response!, localURL: movedDownloadedFile)
+                try backgroundCache.cacheRequestResult(taskIdentifer: downloadTask.taskIdentifier, response: response, localURL: movedDownloadedFile)
             } catch let error {
-                transferDelegate.error(self, file: downloadFile, statusCode: response?.statusCode, error: error)
+                transferDelegate.error(self, file: downloadFile, statusCode: response.statusCode, error: error)
             }
             
         case .upload, .none:
             logger.error("Unexpected transfer type: \(String(describing: cache?.transfer))")
-            transferDelegate.error(self, file: downloadFile, statusCode: response?.statusCode, error: NetworkingError.unexpectedTransferType)
+            transferDelegate.error(self, file: downloadFile, statusCode: response.statusCode, error: NetworkingError.unexpectedTransferType)
         }
     }
     

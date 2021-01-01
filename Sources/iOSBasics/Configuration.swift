@@ -17,6 +17,10 @@ public struct Configuration {
     }
     
     public let minimumServerVersion:Version?
+    
+    // The version of the current client app, e.g., Neebla
+    public let currentClientAppVersion:Version?
+    
     public let failoverMessageURL:URL?
 
     // The name of the folder to use in cloud storage for services that need a folder name. E.g., Google Drive.
@@ -55,7 +59,7 @@ public struct Configuration {
         return TemporaryFiles(directory: directory, filePrefix: "SyncServer", fileExtension: "dat")
     }
     
-    public init(appGroupIdentifier: String?, urlSessionBackgroundIdentifier: String? = nil, serverURL: URL, minimumServerVersion:Version?, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryFiles:TemporaryFiles = Self.defaultTemporaryFiles, packageTests: Bool = false) {
+    public init(appGroupIdentifier: String?, urlSessionBackgroundIdentifier: String? = nil, serverURL: URL, minimumServerVersion:Version?, currentClientAppVersion: Version? = nil, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryFiles:TemporaryFiles = Self.defaultTemporaryFiles, packageTests: Bool = false) {
         self.appGroupIdentifier = appGroupIdentifier
         self.urlSessionBackgroundIdentifier = urlSessionBackgroundIdentifier
         self.serverURL = serverURL
@@ -64,6 +68,7 @@ public struct Configuration {
         self.cloudFolderName = cloudFolderName
         self.deviceUUID = deviceUUID
         self.temporaryFiles = temporaryFiles
+        self.currentClientAppVersion = currentClientAppVersion
         
 #if !DEBUG
         assert(!packageTests)

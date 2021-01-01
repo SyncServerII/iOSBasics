@@ -29,7 +29,7 @@ enum NetworkingError: Error {
 }
 
 protocol NetworkingDelegate: AnyObject {
-    func badServerVersion(_ delegated: AnyObject, serverVersion: Version?)
+    func badVersion(_ delegated: AnyObject, version: BadVersion)
     func credentialsForNetworkRequests(_ delegated: AnyObject) throws -> GenericCredentials
     func deviceUUID(_ delegated: AnyObject) -> UUID
     
@@ -190,7 +190,7 @@ class Networking: NSObject {
                 return
             }
             
-            if serverVersionIsOK(headerFields: response.allHeaderFields) {
+            if versionsAreOK(headerFields: response.allHeaderFields) {
                 var json:Any?
                 do {
                     try json = JSONSerialization.jsonObject(with: data, options: JSONSerialization.ReadingOptions(rawValue: UInt(0)))
@@ -245,12 +245,41 @@ class Networking: NSObject {
             // Either: a) Client *does* care, but server isn't versioned, or
             // b) the actual server version is less than what the client needs.
             DispatchQueue.main.sync {
-                self.delegate.badServerVersion(self, serverVersion: serverVersion)
+                self.delegate.badVersion(self, version: .badServerVersion(serverVersion))
             }
             return false
         }
         
         return true
+    }
+    
+    private func clientAppVersionIsOK(headerFields: [AnyHashable: Any]) -> Bool {
+        if let iosAppVersionRaw = headerFields[
+            ServerConstants.httpResponseMinimumIOSClientAppVersion] as? String,
+            let currentClientiOSAppVersion = config.currentClientAppVersion {
+            
+            let minimumIOSClientAppVersion: Version
+            do {
+                minimumIOSClientAppVersion = try Version(iosAppVersionRaw)
+            } catch let error {
+                logger.error("clientAppVersionIsOK: \(error)")
+                return true
+            }
+            
+            if currentClientiOSAppVersion < minimumIOSClientAppVersion {
+                DispatchQueue.main.sync {
+                    self.delegate.badVersion(self, version: .badClientAppVersion(minimumNeeded: minimumIOSClientAppVersion))
+                }
+                return false
+            }
+        }
+        
+        return true
+    }
+    
+    func versionsAreOK(headerFields: [AnyHashable: Any]) -> Bool {
+        return serverVersionIsOK(headerFields: headerFields) ||
+            clientAppVersionIsOK(headerFields: headerFields)
     }
     
     private func uploadFile(localURL: URL, to serverURL: URL, method: ServerHTTPMethod) -> URLSessionUploadTask {

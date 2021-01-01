@@ -58,7 +58,7 @@ extension Delegate  {
 }
 
 extension Delegate {
-    func badServerVersion(_ syncServer: SyncServer, serverVersion: Version?) {
+    func badVersion(_ syncServer: SyncServer, version: BadVersion) {
         XCTFail()
     }
     

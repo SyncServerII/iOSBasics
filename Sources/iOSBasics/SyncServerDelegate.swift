@@ -109,10 +109,15 @@ public enum UserEvent {
     case showAlert(title: String, message: String)
 }
 
+public enum BadVersion {
+    case badServerVersion(Version?)
+    case badClientAppVersion(minimumNeeded: Version)
+}
+
 // These methods are all called on the `delegateDispatchQueue` passed to the SyncServer constructor.
 public protocol SyncServerDelegate: AnyObject {
     // The server version is bad. Likely the iOS app needs upgrading.
-    func badServerVersion(_ syncServer: SyncServer, serverVersion: Version?)
+    func badVersion(_ syncServer: SyncServer, version: BadVersion)
 
     // These probably need to be shown to the user.
     func userEvent(_ syncServer: SyncServer, event: UserEvent)
