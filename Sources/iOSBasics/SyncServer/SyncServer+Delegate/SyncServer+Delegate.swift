@@ -3,9 +3,16 @@ import ServerShared
 import iOSShared
 import iOSSignIn
 import SQLite
+import Version
 
 extension SyncServer: ServerAPIDelegate {
-
+    func badServerVersion(_ delegated: AnyObject, serverVersion: Version?) {
+        delegator { [weak self] delegate in
+            guard let self = self else { return }
+            delegate.badServerVersion(self, serverVersion: serverVersion)
+        }
+    }
+    
     func error(_ delegated: AnyObject, error: Error?) {
         delegator { [weak self] delegate in
             guard let self = self else { return }

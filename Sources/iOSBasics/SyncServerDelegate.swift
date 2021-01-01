@@ -1,6 +1,7 @@
 import Foundation
 import iOSSignIn
 import ServerShared
+import Version
 
 public enum UUIDCollisionType {
     case file
@@ -110,6 +111,9 @@ public enum UserEvent {
 
 // These methods are all called on the `delegateDispatchQueue` passed to the SyncServer constructor.
 public protocol SyncServerDelegate: AnyObject {
+    // The server version is bad. Likely the iOS app needs upgrading.
+    func badServerVersion(_ syncServer: SyncServer, serverVersion: Version?)
+
     // These probably need to be shown to the user.
     func userEvent(_ syncServer: SyncServer, event: UserEvent)
     

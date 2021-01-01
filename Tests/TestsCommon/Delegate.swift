@@ -4,6 +4,7 @@ import Foundation
 import iOSSignIn
 import XCTest
 import iOSShared
+import Version
 
 class DelegateHandlers {
     class Extras {
@@ -57,6 +58,10 @@ extension Delegate  {
 }
 
 extension Delegate {
+    func badServerVersion(_ syncServer: SyncServer, serverVersion: Version?) {
+        XCTFail()
+    }
+    
     func userEvent(_ syncServer: SyncServer, event: UserEvent){
         XCTFail("\(String(describing: event))")
         handlers.userEvent?(syncServer, event)

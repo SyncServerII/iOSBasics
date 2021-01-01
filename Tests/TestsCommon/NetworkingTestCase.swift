@@ -13,6 +13,7 @@ import iOSShared
 import ServerShared
 import SQLite
 import iOSDropbox
+import Version
 
 protocol ServerAPIDelegator: ServerAPIDelegate {
     var handlers: DelegateHandlers {get}
@@ -21,6 +22,10 @@ protocol ServerAPIDelegator: ServerAPIDelegate {
 }
 
 extension ServerAPIDelegator {
+    func badServerVersion(_ delegated: AnyObject, serverVersion: Version?) {
+        XCTFail()
+    }
+    
     func error(_ delegated: AnyObject, error: Error?) {
         XCTFail("\(String(describing: error))")
     }

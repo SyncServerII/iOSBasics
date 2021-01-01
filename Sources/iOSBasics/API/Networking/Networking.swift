@@ -29,6 +29,7 @@ enum NetworkingError: Error {
 }
 
 protocol NetworkingDelegate: AnyObject {
+    func badServerVersion(_ delegated: AnyObject, serverVersion: Version?)
     func credentialsForNetworkRequests(_ delegated: AnyObject) throws -> GenericCredentials
     func deviceUUID(_ delegated: AnyObject) -> UUID
     
@@ -220,6 +221,15 @@ class Networking: NSObject {
         }
     }
     
+    private func serverVersionTooLow(serverVersion: Version?, configMinimumServerVersion:Version?) -> Bool {
+        guard let serverVersion = serverVersion,
+            let configMinimumServerVersion = config.minimumServerVersion else {
+            return false
+        }
+        
+        return serverVersion < configMinimumServerVersion
+    }
+    
     private func serverVersionIsOK(headerFields: [AnyHashable: Any]) -> Bool {
         var serverVersion:Version?
         if let version = headerFields[ServerConstants.httpResponseCurrentServerVersion] as? String {
@@ -230,12 +240,12 @@ class Networking: NSObject {
             // Client doesn't care which version of the server they are using.
             return true
         }
-        else if serverVersion == nil || serverVersion! < config.minimumServerVersion! {
+        else if serverVersion == nil || serverVersionTooLow(serverVersion: serverVersion, configMinimumServerVersion:config.minimumServerVersion) {
+        
             // Either: a) Client *does* care, but server isn't versioned, or
             // b) the actual server version is less than what the client needs.
             DispatchQueue.main.sync {
-                //self.syncServerDelegate?.syncServerErrorOccurred(error:
-                //    .badServerVersion(actualServerVersion: serverVersion))
+                self.delegate.badServerVersion(self, serverVersion: serverVersion)
             }
             return false
         }
