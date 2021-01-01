@@ -24,8 +24,6 @@ public class SignIns {
         self.signInServicesHelper = signInServicesHelper
     }
     
-    #warning("TODO: This is being reported as an error. But it's not always used as an error. Plus, these just aren't showing up in Neebla yet.")
-    #warning("I think what needs to happen here is that the `error` delegate needs to change to something like `userAlert`")
     private func showAlert(withTitle title: String, message: String) {
         delegator { [weak self] delegate in
             guard let self = self else { return }
