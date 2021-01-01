@@ -12,7 +12,7 @@ public class SignIns {
     }
     
     weak var signInServicesHelper:SignInServicesHelper!
-    weak var delegate:SignInsDelegate!
+    public weak var delegate:SignInsDelegate!
     var api:ServerAPI!
     var cloudFolderName:String?
     
@@ -58,11 +58,11 @@ public class SignIns {
 
                     case .user(userId: let userId, accessToken: let accessToken):
                         logger.info("SyncServer user signed in: access token: \(String(describing: accessToken))")
-                        self.signInServicesHelper.userId = userId
                         self.delegate?.signInCompleted(self, userId: userId)
                     }
                     
                 case .failure(let error):
+                    logger.error("\(error)")
                     let message:Logger.Message = "Error checking for existing user on server."
                     logger.error(message)
                     
@@ -101,7 +101,6 @@ public class SignIns {
                         switch addUserResult {
                         case .userId:
                             self.delegate?.newOwningUserCreated(self)
-                            self.showAlert(withTitle: "Success!", message: "Created new owning user! You are now signed in too!")
                             
                         case .userAlreadyExisted:
                             self.signUserOut()
@@ -132,7 +131,6 @@ public class SignIns {
                 case .success(let result):
                     logger.info("Access token: \(String(describing: result.accessToken))")
                     self.delegate?.invitationAcceptedAndUserCreated(self)
-                    self.showAlert(withTitle: "Success!", message: "Created new sharing user! You are now signed in too!")
                 }
             }
         }
