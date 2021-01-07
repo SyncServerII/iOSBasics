@@ -10,18 +10,24 @@ import ServerShared
 
 public struct FileDeclaration: DeclarableFile, Codable, Hashable {
     public var fileLabel: String
-    public let mimeType: MimeType
+    public let mimeTypes: Set<MimeType>
     public let changeResolverName: String?
     
-    public init(fileLabel: String, mimeType: MimeType, changeResolverName: String?) {
+    public init(fileLabel: String, mimeTypes: Set<MimeType>, changeResolverName: String?) {
         self.fileLabel = fileLabel
-        self.mimeType = mimeType
+        self.mimeTypes = mimeTypes
         self.changeResolverName = changeResolverName
     }
     
     public static func == (lhs: FileDeclaration, rhs: FileInfo) -> Bool {
         // Not including fileLabel in comparison because fileLabel can be nil in FileInfo.
-        return lhs.mimeType.rawValue == rhs.mimeType &&
+        var mimeTypeFactor = true
+        if let rhsMimeType = rhs.mimeType {
+            let mimeTypeStrings:Set<String> = Set(lhs.mimeTypes.map {$0.rawValue})
+            mimeTypeFactor = mimeTypeStrings.contains(rhsMimeType)
+        }
+        
+        return mimeTypeFactor &&
             lhs.changeResolverName == rhs.changeResolverName
     }
 }
@@ -51,7 +57,7 @@ public struct ObjectToDownload: DownloadableObject {
     }
 }
 
-public struct DownloadFile: DownloadingFile {
+public struct DownloadFile: FileNeedingDownload {
     public let uuid: UUID
     public let fileVersion: FileVersionInt
     public let fileLabel: String
@@ -73,7 +79,7 @@ public struct DownloadFile: DownloadingFile {
     }
 }
 
-public struct DownloadObject: DownloadingObject {
+public struct DownloadObject: ObjectNeedingDownload {
     public let sharingGroupUUID: UUID
     public let fileGroupUUID: UUID
     public let creationDate: Date
@@ -107,10 +113,11 @@ public struct IndexObject: IndexableObject {
     }
 }
 
-public struct DownloadedFile: DownloadingFile {
+public struct DownloadedFile: FileWasDownloaded {
     public let uuid: UUID
     public let fileVersion: FileVersionInt
     public let fileLabel: String
+    public let mimeType: MimeType
     
     public enum Contents {
         case gone
@@ -121,15 +128,16 @@ public struct DownloadedFile: DownloadingFile {
     
     public let contents: Contents
     
-    public init(uuid: UUID, fileVersion: FileVersionInt, fileLabel: String, contents: DownloadedFile.Contents) {
+    public init(uuid: UUID, fileVersion: FileVersionInt, fileLabel: String, mimeType: MimeType, contents: DownloadedFile.Contents) {
         self.uuid = uuid
         self.fileVersion = fileVersion
         self.fileLabel = fileLabel
+        self.mimeType = mimeType
         self.contents = contents
     }
 }
 
-public struct DownloadedObject: DownloadingObject {
+public struct DownloadedObject: ObjectWasDownloaded {
     public let creationDate: Date
     
     // Has a sharingGroupUUID because `DownloadedObject` is used in the `ObjectDownloadHandler` `objectWasDownloaded` method and that method needs to know the sharing group.

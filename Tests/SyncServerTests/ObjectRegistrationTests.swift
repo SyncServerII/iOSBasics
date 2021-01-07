@@ -66,6 +66,10 @@ class ObjectRegistrationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
 
     override func tearDownWithError() throws {
         // All temporary files should have been removed prior to end of test.
+        guard let config = config else {
+            XCTFail()
+            return
+        }
         let filePaths = try FileManager.default.contentsOfDirectory(atPath: config.temporaryFiles.directory.path)
         XCTAssert(filePaths.count == 0, "\(filePaths.count)")
     }
@@ -82,7 +86,7 @@ class ObjectRegistrationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
     
     func testRegisterNewDeclaration() throws {
         let count1 = syncServer.objectDeclarations.count
-        let fileDeclaration = FileDeclaration(fileLabel: "file2", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration = FileDeclaration(fileLabel: "file2", mimeTypes: [.jpeg], changeResolverName: nil)
 
         let example = ExampleDeclaration(objectType: "Foo", declaredFiles: [fileDeclaration])
         try syncServer.register(object: example)
@@ -110,8 +114,8 @@ class ObjectRegistrationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
     
     func testReRegisterObjectWithoutAllFilesFails() throws {
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "one", mimeType: .jpeg, changeResolverName: nil)
-        let fileDeclaration2 = FileDeclaration(fileLabel: "two", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "one", mimeTypes: [.jpeg], changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "two", mimeTypes: [.jpeg], changeResolverName: nil)
         let example1 = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
         try syncServer.register(object: example1)
 
@@ -125,13 +129,13 @@ class ObjectRegistrationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
     
   func testReRegisterObjectWithoutAllFilesFails2() throws {
         let objectType = "Foo"
-    let fileDeclaration1 = FileDeclaration(fileLabel: "one", mimeType: .jpeg, changeResolverName: nil)
-    let fileDeclaration2 = FileDeclaration(fileLabel: "two", mimeType: .jpeg, changeResolverName: "New")
+    let fileDeclaration1 = FileDeclaration(fileLabel: "one", mimeTypes: [.jpeg], changeResolverName: nil)
+    let fileDeclaration2 = FileDeclaration(fileLabel: "two", mimeTypes: [.jpeg], changeResolverName: "New")
         let example1 = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
         try syncServer.register(object: example1)
 
-    let fileDeclaration3 = FileDeclaration(fileLabel: "three", mimeType: .jpeg, changeResolverName: "Stew")
-    let fileDeclaration4 = FileDeclaration(fileLabel: "four", mimeType: .jpeg, changeResolverName: "Blew")
+    let fileDeclaration3 = FileDeclaration(fileLabel: "three", mimeTypes: [.jpeg], changeResolverName: "Stew")
+    let fileDeclaration4 = FileDeclaration(fileLabel: "four", mimeTypes: [.jpeg], changeResolverName: "Blew")
         let example2 = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration3, fileDeclaration4])
         do {
             try syncServer.register(object: example2)
@@ -143,7 +147,7 @@ class ObjectRegistrationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
     func testRegisterSameObjectTwiceWorks() throws {
         let count1 = syncServer.objectDeclarations.count
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "one", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "one", mimeTypes: [.jpeg], changeResolverName: nil)
         let example1 = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example1)
 
@@ -173,14 +177,14 @@ class ObjectRegistrationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
     func testRegisterAddsNewFileWorks() throws {
         let count1 = syncServer.objectDeclarations.count
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "one", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "one", mimeTypes: [.jpeg], changeResolverName: nil)
         let example1 = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example1)
         
         let count2 = syncServer.objectDeclarations.count
         XCTAssert(count1 + 1 == count2, "\(count1 + 1) != \(count2)")
 
-        let fileDeclaration2 = FileDeclaration(fileLabel: "two", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "two", mimeTypes: [.jpeg], changeResolverName: nil)
         let example2 = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
         try syncServer.register(object: example2)
         
@@ -203,8 +207,8 @@ class ObjectRegistrationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
     
     func runRegister(duplicateFileLabel: Bool) throws {
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "one", mimeType: .jpeg, changeResolverName: nil)
-        let fileDeclaration2 = FileDeclaration(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "one", mimeTypes: [.jpeg], changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: fileDeclaration1.fileLabel, mimeTypes: [.text], changeResolverName: nil)
 
         var files = [fileDeclaration2]
         
@@ -238,15 +242,124 @@ class ObjectRegistrationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
     
     func testRegisterMultipleObjectTypesWorks() throws {
         let objectType1 = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "one", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "one", mimeTypes: [.text], changeResolverName: nil)
         let files1 = [fileDeclaration1]
         let example1 = ExampleDeclaration(objectType: objectType1, declaredFiles: files1)
         try syncServer.register(object: example1)
         
         let objectType2 = "Foo2"
-        let fileDeclaration2 = FileDeclaration(fileLabel: "one", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "one", mimeTypes: [.text], changeResolverName: nil)
         let files2 = [fileDeclaration2]
         let example2 = ExampleDeclaration(objectType: objectType2, declaredFiles: files2)
+        try syncServer.register(object: example2)
+    }
+    
+    func registerSingleFile(mimeTypes: Set<MimeType>) throws {
+        let objectType1 = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "one", mimeTypes: mimeTypes, changeResolverName: nil)
+        let files1 = [fileDeclaration1]
+        let example1 = ExampleDeclaration(objectType: objectType1, declaredFiles: files1)
+        
+        do {
+            try syncServer.register(object: example1)
+        } catch let error {
+            if mimeTypes.count == 0 {
+                return
+            }
+            XCTFail("\(error)")
+            return
+        }
+
+        if mimeTypes.count == 0 {
+            XCTFail()
+            return
+        }
+    }
+    
+    func testRegisterWithNoMimeTypeInSingleFileFails() throws {
+        try registerSingleFile(mimeTypes: [])
+    }
+    
+    func testRegisterWithMimeTypeInSingleFileWorks() throws {
+        try registerSingleFile(mimeTypes: [.text])
+    }
+    
+    func testSecondRegistrationWithDifferentMimeTypeFails() throws {
+        let objectType1 = "Foo"
+        let fileLabel = "one"
+        let fileDeclaration1 = FileDeclaration(fileLabel: fileLabel, mimeTypes: [.text], changeResolverName: nil)
+        let files1 = [fileDeclaration1]
+        let example1 = ExampleDeclaration(objectType: objectType1, declaredFiles: files1)
+        try syncServer.register(object: example1)
+        
+        let fileDeclaration2 = FileDeclaration(fileLabel: fileLabel, mimeTypes: [.jpeg], changeResolverName: nil)
+        let files2 = [fileDeclaration2]
+        let example2 = ExampleDeclaration(objectType: objectType1, declaredFiles: files2)
+        do {
+            try syncServer.register(object: example2)
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            XCTAssert(syncServerError == .matchingFileLabelButOtherDifferences)
+            return
+        }
+        XCTFail()
+    }
+    
+    func testSecondRegistrationWithSomeDifferentMimeTypeFails() throws {
+        let objectType1 = "Foo"
+        let fileLabel = "one"
+        let fileDeclaration1 = FileDeclaration(fileLabel: fileLabel, mimeTypes: [.png, .jpeg], changeResolverName: nil)
+        let files1 = [fileDeclaration1]
+        let example1 = ExampleDeclaration(objectType: objectType1, declaredFiles: files1)
+        try syncServer.register(object: example1)
+        
+        let fileDeclaration2 = FileDeclaration(fileLabel: fileLabel, mimeTypes: [.jpeg], changeResolverName: nil)
+        let files2 = [fileDeclaration2]
+        let example2 = ExampleDeclaration(objectType: objectType1, declaredFiles: files2)
+        do {
+            try syncServer.register(object: example2)
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            XCTAssert(syncServerError == .matchingFileLabelButOtherDifferences)
+            return
+        }
+        
+        XCTFail()
+    }
+    
+    func testSecondRegistrationWithSameMimeTypeWorks() throws {
+        let objectType1 = "Foo"
+        let fileLabel = "one"
+        let mimeTypes:Set<MimeType> = [.png]
+        let fileDeclaration1 = FileDeclaration(fileLabel: fileLabel, mimeTypes: mimeTypes, changeResolverName: nil)
+        let files1 = [fileDeclaration1]
+        let example1 = ExampleDeclaration(objectType: objectType1, declaredFiles: files1)
+        try syncServer.register(object: example1)
+        
+        let fileDeclaration2 = FileDeclaration(fileLabel: fileLabel, mimeTypes: mimeTypes, changeResolverName: nil)
+        let files2 = [fileDeclaration2]
+        let example2 = ExampleDeclaration(objectType: objectType1, declaredFiles: files2)
+        try syncServer.register(object: example2)
+    }
+    
+    func testSecondRegistrationWithSameMimeTypesWorks() throws {
+        let objectType1 = "Foo"
+        let fileLabel = "one"
+        let mimeTypes:Set<MimeType> = [.png, .jpeg]
+        let fileDeclaration1 = FileDeclaration(fileLabel: fileLabel, mimeTypes: mimeTypes, changeResolverName: nil)
+        let files1 = [fileDeclaration1]
+        let example1 = ExampleDeclaration(objectType: objectType1, declaredFiles: files1)
+        try syncServer.register(object: example1)
+        
+        let fileDeclaration2 = FileDeclaration(fileLabel: fileLabel, mimeTypes: mimeTypes, changeResolverName: nil)
+        let files2 = [fileDeclaration2]
+        let example2 = ExampleDeclaration(objectType: objectType1, declaredFiles: files2)
         try syncServer.register(object: example2)
     }
 }

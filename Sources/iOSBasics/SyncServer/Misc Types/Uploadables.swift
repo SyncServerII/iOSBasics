@@ -1,5 +1,6 @@
 
 import Foundation
+import ServerShared
 
 public enum LocalPersistence {
     case copy
@@ -33,6 +34,11 @@ public protocol UploadableFile: File {
     // Reference for DeclarableFile
     var fileLabel: String {get}
     
+    // The specific mime type; must be one of those in the corresponding DeclarableFile.
+    // Once you upload a file with a specific mime type for a specific file label and file uuid, the mime type has to remain the same.
+    // If this is given as nil, then the `DeclarableFile` must have exactly one mime type
+    var mimeType: MimeType? {get}
+    
     var appMetaData: String? {get}
     
     var dataSource: UploadDataSource {get}
@@ -41,6 +47,7 @@ public protocol UploadableFile: File {
 extension UploadableFile {
     public func compare(to other: UploadableFile) -> Bool {
         return self.uuid == other.uuid &&
+            self.mimeType == other.mimeType &&
             self.fileLabel == other.fileLabel &&
             self.dataSource == other.dataSource &&
             self.appMetaData == other.appMetaData

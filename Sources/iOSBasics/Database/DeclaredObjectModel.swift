@@ -65,7 +65,7 @@ class DeclaredObjectModel: DatabaseModel, DeclarableObjectBasics, Equatable {
         }
         
         let files = object.declaredFiles.map {
-            FileDeclaration(fileLabel: $0.fileLabel, mimeType: $0.mimeType, changeResolverName: $0.changeResolverName)
+            FileDeclaration(fileLabel: $0.fileLabel, mimeTypes: $0.mimeTypes, changeResolverName: $0.changeResolverName)
         }
         
         self.objectType = object.objectType
@@ -139,7 +139,7 @@ extension DeclaredObjectModel {
         let existingObjectFiles = try existingObject.getFiles()
                 
         let newObjectFiles = object.declaredFiles.map {
-            FileDeclaration(fileLabel: $0.fileLabel, mimeType: $0.mimeType, changeResolverName: $0.changeResolverName)
+            FileDeclaration(fileLabel: $0.fileLabel, mimeTypes: $0.mimeTypes, changeResolverName: $0.changeResolverName)
         }
         
         var newObjectFilesSet = Set<FileDeclaration>(newObjectFiles)
@@ -147,7 +147,20 @@ extension DeclaredObjectModel {
         // Make sure all of the file declarations in the existing object are in the new object.
 
         for existingObjectFile in existingObjectFiles {
-            if newObjectFilesSet.contains(existingObjectFile) {
+            // Check if the fileLabel for the `existingObjectFile` is in one of the `newObjectFilesSet`
+            
+            var contained = false
+            for newFile in newObjectFilesSet {
+                if existingObjectFile.fileLabel == newFile.fileLabel {
+                    guard existingObjectFile == newFile else {
+                        throw SyncServerError.matchingFileLabelButOtherDifferences
+                    }
+                    contained = true
+                    break
+                }
+            }
+            
+            if contained {
                 newObjectFilesSet.remove(existingObjectFile)
             }
             else {
@@ -187,20 +200,6 @@ extension DeclaredObjectModel {
         
         return declaredObject
     }
-    
-/*
-    // Create a `DeclaredObjectModel` and `DeclaredFileModel`'s corresponding to a `DeclarableObject`.
-    static func createModels<DECL: DeclarableObject>(from declaration: DECL, db: Connection) throws {
-        let declaredObject = try DeclaredObjectModel(db: db, fileGroupUUID: declaration.fileGroupUUID, objectType: declaration.objectType, sharingGroupUUID: declaration.sharingGroupUUID)
-        try declaredObject.insert()
-                    
-        // Need to add entries for the file declarations.
-        for file in declaration.declaredFiles {
-            let declared = try DeclaredFileModel(db: db, fileGroupUUID: declaration.fileGroupUUID, uuid: file.uuid, mimeType: file.mimeType, appMetaData: file.appMetaData, changeResolverName: file.changeResolverName)
-            try declared.insert()
-        }
-    }
-*/
 }
 
 

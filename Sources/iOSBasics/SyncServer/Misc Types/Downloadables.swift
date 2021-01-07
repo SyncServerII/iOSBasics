@@ -14,20 +14,34 @@ public protocol DownloadableObject {
 }
 
 // Indicates that the file needs to be downloaded
-public protocol DownloadingFile: DownloadableFile {
+public protocol FileNeedingDownload: DownloadableFile {
     var fileVersion: FileVersionInt { get }
     var fileLabel: String { get }
 }
 
-public protocol DownloadingObject {
-    associatedtype FileDownload: DownloadingFile
+public protocol ObjectNeedingDownload {
+    associatedtype FileDownload: FileNeedingDownload
     var sharingGroupUUID: UUID {get}
     var fileGroupUUID: UUID {get}
     var creationDate: Date {get}
     var downloads: [FileDownload] {get}
 }
 
-public protocol IndexableObject: DownloadingObject {
+public protocol FileWasDownloaded: DownloadableFile {
+    var fileVersion: FileVersionInt { get }
+    var fileLabel: String { get }
+    var mimeType: MimeType { get }
+}
+
+public protocol ObjectWasDownloaded {
+    associatedtype FileDownload: FileWasDownloaded
+    var sharingGroupUUID: UUID {get}
+    var fileGroupUUID: UUID {get}
+    var creationDate: Date {get}
+    var downloads: [FileDownload] {get}
+}
+
+public protocol IndexableObject: ObjectNeedingDownload {
     var deleted: Bool {get}
     var objectType: String {get}
 }

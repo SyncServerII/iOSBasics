@@ -87,11 +87,11 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         let sharingGroupUUID = try getSharingGroupUUID()
 
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
         
-        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
         let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
         
         try syncServer.queue(upload: upload)
@@ -165,11 +165,11 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         let fileGroupUUID = UUID()
         
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
 
-        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
         let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
         
         try syncServer.queue(upload: upload)
@@ -224,11 +224,11 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         let fileGroupUUID = UUID()
         
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
 
-        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
         let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
         
         try syncServer.queue(upload: upload)
@@ -289,13 +289,13 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         let fileGroupUUID = UUID()
         
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
-        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
         try syncServer.register(object: example)
         
-        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
-        let fileUpload2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID2)
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
+        let fileUpload2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, mimeType: .text, dataSource: .copy(exampleTextFileURL), uuid: fileUUID2)
         let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1, fileUpload2])
         
         try syncServer.queue(upload: upload)
@@ -353,12 +353,12 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         let sharingGroupUUID = try getSharingGroup(db: database)
         
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
 
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
         
-        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .jpeg, dataSource: .copy(exampleTextFileURL), uuid: UUID())
         let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
 
         try syncServer.queue(upload: upload)

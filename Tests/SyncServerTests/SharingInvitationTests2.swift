@@ -39,10 +39,10 @@ class SharingInvitationTests2: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
         
-//        _ = handlers.user.removeUser()
-//        guard handlers.user.addUser() else {
-//            throw SyncServerError.internalError("Could not add user")
-//        }
+        _ = handlers.user.removeUser()
+        guard handlers.user.addUser() else {
+            throw SyncServerError.internalError("Could not add user")
+        }
         
         // So as to not throw an error in `contentsOfDirectory`
         try Files.createDirectoryIfNeeded(config.temporaryFiles.directory)

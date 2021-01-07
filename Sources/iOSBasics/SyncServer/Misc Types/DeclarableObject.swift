@@ -5,7 +5,8 @@ public protocol DeclarableFile {
     // Needed to indicate a specific file and because `mimeType`'s need not be unique across all files for an object. `fileLabel`'s must all be unique for a specific object.
     var fileLabel: String {get}
     
-    var mimeType: MimeType {get}
+    // The possible mime types for this file.
+    var mimeTypes: Set<MimeType> {get}
 
     // If the file will be changed and have multiple versions on the server, this must be non-nil and a valid change resolver name. For a static file that will not be changed beyond v0 of the file on the server, this must be nil.
     var changeResolverName: String? {get}
@@ -13,7 +14,7 @@ public protocol DeclarableFile {
 
 extension DeclarableFile {
     public func equal(_ other: DeclarableFile) -> Bool {
-        return mimeType == other.mimeType
+        return mimeTypes == other.mimeTypes
             && changeResolverName == other.changeResolverName
             && fileLabel == other.fileLabel
     }

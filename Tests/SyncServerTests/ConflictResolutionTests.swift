@@ -80,11 +80,11 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         let sharingGroupUUID = try getSharingGroupUUID()
 
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
         
-        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
         let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [file1])
         
         try syncServer.queue(upload: upload)
@@ -150,7 +150,7 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         let sharingGroupUUID = try getSharingGroupUUID()
         
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: CommentFile.changeResolverName)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
             
@@ -161,13 +161,13 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
                 let commentFile = CommentFile()
                 let commentFileData = try commentFile.getData()
 
-                let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID1)
+                let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID1)
                 upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
             }
             else {
                 let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
                 
-                let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(comment.updateContents), uuid: fileUUID1)
+                let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(comment.updateContents), uuid: fileUUID1)
                 upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
             }
 

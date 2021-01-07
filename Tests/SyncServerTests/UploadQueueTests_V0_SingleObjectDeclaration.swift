@@ -64,7 +64,7 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         let sharingGroupUUID = try getSharingGroup(db: database)
 
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
          
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
@@ -120,8 +120,8 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         let sharingGroupUUID = try getSharingGroup(db: database)
         
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
-        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeTypes: [.jpeg], changeResolverName: nil)
 
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
         try syncServer.register(object: example)
@@ -183,7 +183,7 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         let sharingGroupUUID = try getSharingGroup(db: database)
         
         let objectType = "Foo"
-        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
             
         if knownObjectType {
             let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration])
@@ -235,8 +235,8 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         let sharingGroupUUID = try getSharingGroup(db: database)
 
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
-        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeTypes: [.jpeg], changeResolverName: nil)
          
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
         try syncServer.register(object: example)
@@ -293,7 +293,7 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         let sharingGroupUUID = try getSharingGroup(db: database)
 
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
 
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
@@ -352,7 +352,7 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         var sharingGroupUUID = try getSharingGroup(db: database)
         
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
 
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
@@ -417,7 +417,7 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         }
         
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
 
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
@@ -470,7 +470,7 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         let sharingGroupUUID = try getSharingGroupUUID()
 
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
         
@@ -485,8 +485,8 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         let sharingGroupUUID = try getSharingGroup(db: database)
 
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
-        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeTypes: [.text], changeResolverName: nil)
 
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
         try syncServer.register(object: example)
@@ -537,6 +537,93 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
             }
             
             XCTAssert(error == SyncServerError.attemptToQueueADeletedFile)
+            return
+        }
+        
+        XCTFail()
+    }
+    
+    func testUploadWrongMimeTypeWithSingleMimeTypeInDeclaration() throws {
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        let objectType = "o1"
+        let localFile = Self.exampleTextFileURL
+        
+        let fileUUID1 = UUID()
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1], objectWasDownloaded: nil)
+        try syncServer.register(object: example)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .jpeg, dataSource: .copy(localFile), uuid: fileUUID1)
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        
+        do {
+            try syncServer.queue(upload: upload)
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            XCTAssert(syncServerError == .mimeTypeNotInDeclaration)
+            return
+        }
+        
+        XCTFail()
+    }
+    
+    func testUploadWrongMimeTypeWithMultipleMimeTypeInDeclaration() throws {
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        let objectType = "o1"
+        let localFile = Self.exampleTextFileURL
+        
+        let fileUUID1 = UUID()
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text, .png], changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1], objectWasDownloaded: nil)
+        try syncServer.register(object: example)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .jpeg, dataSource: .copy(localFile), uuid: fileUUID1)
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        
+        do {
+            try syncServer.queue(upload: upload)
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            XCTAssert(syncServerError == .mimeTypeNotInDeclaration)
+            return
+        }
+        
+        XCTFail()
+    }
+    
+    func testUploadNilMimeTypeWhenMoreThanOneMimeTypeFails() throws {
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        let objectType = "o1"
+        let localFile = Self.exampleTextFileURL
+        
+        let fileUUID1 = UUID()
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text, .jpeg], changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1], objectWasDownloaded: nil)
+        try syncServer.register(object: example)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(localFile), uuid: fileUUID1)
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        
+        do {
+            try syncServer.queue(upload: upload)
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            XCTAssert(syncServerError == .nilUploadMimeTypeButNotJustOneMimeTypeInDeclaration)
             return
         }
         

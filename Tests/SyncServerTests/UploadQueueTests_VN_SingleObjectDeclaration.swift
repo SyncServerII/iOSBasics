@@ -68,14 +68,14 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         let sharingGroupUUID = try getSharingGroup(db: database)
         
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: CommentFile.changeResolverName)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
         
         let commentFile = CommentFile()
         let commentFileData = try commentFile.getData()
                 
-        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID)
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID)
         let uploads = [file1]
         let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: uploads)
         
@@ -126,14 +126,14 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         let sharingGroupUUID = try getSharingGroup(db: database)
         
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: CommentFile.changeResolverName)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
         
         let commentFile = CommentFile()
         let commentFileData = try commentFile.getData()
                 
-        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID)
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID)
         let uploads = [file1]
         let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: uploads)
 
@@ -150,7 +150,7 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
 
         let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
         
-        let file2 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(comment.updateContents), uuid: fileUUID2)
+        let file2 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(comment.updateContents), uuid: fileUUID2)
         let uploads2 = [file2]
         
         let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: uploads2)
@@ -199,14 +199,14 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         let sharingGroupUUID = try getSharingGroup(db: database)
         
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: CommentFile.changeResolverName)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
         
         let commentFile = CommentFile()
         let commentFileData = try commentFile.getData()
                 
-        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID)
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID)
         let uploads = [file1]
         let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: uploads)
 
@@ -223,7 +223,7 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
 
         let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
         
-        let file2 = FileUpload(fileLabel: fileLabel2, dataSource: .data(comment.updateContents), uuid: fileUUID)
+        let file2 = FileUpload(fileLabel: fileLabel2, mimeType: .text, dataSource: .data(comment.updateContents), uuid: fileUUID)
         let uploads2 = [file2]
         
         let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: uploads2)
@@ -276,14 +276,14 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         }
         
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: changeResolver)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: changeResolver)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
         
         let commentFile = CommentFile()
         let commentFileData = try commentFile.getData()
                 
-        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID)
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID)
         let uploads = [file1]
         let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: uploads)
 
@@ -292,7 +292,7 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
 
         let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
         
-        let file2 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(comment.updateContents), uuid: fileUUID)
+        let file2 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(comment.updateContents), uuid: fileUUID)
         let uploads2 = [file2]
         
         let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: uploads2)
@@ -332,5 +332,89 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
     
     func testvNUploadWithChangeResolverWorks() throws {
         try runUpload(vNUploadWithChangeResolver: true)
+    }
+    
+    func testVNUploadWithWrongMimeTypeFails() throws {
+        let fileUUID = UUID()
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let changeResolver = CommentFile.changeResolverName
+
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: changeResolver)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let commentFile = CommentFile()
+        let commentFileData = try commentFile.getData()
+                
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID)
+        let uploads = [file1]
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: uploads)
+
+        try syncServer.queue(upload: upload)
+        waitForUploadsToComplete(numberUploads: 1)
+
+        let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
+        
+        let file2 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .png, dataSource: .data(comment.updateContents), uuid: fileUUID)
+        let uploads2 = [file2]
+        
+        let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: uploads2)
+
+        do {
+            try syncServer.queue(upload: upload2)
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            XCTAssert(syncServerError == .attemptToUploadWithDifferentMimeType)
+            return
+        }
+        XCTFail()
+    }
+    
+    func testVNUploadNilMimeTypeWhenMoreThanOneMimeTypeFails() throws {
+        let fileUUID = UUID()
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let changeResolver = CommentFile.changeResolverName
+
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text, .png], changeResolverName: changeResolver)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let commentFile = CommentFile()
+        let commentFileData = try commentFile.getData()
+                
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID)
+        let uploads = [file1]
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: uploads)
+
+        try syncServer.queue(upload: upload)
+        waitForUploadsToComplete(numberUploads: 1)
+
+        let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
+        
+        let file2 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(comment.updateContents), uuid: fileUUID)
+        let uploads2 = [file2]
+        
+        let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: uploads2)
+
+        do {
+            try syncServer.queue(upload: upload2)
+        } catch let error {
+            guard let syncServerError = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            XCTAssert(syncServerError == .nilUploadMimeTypeButNotJustOneMimeTypeInDeclaration)
+            return
+        }
+        XCTFail()
     }
 }

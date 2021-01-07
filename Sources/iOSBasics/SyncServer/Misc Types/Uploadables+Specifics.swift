@@ -1,14 +1,17 @@
 
 import Foundation
+import ServerShared
 
 public struct FileUpload: UploadableFile {
     public let fileLabel: String
+    public let mimeType: MimeType?
     public let dataSource: UploadDataSource
     public let uuid: UUID
     public let appMetaData: String?
     
-    public init(fileLabel: String, dataSource: UploadDataSource, uuid: UUID, appMetaData: String? = nil) {
+    public init(fileLabel: String, mimeType: MimeType? = nil, dataSource: UploadDataSource, uuid: UUID, appMetaData: String? = nil) {
         self.fileLabel = fileLabel
+        self.mimeType = mimeType
         self.dataSource = dataSource
         self.uuid = uuid
         self.appMetaData = appMetaData

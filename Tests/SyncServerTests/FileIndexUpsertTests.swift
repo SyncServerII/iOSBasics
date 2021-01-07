@@ -80,7 +80,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let fileGroupUUID = UUID()
         let cloudStorageType: CloudStorageType = .Dropbox
         
-        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let declaredObject = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration])
         try declaredObject.insert()
         
@@ -118,7 +118,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let fileGroupUUID = UUID()
         let objectType = "Foo"
         
-        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let declaredObject = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration])
         try declaredObject.insert()
         
@@ -159,7 +159,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let fileGroupUUID = UUID()
         let objectType = "Foo"
         
-        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let declaredObject = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration])
         try declaredObject.insert()
         
@@ -214,7 +214,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let fileGroupUUID = UUID()
         let objectType = "Foo"
         
-        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let declaredObject = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration])
         try declaredObject.insert()
         
@@ -287,7 +287,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let fileGroupUUID = UUID()
         let objectType = "Foo"
         
-        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let declaredObject = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration])
         try declaredObject.insert()
         
@@ -348,7 +348,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let fileGroupUUID = UUID()
         let objectType = "objectType"
         
-        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let declaredObject = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration])
         try declaredObject.insert()
         
@@ -371,7 +371,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let fileGroupUUID = UUID()
         let objectType = "objectType"
         
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let declaredObject1 = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration1])
         try declaredObject1.insert()
         
@@ -408,7 +408,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         
         let objectType = "objectType"
         
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let declaredObject1 = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration1])
         try declaredObject1.insert()
 
@@ -424,7 +424,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
     
     func testMissingObjectType() throws {
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
         
@@ -469,7 +469,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let objectType = "Foo"
         let fileLabel = "file1"
         
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1], appMetaDataMapping: ["a": fileLabel])
         try syncServer.register(object: example)
         
@@ -512,7 +512,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         let objectType = "Foo"
         let fileLabel = "file1"
         
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1], appMetaDataMapping: ["a": fileLabel])
         try syncServer.register(object: example)
         

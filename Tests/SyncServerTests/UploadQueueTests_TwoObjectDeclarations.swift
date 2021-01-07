@@ -74,21 +74,21 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
 
         // First object
         let objectType1 = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example1 = ExampleDeclaration(objectType: objectType1, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example1)
         
-        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
         let upload = ObjectUpload(objectType: objectType1, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [file1])
         try syncServer.queue(upload: upload)
         
         // Second object
         let objectType2 = "Foobly"
-        let fileDeclaration2 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example2 = ExampleDeclaration(objectType: objectType2, declaredFiles: [fileDeclaration2])
         try syncServer.register(object: example2)
         
-        let file2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID2)
+        let file2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, mimeType: .text, dataSource: .copy(exampleTextFileURL), uuid: fileUUID2)
         let upload2 = ObjectUpload(objectType: objectType2, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [file2])
         try syncServer.queue(upload: upload2)
         
@@ -121,7 +121,7 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
 
         // Object1
         let objectType1 = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: CommentFile.changeResolverName)
         let example1 = ExampleDeclaration(objectType: objectType1, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example1)
 
@@ -131,12 +131,12 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
             if v0 {
                 let commentFile = CommentFile()
                 let commentFileData = try commentFile.getData()
-                let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID1)
+                let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID1)
                 upload = ObjectUpload(objectType: objectType1, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
             }
             else {
                 let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
-                let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(comment.updateContents), uuid: fileUUID1)
+                let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(comment.updateContents), uuid: fileUUID1)
                 upload = ObjectUpload(objectType: objectType1, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
             }
 
@@ -145,7 +145,7 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
         
         // Object2
         let objectType2 = "Foo"
-        let fileDeclaration2 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: CommentFile.changeResolverName)
         let example2 = ExampleDeclaration(objectType: objectType1, declaredFiles: [fileDeclaration2])
         try syncServer.register(object: example2)
                 
@@ -155,12 +155,12 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
             if v0 {
                 let commentFile = CommentFile()
                 let commentFileData = try commentFile.getData()
-                let file1 = FileUpload(fileLabel: fileDeclaration2.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID2)
+                let file1 = FileUpload(fileLabel: fileDeclaration2.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID2)
                 upload = ObjectUpload(objectType: objectType2, fileGroupUUID: fileGroupUUID2, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
             }
             else {
                 let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
-                let file1 = FileUpload(fileLabel: fileDeclaration2.fileLabel, dataSource: .data(comment.updateContents), uuid: fileUUID2)
+                let file1 = FileUpload(fileLabel: fileDeclaration2.fileLabel, mimeType: .text, dataSource: .data(comment.updateContents), uuid: fileUUID2)
                 upload = ObjectUpload(objectType: objectType2, fileGroupUUID: fileGroupUUID2, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
             }
 
@@ -233,28 +233,28 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
 
         // Object1
         let objectType1 = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: CommentFile.changeResolverName)
         let example1 = ExampleDeclaration(objectType: objectType1, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example1)
 
         func object1v0() throws {
             let commentFile = CommentFile()
             let commentFileData = try commentFile.getData()
-            let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID1)
+            let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID1)
             let upload = ObjectUpload(objectType: objectType1, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
             try syncServer.queue(upload: upload)
         }
         
         // Object2
         let objectType2 = "Foo"
-        let fileDeclaration2 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: CommentFile.changeResolverName)
         let example2 = ExampleDeclaration(objectType: objectType2, declaredFiles: [fileDeclaration2])
         try syncServer.register(object: example2)
 
         func object2v0() throws {
             let commentFile = CommentFile()
             let commentFileData = try commentFile.getData()
-            let file1 = FileUpload(fileLabel: fileDeclaration2.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID2)
+            let file1 = FileUpload(fileLabel: fileDeclaration2.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID2)
             let upload = ObjectUpload(objectType: objectType2, fileGroupUUID: fileGroupUUID2, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
             try syncServer.queue(upload: upload)
         }
@@ -279,7 +279,7 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
             fileLabel = fileDeclaration2.fileLabel
         }
         
-        let file1 = FileUpload(fileLabel: fileLabel, dataSource: .data(comment.updateContents), uuid: uploadFileUUID)
+        let file1 = FileUpload(fileLabel: fileLabel, mimeType: .text, dataSource: .data(comment.updateContents), uuid: uploadFileUUID)
         let upload = ObjectUpload(objectType: objectType2, fileGroupUUID: fileGroupUUID2, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
         
         do {

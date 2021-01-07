@@ -26,6 +26,10 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
     static let fileLabelField = Field("fileLabel", \M.fileLabel)
     var fileLabel: String
     
+    // Actual mime type uploaded/downloaded
+    static let mimeTypeField = Field("mimeType", \M.mimeType)
+    var mimeType: MimeType
+    
     // The version of the file locally.
     // This will be 0 after a first *successful* upload for a file initiated by the local client. After that, it will only be updated when a specific file version is downloaded in its entirety from the server. It cannot be updated for vN files on deferred upload completion because the local client, if other competing clients are concurrently making changes, may not have the complete file update for a specific version.
     // This can be nil, and the `serverFileVersion` can be non-nil. This will indicate a file that has not been created locally, that needs downloading.
@@ -94,10 +98,15 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             lhs.deletedOnServer == rhs.deletedOnServer &&
             lhs.goneReason == rhs.goneReason &&
             lhs.fileLabel == rhs.fileLabel &&
-            lhs.creationDate == rhs.creationDate
+            lhs.creationDate == rhs.creationDate &&
+            lhs.mimeType == rhs.mimeType
     }
     
     func sameInvariants(fileInfo: FileInfo) -> Bool {
+        guard mimeType.rawValue == fileInfo.mimeType else {
+            return false
+        }
+        
         guard fileUUID.uuidString == fileInfo.fileUUID else {
             return false
         }
@@ -136,6 +145,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
         id: Int64! = nil,
         fileUUID: UUID,
         fileLabel: String,
+        mimeType: MimeType,
         fileGroupUUID: UUID,
         fileVersion: FileVersionInt?,
         serverFileVersion: FileVersionInt?,
@@ -154,6 +164,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
         self.db = db
         self.id = id
         self.fileLabel = fileLabel
+        self.mimeType = mimeType
         self.fileUUID = fileUUID
         self.fileGroupUUID = fileGroupUUID
         self.fileVersion = fileVersion
@@ -180,6 +191,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             t.column(goneReasonField.description)
             t.column(creationDateField.description)
             t.column(updateCreationDateField.description)
+            t.column(mimeTypeField.description)
         }
     }
     
@@ -188,6 +200,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             id: row[Self.idField.description],
             fileUUID: row[Self.fileUUIDField.description],
             fileLabel: row[Self.fileLabelField.description],
+            mimeType: row[Self.mimeTypeField.description],
             fileGroupUUID: row[Self.fileGroupUUIDField.description],
             fileVersion: row[Self.fileVersionField.description],
             serverFileVersion: row[Self.serverFileVersionField.description],
@@ -210,7 +223,8 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             Self.deletedOnServerField.description <- deletedOnServer,
             Self.creationDateField.description <- creationDate,
             Self.updateCreationDateField.description <- updateCreationDate,
-            Self.goneReasonField.description <- goneReason
+            Self.goneReasonField.description <- goneReason,
+            Self.mimeTypeField.description <- mimeType
         )
     }
 }
@@ -272,9 +286,14 @@ extension DirectoryFileEntry {
             }
             
             let fileLabel = try fileInfo.getFileLabel(objectType: objectType, objectDeclarations: objectDeclarations)
+            
+            guard let mimeTypeString = fileInfo.mimeType,
+                let mimeType = MimeType(rawValue: mimeTypeString) else {
+                throw DatabaseError.badMimeType
+            }
 
             // `deletedLocally` is set to the same state as `deletedOnServer` because this is a file not yet known the local client. This just indicates that, if deleted on server already, the local client doesn't have to take any deletion actions for this file. If not deleted on the server, then the file isn't deleted locally either. 
-            let entry = try DirectoryFileEntry(db: db, fileUUID: fileUUID, fileLabel: fileLabel, fileGroupUUID: fileGroupUUID, fileVersion: nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, creationDate: creationDate, updateCreationDate: false, goneReason: nil)
+            let entry = try DirectoryFileEntry(db: db, fileUUID: fileUUID, fileLabel: fileLabel, mimeType: mimeType, fileGroupUUID: fileGroupUUID, fileVersion: nil, serverFileVersion: fileInfo.fileVersion, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted, creationDate: creationDate, updateCreationDate: false, goneReason: nil)
             try entry.insert()
             resultEntry = entry
         }

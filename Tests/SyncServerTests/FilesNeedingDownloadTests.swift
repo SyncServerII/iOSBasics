@@ -98,7 +98,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         let fileUUID1 = UUID()
         
         let objectType = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
 
@@ -154,8 +154,8 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         let fileUUID2 = UUID()
         let objectType = "Foo"
         
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
-        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
         try syncServer.register(object: example)
 
@@ -209,7 +209,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         let fileGroupUUID2 = UUID()
         let objectType = "Foo"
         
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
         
@@ -274,7 +274,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         let fileGroupUUID2 = UUID()
         let objectType = "Foo"
         
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
         
@@ -357,7 +357,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         if knownFileGroup {
             let objectType = "Foo"
             
-            let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+            let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
             let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
             try syncServer.register(object: example)
             
@@ -402,7 +402,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         let fileGroupUUID = UUID()
         let objectType = "Foo"
         
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
         
@@ -469,7 +469,7 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         let fileGroupUUID = UUID()
         let objectType = "Foo"
         
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
         try syncServer.register(object: example)
         

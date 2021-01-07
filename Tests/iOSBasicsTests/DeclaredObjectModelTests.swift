@@ -8,7 +8,7 @@ class DeclaredObjectModelTests: XCTestCase {
     var database: Connection!
     let fileGroupUUID = UUID()
     var entry:DeclaredObjectModel!
-    let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeType: .jpeg, changeResolverName: nil)
+    let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
     let objectType = "Foo"
     
     override func setUpWithError() throws {
@@ -29,7 +29,6 @@ class DeclaredObjectModelTests: XCTestCase {
         try DeclaredObjectModel.createTable(db: database)
         try DeclaredObjectModel.createTable(db: database)
     }
-
 
     func testInsertIntoTable() throws {
         try DeclaredObjectModel.createTable(db: database)
@@ -181,20 +180,24 @@ class DeclaredObjectModelTests: XCTestCase {
         XCTAssert(iOSBasics.equal(result.declaredFiles, try entry.getFiles()))
     }
     
-    /*
-    func testUpsert() throws {
+    func testInsertDeclarationWithMultipleMimeTypes() throws {
         try DeclaredObjectModel.createTable(db: database)
+        
+        let mimeTypes:Set<MimeType> = [.jpeg, .png]
+        let fileDeclaration = FileDeclaration(fileLabel: "file1", mimeTypes: mimeTypes, changeResolverName: nil)
+        let objectType = "OtherFoo"
+        let entry = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration])
         try entry.insert()
         
-        let obj = ObjectBasics(fileGroupUUID: entry.fileGroupUUID, objectType: entry.objectType, sharingGroupUUID: entry.sharingGroupUUID)
-        let declaredObject = try DeclaredObjectModel.upsert(object: obj, db: database)
-                
-        XCTAssert(entry == declaredObject)
+        let result = try DeclaredObjectModel.lookup(objectType: objectType, db: database)
+        guard result.declaredFiles.count == 1 else {
+            XCTFail()
+            return
+        }
         
-        let obj2 = ObjectBasics(fileGroupUUID: UUID(), objectType: entry.objectType, sharingGroupUUID: entry.sharingGroupUUID)
-        let declaredObject2 = try DeclaredObjectModel.upsert(object: obj2, db: database)
-        
-        XCTAssert(entry != declaredObject2)
-    }*/
+        XCTAssert(result.declaredFiles[0].mimeTypes == mimeTypes)
+        XCTAssert(result.objectType == entry.objectType)
+        XCTAssert(iOSBasics.equal(result.declaredFiles, try entry.getFiles()))
+    }
 }
 

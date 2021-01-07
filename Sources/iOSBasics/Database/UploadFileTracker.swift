@@ -6,6 +6,10 @@ import ServerShared
 import iOSShared
 
 class UploadFileTracker: DatabaseModel {
+    enum UploadFileTrackerError: Error {
+        case notExactlyOneMimeType
+    }
+        
     let db: Connection
     var id: Int64!
     
@@ -22,6 +26,9 @@ class UploadFileTracker: DatabaseModel {
     
     static let fileUUIDField = Field("fileUUID", \M.fileUUID)
     var fileUUID: UUID
+    
+    static let mimeTypeField = Field("mimeType", \M.mimeType)
+    var mimeType: MimeType
     
     static let statusField = Field("status", \M.status)
     var status: Status
@@ -49,6 +56,7 @@ class UploadFileTracker: DatabaseModel {
         uploadObjectTrackerId: Int64,
         status: Status,
         fileUUID: UUID,
+        mimeType: MimeType,
         fileVersion: FileVersionInt?,
         localURL:URL?,
         goneReason: GoneReason?,
@@ -61,6 +69,7 @@ class UploadFileTracker: DatabaseModel {
         self.uploadObjectTrackerId = uploadObjectTrackerId
         self.status = status
         self.fileUUID = fileUUID
+        self.mimeType = mimeType
         self.fileVersion = fileVersion
         self.localURL = localURL
         self.goneReason = goneReason
@@ -83,6 +92,7 @@ class UploadFileTracker: DatabaseModel {
             t.column(uploadCopyField.description)
             t.column(checkSumField.description)
             t.column(appMetaDataField.description)
+            t.column(mimeTypeField.description)
         }
     }
     
@@ -92,6 +102,7 @@ class UploadFileTracker: DatabaseModel {
             uploadObjectTrackerId: row[Self.uploadObjectTrackerIdField.description],
             status: row[Self.statusField.description],
             fileUUID: row[Self.fileUUIDField.description],
+            mimeType: row[Self.mimeTypeField.description],
             fileVersion: row[Self.fileVersionField.description],
             localURL: row[Self.localURLField.description],
             goneReason: row[Self.goneReasonField.description],
@@ -111,7 +122,8 @@ class UploadFileTracker: DatabaseModel {
             Self.goneReasonField.description <- goneReason,
             Self.uploadCopyField.description <- uploadCopy,
             Self.checkSumField.description <- checkSum,
-            Self.appMetaDataField.description <- appMetaData
+            Self.appMetaDataField.description <- appMetaData,
+            Self.mimeTypeField.description <- mimeType
         )
     }
 }
@@ -120,7 +132,7 @@ extension UploadFileTracker {
     // Creates an `UploadFileTracker` and copies data from the file's UploadableDataSource to a temporary file location if needed.
     // The returned `UploadFileTracker` has been inserted into the database.
     // The objectTrackerId is the id of the UploadObjectTracker for this file.
-    static func create(file: UploadableFile, cloudStorageType: CloudStorageType, objectTrackerId: Int64, config: Configuration.TemporaryFiles, hashingManager: HashingManager, db: Connection) throws -> UploadFileTracker {
+    static func create(file: UploadableFile, objectModel: DeclaredObjectModel, cloudStorageType: CloudStorageType, objectTrackerId: Int64, config: Configuration.TemporaryFiles, hashingManager: HashingManager, db: Connection) throws -> UploadFileTracker {
         let url: URL
         switch file.dataSource {
         case .data(let data):
@@ -133,7 +145,21 @@ extension UploadFileTracker {
         
         let checkSum = try hashingManager.hashFor(cloudStorageType: cloudStorageType).hash(forURL: url)
         
-        let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: objectTrackerId, status: .notStarted, fileUUID: file.uuid, fileVersion: nil, localURL: url, goneReason: nil, uploadCopy: file.dataSource.isCopy, checkSum: checkSum, appMetaData: file.appMetaData)
+        let uploadMimeType: MimeType
+        
+        if let mimeType = file.mimeType {
+            uploadMimeType = mimeType
+        }
+        else {
+            let fileDeclaration = try objectModel.getFile(with: file.fileLabel)
+            guard fileDeclaration.mimeTypes.count == 1,
+                let mimeType = fileDeclaration.mimeTypes.first else {
+                throw UploadFileTrackerError.notExactlyOneMimeType
+            }
+            uploadMimeType = mimeType
+        }
+        
+        let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: objectTrackerId, status: .notStarted, fileUUID: file.uuid, mimeType: uploadMimeType, fileVersion: nil, localURL: url, goneReason: nil, uploadCopy: file.dataSource.isCopy, checkSum: checkSum, appMetaData: file.appMetaData)
         try fileTracker.insert()
         
         return fileTracker

@@ -86,11 +86,11 @@ extension SyncServerTests where Self: XCTestCase {
     func uploadExampleTextFile(objectType: String = "Foo", sharingGroupUUID: UUID, localFile: URL = Self.exampleTextFileURL, objectWasDownloaded:((DownloadedObject)->())? = nil) throws -> (ObjectUpload, ExampleDeclaration) {
         let fileUUID1 = UUID()
         
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: nil)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
         let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1], objectWasDownloaded: objectWasDownloaded)
         try syncServer.register(object: example)
         
-        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(localFile), uuid: fileUUID1)
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .copy(localFile), uuid: fileUUID1)
         let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
         
         try syncServer.queue(upload: upload)

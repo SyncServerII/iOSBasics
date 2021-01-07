@@ -9,10 +9,17 @@ extension SyncServer {
             throw SyncServerError.duplicateFileLabel
         }
         
+        // Make sure all files have at least one mime type
+        for fileDeclaration in object.declaredFiles {
+            guard fileDeclaration.mimeTypes.count > 0 else {
+                throw SyncServerError.noMimeTypes
+            }
+        }
+        
         let result = try DeclaredObjectModel.lookupMatches(object: object, db: db)
         
         switch result {
-        case .noMatch:            
+        case .noMatch:
             let newObject = try DeclaredObjectModel(db: db, object: object)
             try newObject.insert()
             objectDeclarations[object.objectType] = object

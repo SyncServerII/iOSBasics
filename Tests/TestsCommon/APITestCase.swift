@@ -15,6 +15,12 @@ import SQLite
 @testable import iOSDropbox
 import ChangeResolvers
 
+class DropboxKey: Codable {
+    let DropboxAppKey: String
+}
+
+private var calledDropboxSetup = false
+
 public struct ExampleComment {
     static let messageKey = "messageString"
     public let messageString:String
@@ -50,14 +56,16 @@ enum SelectUser {
 }
     
 extension UserSetup {
-    // A bit of a hack
-    
+    var dropboxKeyURL: URL {
+        URL(fileURLWithPath: "/Users/chris/Developer/Private/iOSBasics/DropboxKey.json")
+    }
+
     // First dropbox user
-    var dropboxCredentialsPath: String { return "/Users/chris/Desktop/NewSyncServer/Private/iOSBasics/Dropbox.credentials"
+    var dropboxCredentialsPath: String { return "/Users/chris/Developer/Private/iOSBasics/Dropbox.credentials"
     }
     
     // Second dropbox user
-    var dropboxCredentialsPath2: String { return "/Users/chris/Desktop/NewSyncServer/Private/iOSBasics/Dropbox2.credentials"
+    var dropboxCredentialsPath2: String { return "/Users/chris/Developer/Private/iOSBasics/Dropbox2.credentials"
     }
 
     // Dropbox
@@ -105,14 +113,19 @@ extension UserSetup {
         
         return success
     }
-    
-    private func createDropboxCredentials() throws -> DropboxCredentials {
-        let savedCredentials = try loadDropboxCredentials()
-        return DropboxCredentials(savedCreds:savedCredentials)
-    }
-    
-    private func loadDropboxCredentials(selectUser: SelectUser = .first) throws -> DropboxSavedCreds {
+
+    private func createDropboxCredentials(selectUser: SelectUser = .first) throws -> DropboxCredentials {
         let dropboxCredentials:URL
+        
+        let keyData = try Data(contentsOf: dropboxKeyURL)
+        let key = try JSONDecoder().decode(DropboxKey.self, from: keyData)
+        
+        // This does necessary initializations for Dropbox-- so that token can be refreshed.
+        // Have to futz around here. Can only call this once.
+        if !calledDropboxSetup {
+            _ = DropboxSyncServerSignIn(appKey: key.DropboxAppKey)
+            calledDropboxSetup = true
+        }
         
         switch selectUser {
         case .first:
@@ -121,17 +134,20 @@ extension UserSetup {
             dropboxCredentials = URL(fileURLWithPath: dropboxCredentialsPath2)
         }
         
-        return try DropboxSavedCreds.fromJSON(file: dropboxCredentials)
+        let savedCreds = try DropboxSavedCreds.fromJSON(file: dropboxCredentials)
+        let creds = DropboxCredentials(savedCreds:savedCreds)
+
+        let exp = expectation(description: "exp")
+        creds.refreshCredentials { error in
+            XCTAssert(error == nil, "\(String(describing: error))")
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        return creds
     }
-    
-    private func setupDropboxCredentials(selectUser: SelectUser = .first) throws -> DropboxCredentials {
-        let savedCredentials = try loadDropboxCredentials(selectUser: selectUser)
-        return DropboxCredentials(savedCreds:savedCredentials)
-    }
-    
 
     func dropboxUser(selectUser: SelectUser = .first) throws -> TestUser {
-        let creds = try setupDropboxCredentials(selectUser: selectUser)
+        let creds = try createDropboxCredentials(selectUser: selectUser)
         return TestUser(
             cloudStorageType: .Dropbox,
             credentials:creds,

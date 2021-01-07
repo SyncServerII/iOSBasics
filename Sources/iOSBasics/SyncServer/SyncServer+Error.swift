@@ -46,8 +46,44 @@ enum SyncServerError: Error {
     case someUploadFilesV0SomeVN
     case noChangeResolver
     
+    case noMimeTypes
+    case matchingFileLabelButOtherDifferences
+    case nilUploadMimeTypeButNotJustOneMimeTypeInDeclaration
+    case attemptToUploadWithDifferentMimeType
+    case mimeTypeNotInDeclaration
+    
     static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
+         case mimeTypeNotInDeclaration:
+            guard case .mimeTypeNotInDeclaration = rhs else {
+                return false
+            }
+            return true
+            
+         case attemptToUploadWithDifferentMimeType:
+            guard case .attemptToUploadWithDifferentMimeType = rhs else {
+                return false
+            }
+            return true
+            
+        case nilUploadMimeTypeButNotJustOneMimeTypeInDeclaration:
+            guard case .nilUploadMimeTypeButNotJustOneMimeTypeInDeclaration = rhs else {
+                return false
+            }
+            return true
+            
+        case matchingFileLabelButOtherDifferences:
+            guard case .matchingFileLabelButOtherDifferences = rhs else {
+                return false
+            }
+            return true
+            
+        case noMimeTypes:
+            guard case .noMimeTypes = rhs else {
+                return false
+            }
+            return true
+            
         case badFileLabel:
             guard case .badFileLabel = rhs else {
                 return false

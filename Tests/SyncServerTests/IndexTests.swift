@@ -288,7 +288,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
         try syncServer.sync(sharingGroupUUID: sharingGroupUUID)
         waitForExpectations(timeout: 10, handler: nil)
         
-        let fileUpload1 = FileUpload(fileLabel: uploadFile.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: uploadFile.uuid)
+        let fileUpload1 = FileUpload(fileLabel: uploadFile.fileLabel, mimeType: .text, dataSource: .copy(exampleTextFileURL), uuid: uploadFile.uuid)
         let upload = ObjectUpload(objectType: objectUpload.objectType, fileGroupUUID: objectUpload.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
 
         // This is as if another client attempts an upload of a file after a sync where it learned about the deleted file for the first time.
@@ -502,15 +502,15 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
         let sharingGroupUUID = try getSharingGroupUUID()
 
         let objectType1 = "Foo"
-        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
-        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeType: .text, changeResolverName: CommentFile.changeResolverName)
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: CommentFile.changeResolverName)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeTypes: [.text], changeResolverName: CommentFile.changeResolverName)
         let example1 = ExampleDeclaration(objectType: objectType1, declaredFiles: [fileDeclaration1, fileDeclaration2])
         try syncServer.register(object: example1)
 
         let commentFile = CommentFile()
         let commentFileData = try commentFile.getData()
-        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID1)
-        let file2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, dataSource: .data(commentFileData), uuid: fileUUID2)
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID1)
+        let file2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID2)
         let upload1 = ObjectUpload(objectType: objectType1, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1, file2])
         try syncServer.queue(upload: upload1)
 

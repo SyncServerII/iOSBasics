@@ -10,7 +10,7 @@ extension SyncServer {
     }
     
     // Is the fileLabel/UUID combination in the fileEntries?
-    private func fileLabelUUID(of upload: UploadableFile, in fileEntries:[DirectoryFileEntry]) throws -> DirectoryFileEntry? {
+    private func directoryEntryMatchingFileLabelUUID(of upload: UploadableFile, in fileEntries:[DirectoryFileEntry]) throws -> DirectoryFileEntry? {
         let filter = fileEntries.filter {$0.fileLabel == upload.fileLabel}
         switch filter.count {
         case 0:
@@ -40,7 +40,7 @@ extension SyncServer {
         var v0Uploads = [UploadableFile]()
         
         for upload in upload.uploads {
-            let fileEntry = try fileLabelUUID(of: upload, in: objectInfo.allFileEntries)
+            let fileEntry = try directoryEntryMatchingFileLabelUUID(of: upload, in: objectInfo.allFileEntries)
             if fileEntry == nil {
                 // The fileLabel/UUID has not yet been uploaded.
                 v0Uploads += [upload]
@@ -48,6 +48,47 @@ extension SyncServer {
         }
         
         return v0Uploads
+    }
+    
+    // Given that all files in the upload have been uploaded before, make sure that either (a) the mimeType in the UploadableFile is nil, and the declared object has exactly one mimeType, or (b) the mimeType in the UploadableFile is non-nil and that matches with the mime type in the existing DirectoryFileEntry.
+    private func existingUploadsHaveSameMimeType(upload: UploadableObject, objectModel: DeclaredObjectModel, objectInfo: DirectoryObjectEntry.ObjectInfo) throws {
+                
+        for upload in upload.uploads {
+            guard let fileEntry:DirectoryFileEntry = try directoryEntryMatchingFileLabelUUID(of: upload, in: objectInfo.allFileEntries) else {
+                throw SyncServerError.internalError("Should have a matching directory entry.")
+            }
+
+            if let mimeType = upload.mimeType {
+                guard fileEntry.mimeType == mimeType else {
+                    throw SyncServerError.attemptToUploadWithDifferentMimeType
+                }
+            }
+            else {
+                let fileDeclaration = try objectModel.getFile(with: upload.fileLabel)
+                guard fileDeclaration.mimeTypes.count == 1 else {
+                    throw SyncServerError.nilUploadMimeTypeButNotJustOneMimeTypeInDeclaration
+                }
+            }
+        }
+    }
+    
+    private func newUploadsHaveValidMimeType(upload: UploadableObject, objectModel: DeclaredObjectModel) throws {
+
+        for upload in upload.uploads {
+            let fileDeclaration = try objectModel.getFile(with: upload.fileLabel)
+
+            if let mimeType = upload.mimeType {
+                guard fileDeclaration.mimeTypes.contains(mimeType) else {
+                    throw SyncServerError.mimeTypeNotInDeclaration
+                }
+            }
+            else {
+                // Nil mime type given-- make sure there's just one mime type in the declaration.
+                guard fileDeclaration.mimeTypes.count == 1 else {
+                    throw SyncServerError.nilUploadMimeTypeButNotJustOneMimeTypeInDeclaration
+                }
+            }
+        }
     }
     
     func queueHelper(upload: UploadableObject) throws {
@@ -105,7 +146,7 @@ extension SyncServer {
     }
     
     // Add a new tracker into UploadObjectTracker, and one for each new upload.
-    private func createNewTrackers(fileGroupUUID: UUID, cloudStorageType: CloudStorageType, uploads: [UploadableFile]) throws -> (newObjectTrackerId: Int64, UploadObjectTracker) {
+    private func createNewTrackers(fileGroupUUID: UUID, objectModel: DeclaredObjectModel, cloudStorageType: CloudStorageType, uploads: [UploadableFile]) throws -> (newObjectTrackerId: Int64, UploadObjectTracker) {
     
         let newObjectTracker = try UploadObjectTracker(db: db, fileGroupUUID: fileGroupUUID)
         try newObjectTracker.insert()
@@ -118,7 +159,7 @@ extension SyncServer {
         
         // Create a new `UploadFileTracker` for each file we're uploading.
         for file in uploads {
-            let newFileTracker = try UploadFileTracker.create(file: file, cloudStorageType: cloudStorageType, objectTrackerId: newObjectTrackerId, config: configuration.temporaryFiles, hashingManager: hashingManager, db: db)
+            let newFileTracker = try UploadFileTracker.create(file: file, objectModel: objectModel, cloudStorageType: cloudStorageType, objectTrackerId: newObjectTrackerId, config: configuration.temporaryFiles, hashingManager: hashingManager, db: db)
             logger.debug("newFileTracker: \(String(describing: newFileTracker.id))")
         }
         
@@ -136,8 +177,11 @@ extension SyncServer {
             }
         }
         
+        // Need to look up directory entries for each file and make sure for each the mime type we're uploading now is the same as the mime type that was uploaded before.
+        try existingUploadsHaveSameMimeType(upload: upload, objectModel: objectModel, objectInfo: objectEntry)
+        
         // Every new upload needs new upload trackers.
-        let (_, newObjectTracker) = try createNewTrackers(fileGroupUUID: upload.fileGroupUUID, cloudStorageType: objectEntry.objectEntry.cloudStorageType, uploads: upload.uploads)
+        let (_, newObjectTracker) = try createNewTrackers(fileGroupUUID: upload.fileGroupUUID, objectModel: objectModel, cloudStorageType: objectEntry.objectEntry.cloudStorageType, uploads: upload.uploads)
         
         // This is an upload for existing file instances.
         try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- false)
@@ -156,6 +200,10 @@ extension SyncServer {
     
     // This is either the first upload for the file group. i.e., the first upload for this specific object. OR, it's the first upload for only some of the files in the file group.
     private func uploadNew(upload: UploadableObject, objectType: DeclaredObjectModel, objectEntryType: DirectoryObjectEntry.ObjectEntryType, activeUploadsForThisFileGroup: Bool) throws {
+    
+        // Make sure all of the mime types in the upload match those needed.
+        try newUploadsHaveValidMimeType(upload: upload, objectModel: objectType)
+        
         // The user must do at least one `sync` call prior to queuing an upload or this may throw an error.
         let cloudStorageType = try cloudStorageTypeForNewFile(sharingGroupUUID: upload.sharingGroupUUID)
         
@@ -163,7 +211,7 @@ extension SyncServer {
         let objectEntry = try DirectoryObjectEntry.createNewInstance(upload: upload, objectType: objectType, objectEntryType: objectEntryType, cloudStorageType: cloudStorageType, db: db)
         
         // Every new upload needs new upload trackers.
-        let (_, newObjectTracker) = try createNewTrackers(fileGroupUUID: upload.fileGroupUUID, cloudStorageType: cloudStorageType, uploads: upload.uploads)
+        let (_, newObjectTracker) = try createNewTrackers(fileGroupUUID: upload.fileGroupUUID, objectModel: objectType, cloudStorageType: cloudStorageType, uploads: upload.uploads)
         
         // Since this is the first upload for a new object instance or at least for the specific files of the object, all uploads are v0.
         try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- true)

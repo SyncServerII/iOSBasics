@@ -306,7 +306,7 @@ extension SyncServer {
                     contents = .gone
                 }
                 
-                let downloadFile = DownloadedFile(uuid: file.fileUUID, fileVersion: file.fileVersion, fileLabel: fileEntry.fileLabel, contents: contents)
+                let downloadFile = DownloadedFile(uuid: file.fileUUID, fileVersion: file.fileVersion, fileLabel: fileEntry.fileLabel, mimeType: fileEntry.mimeType, contents: contents)
                 downloadedFiles += [downloadFile]
             }
             
