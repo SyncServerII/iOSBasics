@@ -150,6 +150,7 @@ extension SignIns: iOSSignIn.SignInsDelegate {
     
     public func userIsSignedOut(_ manager: SignInManager, signIn: GenericSignIn) {
         delegate?.setCredentials(self, credentials: nil)
+        delegate?.userIsSignedOut(self)
     }
 }
 
