@@ -177,14 +177,12 @@ extension SyncServer {
         }
         
         for file in fileIndex {
-            guard let fileUUIDString = file.fileUUID,
-                let fileUUID = UUID(uuidString: fileUUIDString) else {
-                throw SyncServerError.internalError("A file UUID string couldn't be converted to a UUID.")
+            guard let fileUUID = try UUID.from(file.fileUUID) else {
+                throw SyncServerError.internalError("A file UUID string couldn't be converted to a UUID: \(String(describing: file.fileUUID))")
             }
             
-            guard let fileGroupUUIDString = file.fileGroupUUID,
-                let fileGroupUUID = UUID(uuidString: fileGroupUUIDString) else {
-                throw SyncServerError.internalError("A file UUID string couldn't be converted to a UUID.")
+            guard let fileGroupUUID = try UUID.from(file.fileGroupUUID) else {
+                throw SyncServerError.internalError("A file group UUID string couldn't be converted to a UUID: \(String(describing: file.fileGroupUUID))")
             }
 
             var hasFileEntry = false
