@@ -130,7 +130,7 @@ class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
         }
                 
         let response = try CheckCredsResponse.decode(jsonDict)
-        XCTAssert(response.userId != nil)
+        XCTAssert(response.userInfo != nil)
         
         guard let info = requestInfo else {
             XCTFail()

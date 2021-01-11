@@ -54,9 +54,9 @@ public class SignIns {
                         self.showAlert(withTitle: "Alert!", message: "User not found on system.")
                         logger.info("signUserOut: noUser in checkForExistingUser")
 
-                    case .user(userId: let userId, accessToken: let accessToken):
-                        logger.info("SyncServer user signed in: access token: \(String(describing: accessToken))")
-                        self.delegate?.signInCompleted(self, userId: userId)
+                    case .user(userInfo: let userInfo, accessToken: let accessToken):
+                        logger.info("SyncServer user signed in: access token: \(String(describing: accessToken)); userInfo: \(userInfo)")
+                        self.delegate?.signInCompleted(self, userInfo: userInfo)
                     }
                     
                 case .failure(let error):

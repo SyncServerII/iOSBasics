@@ -12,6 +12,7 @@ class ServerAPI {
         case non200StatusCode(Int)
         case couldNotCreateResponse
         case badCheckCreds
+        case noUserInfoInCheckCreds
         case unknownServerError
         case couldNotCreateRequest
         case nilResponse
@@ -155,7 +156,7 @@ class ServerAPI {
     
     enum CheckCredsResult {
         case noUser
-        case user(userId:UserId, accessToken:String?)
+        case user(userInfo:CheckCredsResponse.UserInfo, accessToken:String?)
     }
     
     func checkCreds(_ creds: GenericCredentials, completion: @escaping (Swift.Result<CheckCredsResult, Error>)->(Void)) {
@@ -176,7 +177,13 @@ class ServerAPI {
                 }
                 
                 let accessToken = response?[ServerConstants.httpResponseOAuth2AccessTokenKey] as? String
-                result = .user(userId: checkCredsResponse.userId, accessToken: accessToken)
+                
+                guard let userInfo = checkCredsResponse.userInfo else {
+                    completion(.failure(ServerAPIError.noUserInfoInCheckCreds))
+                    return
+                }
+                
+                result = .user(userInfo: userInfo, accessToken: accessToken)
             }
             
             if let result = result {
