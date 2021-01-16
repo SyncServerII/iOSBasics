@@ -351,6 +351,13 @@ extension SyncServer {
                     guard result.uploadsFinished == .v0UploadsFinished else {
                         throw SyncServerError.internalError("Did not get v0UploadsFinished when expected.")
                     }
+                    
+                    if let pushNotificationMessage = objectTracker.pushNotificationMessage {
+                        let sharingGroupUUID = try objectTracker.getSharingGroup()
+                        api.sendPushNotification(pushNotificationMessage, sharingGroupUUID: sharingGroupUUID) { [weak self] error in
+                                self?.reportError(SyncServerError.internalError("Failed sending push notification"))
+                        }
+                    }
                 }
             }
             else {
@@ -400,6 +407,13 @@ extension SyncServer {
         
         let fileTrackers = try objectTracker.dependentFileTrackers()
         try deleteUploadTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
+        
+        if let pushNotificationMessage = objectTracker.pushNotificationMessage {
+            let sharingGroupUUID = try objectTracker.getSharingGroup()
+            api.sendPushNotification(pushNotificationMessage, sharingGroupUUID: sharingGroupUUID) { [weak self] error in
+                    self?.reportError(SyncServerError.internalError("Failed sending push notification"))
+            }
+        }
     }
     
     // Called when an upload or download detects that a file is `gone`.

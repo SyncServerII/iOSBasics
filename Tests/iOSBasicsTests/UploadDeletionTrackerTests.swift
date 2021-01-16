@@ -8,11 +8,12 @@ class UploadDeletionTrackerTests: XCTestCase {
     var database: Connection!
     let fileUUID = UUID()
     var entry:UploadDeletionTracker!
+    let message = "Message"
     
     override func setUpWithError() throws {
         set(logLevel: .trace)
         database = try Connection(.inMemory)
-        entry = try UploadDeletionTracker(db: database, uuid: fileUUID, deletionType: .fileUUID, deferredUploadId: 0, status: .waitingForDeferredDeletion)
+        entry = try UploadDeletionTracker(db: database, uuid: fileUUID, deletionType: .fileUUID, deferredUploadId: 0, status: .waitingForDeferredDeletion, pushNotificationMessage: message)
     }
 
     override func tearDownWithError() throws {
@@ -71,7 +72,7 @@ class UploadDeletionTrackerTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
-        let entry2 = try UploadDeletionTracker(db: database, uuid: UUID(), deletionType: .fileUUID, deferredUploadId: 0, status: .waitingForDeferredDeletion)
+        let entry2 = try UploadDeletionTracker(db: database, uuid: UUID(), deletionType: .fileUUID, deferredUploadId: 0, status: .waitingForDeferredDeletion, pushNotificationMessage: message)
 
         try entry2.insert()
 
@@ -117,10 +118,10 @@ class UploadDeletionTrackerTests: XCTestCase {
         
         let originalStatus: UploadDeletionTracker.Status = .notStarted
         
-        let e1 = try UploadDeletionTracker(db: database, uuid: UUID(), deletionType: .fileUUID, deferredUploadId: 0, status: originalStatus)
+        let e1 = try UploadDeletionTracker(db: database, uuid: UUID(), deletionType: .fileUUID, deferredUploadId: 0, status: originalStatus, pushNotificationMessage: message)
         try e1.insert()
         
-        let e2 = try UploadDeletionTracker(db: database, uuid: UUID(), deletionType: .fileUUID, deferredUploadId: 0, status: originalStatus)
+        let e2 = try UploadDeletionTracker(db: database, uuid: UUID(), deletionType: .fileUUID, deferredUploadId: 0, status: originalStatus, pushNotificationMessage: message)
         try e2.insert()
         
         try e1.update(setters:
@@ -132,5 +133,25 @@ class UploadDeletionTrackerTests: XCTestCase {
         }
         
         XCTAssert(e2Copy.status == originalStatus, "\(e2Copy.status)")
+    }
+    
+    func testGetSharingGroup() throws {
+        // There has to be a DirectoryObjectEntry for the UploadDeletionTracker
+
+        try UploadDeletionTracker.createTable(db: database)
+        try DirectoryObjectEntry.createTable(db: database)
+
+        let sharingGroupUUID = UUID()
+        let fileGroupUUID = UUID()
+
+        let udt = try UploadDeletionTracker(db: database, uuid: fileGroupUUID, deletionType: .fileGroupUUID, deferredUploadId: 0, status: .deleting, pushNotificationMessage: message)
+        try udt.insert()
+
+        let doe = try DirectoryObjectEntry(db: database, objectType: "Foobar2", fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, cloudStorageType: .Dropbox, deletedLocally: false, deletedOnServer: false)
+        try doe.insert()
+        
+        let sharingGroup2 = try udt.getSharingGroup()
+        
+        XCTAssert(sharingGroupUUID == sharingGroup2)
     }
 }

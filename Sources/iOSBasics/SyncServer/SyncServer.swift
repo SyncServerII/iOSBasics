@@ -122,8 +122,8 @@ public class SyncServer {
         try queueHelper(download: download)
     }
     
-    public func queue(objectDeletion fileGroupUUID: UUID) throws {
-        try deleteHelper(object: fileGroupUUID)
+    public func queue(objectDeletion fileGroupUUID: UUID, pushNotificationMessage: String? = nil) throws {
+        try deleteHelper(object: fileGroupUUID, pushNotificationMessage: pushNotificationMessage)
     }
 
     /* This performs a variety of actions:

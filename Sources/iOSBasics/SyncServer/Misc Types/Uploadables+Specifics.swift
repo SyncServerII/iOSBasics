@@ -19,6 +19,8 @@ public struct FileUpload: UploadableFile {
 }
 
 public struct ObjectUpload: UploadableObject {
+    public let pushNotificationMessage: String?
+
     public let objectType: String
     
     // This identifies the specific object instance.
@@ -27,11 +29,12 @@ public struct ObjectUpload: UploadableObject {
     public let sharingGroupUUID: UUID
     public let uploads: [UploadableFile]
     
-    public init(objectType: String, fileGroupUUID: UUID, sharingGroupUUID: UUID, uploads: [UploadableFile]) {
+    public init(objectType: String, fileGroupUUID: UUID, sharingGroupUUID: UUID, pushNotificationMessage: String? = nil, uploads: [UploadableFile]) {
         self.objectType = objectType
         self.fileGroupUUID = fileGroupUUID
         self.sharingGroupUUID = sharingGroupUUID
         self.uploads = uploads
+        self.pushNotificationMessage = pushNotificationMessage
     }
     
     public static func ==(lhs: ObjectUpload, rhs: DownloadObject) -> Bool {

@@ -8,11 +8,12 @@ class UploadObjectTrackerTests: XCTestCase {
     var database: Connection!
     let fileGroupUUID = UUID()
     var entry:UploadObjectTracker!
+    let message = "Message"
     
     override func setUpWithError() throws {
         set(logLevel: .trace)
         database = try Connection(.inMemory)
-        entry = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true)
+        entry = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, pushNotificationMessage: message)
     }
 
     override func tearDownWithError() throws {
@@ -68,7 +69,7 @@ class UploadObjectTrackerTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileGroupUUID, the primary key.
-        let entry2 = try UploadObjectTracker(db: database, fileGroupUUID: UUID(), v0Upload: false)
+        let entry2 = try UploadObjectTracker(db: database, fileGroupUUID: UUID(), v0Upload: false, pushNotificationMessage: message)
 
         try entry2.insert()
 
@@ -123,7 +124,7 @@ class UploadObjectTrackerTests: XCTestCase {
         try UploadFileTracker.createTable(db: database)
         
         let fileGroupUUID = UUID()
-        let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil)
+        let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil, pushNotificationMessage: message)
         try objectTracker.insert()
         
         guard let objectTrackerId = objectTracker.id else {
@@ -206,7 +207,7 @@ class UploadObjectTrackerTests: XCTestCase {
         try UploadFileTracker.createTable(db: database)
         let fileGroupUUID = UUID()
         
-        let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil)
+        let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil, pushNotificationMessage: message)
         try objectTracker.insert()
         
         let fileTracker = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploading, fileUUID: UUID(), mimeType: .text, fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil)
@@ -223,7 +224,7 @@ class UploadObjectTrackerTests: XCTestCase {
         try UploadFileTracker.createTable(db: database)
         let fileGroupUUID = UUID()
         
-        let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil)
+        let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil, pushNotificationMessage: message)
         try objectTracker.insert()
         
         let fileTracker = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploading, fileUUID: UUID(), mimeType: .text, fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil)
@@ -240,7 +241,7 @@ class UploadObjectTrackerTests: XCTestCase {
         try UploadFileTracker.createTable(db: database)
         let fileGroupUUID = UUID()
         
-        let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil)
+        let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil, pushNotificationMessage: message)
         try objectTracker.insert()
         
         let fileTracker1 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploading, fileUUID: UUID(), mimeType: .text, fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil)
@@ -260,7 +261,7 @@ class UploadObjectTrackerTests: XCTestCase {
         try UploadFileTracker.createTable(db: database)
         let fileGroupUUID = UUID()
         
-        let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil)
+        let objectTracker = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil, pushNotificationMessage: message)
         try objectTracker.insert()
         
         let fileTracker1 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker.id, status: .uploading, fileUUID: UUID(), mimeType: .text, fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil)
@@ -273,5 +274,25 @@ class UploadObjectTrackerTests: XCTestCase {
             XCTFail()
             return
         }
+    }
+    
+    func testGetSharingGroup() throws {
+        // There has to be a DirectoryObjectEntry for the UploadObjectTracker
+
+        try UploadObjectTracker.createTable(db: database)
+        try DirectoryObjectEntry.createTable(db: database)
+
+        let sharingGroupUUID = UUID()
+        let fileGroupUUID = UUID()
+
+        let uot = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, deferredUploadId: nil, pushNotificationMessage: message)
+        try uot.insert()
+
+        let doe = try DirectoryObjectEntry(db: database, objectType: "Foobar2", fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, cloudStorageType: .Dropbox, deletedLocally: false, deletedOnServer: false)
+        try doe.insert()
+        
+        let sharingGroup2 = try uot.getSharingGroup()
+        
+        XCTAssert(sharingGroupUUID == sharingGroup2)
     }
 }

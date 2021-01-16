@@ -55,6 +55,9 @@ extension UploadableFile {
 }
 
 public protocol UploadableObject {
+    // Optionally send a push notification when the upload is finished.
+    var pushNotificationMessage: String? {get}
+    
     // References a specific DeclarableObject
     var objectType: String {get}
     

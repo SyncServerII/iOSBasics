@@ -27,17 +27,22 @@ class UploadObjectTracker: DatabaseModel {
     static let deferredUploadIdField = Field("deferredUploadId", \M.deferredUploadId)
     var deferredUploadId: Int64?
     
+    static let pushNotificationMessageField = Field("pushNotificationMessage", \M.pushNotificationMessage)
+    var pushNotificationMessage: String?
+    
     init(db: Connection,
         id: Int64! = nil,
         fileGroupUUID: UUID,
         v0Upload: Bool? = nil,
-        deferredUploadId: Int64? = nil) throws {
+        deferredUploadId: Int64? = nil,
+        pushNotificationMessage: String? = nil) throws {
         
         self.db = db
         self.id = id
         self.fileGroupUUID = fileGroupUUID
         self.v0Upload = v0Upload
         self.deferredUploadId = deferredUploadId
+        self.pushNotificationMessage = pushNotificationMessage
     }
     
     // MARK: DatabaseModel
@@ -48,6 +53,7 @@ class UploadObjectTracker: DatabaseModel {
             t.column(fileGroupUUIDField.description)
             t.column(v0UploadField.description)
             t.column(deferredUploadIdField.description)
+            t.column(pushNotificationMessageField.description)
         }
     }
     
@@ -56,7 +62,8 @@ class UploadObjectTracker: DatabaseModel {
             id: row[Self.idField.description],
             fileGroupUUID: row[Self.fileGroupUUIDField.description],
             v0Upload: row[Self.v0UploadField.description],
-            deferredUploadId: row[Self.deferredUploadIdField.description]
+            deferredUploadId: row[Self.deferredUploadIdField.description],
+            pushNotificationMessage: row[Self.pushNotificationMessageField.description]
         )
     }
     
@@ -64,7 +71,8 @@ class UploadObjectTracker: DatabaseModel {
         try doInsertRow(db: db, values:
             Self.fileGroupUUIDField.description <- fileGroupUUID,
             Self.v0UploadField.description <- v0Upload,
-            Self.deferredUploadIdField.description <- deferredUploadId
+            Self.deferredUploadIdField.description <- deferredUploadId,
+            Self.pushNotificationMessageField.description <- pushNotificationMessage
         )
     }
 }
@@ -123,5 +131,19 @@ extension UploadObjectTracker {
         }
         
         return false
+    }
+}
+
+enum UploadObjectTrackerError: Error {
+    case noObjectEntry
+}
+
+extension UploadObjectTracker {
+    func getSharingGroup() throws -> UUID {
+        guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) else {
+            throw UploadObjectTrackerError.noObjectEntry
+        }
+        
+        return objectEntry.sharingGroupUUID
     }
 }

@@ -146,9 +146,9 @@ extension SyncServer {
     }
     
     // Add a new tracker into UploadObjectTracker, and one for each new upload.
-    private func createNewTrackers(fileGroupUUID: UUID, objectModel: DeclaredObjectModel, cloudStorageType: CloudStorageType, uploads: [UploadableFile]) throws -> (newObjectTrackerId: Int64, UploadObjectTracker) {
+    private func createNewTrackers(fileGroupUUID: UUID, pushNotificationMessage:String?, objectModel: DeclaredObjectModel, cloudStorageType: CloudStorageType, uploads: [UploadableFile]) throws -> (newObjectTrackerId: Int64, UploadObjectTracker) {
     
-        let newObjectTracker = try UploadObjectTracker(db: db, fileGroupUUID: fileGroupUUID)
+        let newObjectTracker = try UploadObjectTracker(db: db, fileGroupUUID: fileGroupUUID, pushNotificationMessage: pushNotificationMessage)
         try newObjectTracker.insert()
         
         guard let newObjectTrackerId = newObjectTracker.id else {
@@ -181,7 +181,7 @@ extension SyncServer {
         try existingUploadsHaveSameMimeType(upload: upload, objectModel: objectModel, objectInfo: objectEntry)
         
         // Every new upload needs new upload trackers.
-        let (_, newObjectTracker) = try createNewTrackers(fileGroupUUID: upload.fileGroupUUID, objectModel: objectModel, cloudStorageType: objectEntry.objectEntry.cloudStorageType, uploads: upload.uploads)
+        let (_, newObjectTracker) = try createNewTrackers(fileGroupUUID: upload.fileGroupUUID, pushNotificationMessage: upload.pushNotificationMessage, objectModel: objectModel, cloudStorageType: objectEntry.objectEntry.cloudStorageType, uploads: upload.uploads)
         
         // This is an upload for existing file instances.
         try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- false)
@@ -211,7 +211,7 @@ extension SyncServer {
         let objectEntry = try DirectoryObjectEntry.createNewInstance(upload: upload, objectType: objectType, objectEntryType: objectEntryType, cloudStorageType: cloudStorageType, db: db)
         
         // Every new upload needs new upload trackers.
-        let (_, newObjectTracker) = try createNewTrackers(fileGroupUUID: upload.fileGroupUUID, objectModel: objectType, cloudStorageType: cloudStorageType, uploads: upload.uploads)
+        let (_, newObjectTracker) = try createNewTrackers(fileGroupUUID: upload.fileGroupUUID, pushNotificationMessage: upload.pushNotificationMessage, objectModel: objectType, cloudStorageType: cloudStorageType, uploads: upload.uploads)
         
         // Since this is the first upload for a new object instance or at least for the specific files of the object, all uploads are v0.
         try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- true)

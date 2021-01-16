@@ -4,7 +4,7 @@ import SQLite
 
 extension SyncServer {
     // This currently only supports a `deletionType` (see UploadDeletionTracker) of `fileGroupUUID`.
-    func deleteHelper(object fileGroupUUID: UUID) throws {
+    func deleteHelper(object fileGroupUUID: UUID, pushNotificationMessage: String?) throws {
         guard let objectInfo = try DirectoryObjectEntry.lookup(fileGroupUUID: fileGroupUUID, db: db) else {
             throw SyncServerError.noObject
         }
@@ -32,7 +32,7 @@ extension SyncServer {
             throw SyncServerError.attemptToDeleteAnAlreadyDeletedFile
         }
         
-        let tracker = try UploadDeletionTracker(db: db, uuid: objectInfo.objectEntry.fileGroupUUID, deletionType: .fileGroupUUID, status: .notStarted)
+        let tracker = try UploadDeletionTracker(db: db, uuid: objectInfo.objectEntry.fileGroupUUID, deletionType: .fileGroupUUID, status: .notStarted, pushNotificationMessage: pushNotificationMessage)
         try tracker.insert()
         
         guard let trackerId = tracker.id else {
@@ -173,5 +173,13 @@ extension SyncServer {
             
         // Since we don't have a `deferredUploadId`, and thus can't wait for the deferred deletion, delete the tracker.
         try tracker.delete()
+        
+        let sharingGroupUUID = try tracker.getSharingGroup()
+        
+        if let pushNotificationMessage = tracker.pushNotificationMessage {
+            api.sendPushNotification(pushNotificationMessage, sharingGroupUUID: sharingGroupUUID) { [weak self] error in
+                self?.reportError(SyncServerError.internalError("Failed sending push notification"))
+            }
+        }
     }
 }
