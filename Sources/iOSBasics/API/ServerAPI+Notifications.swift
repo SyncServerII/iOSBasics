@@ -47,4 +47,41 @@ extension ServerAPI {
             }
         }
     }
+    
+    func registerPushNotificationToken(_ token: String, completion: @escaping (Error?)->()) {
+    
+        let endpoint = ServerEndpoints.registerPushNotificationToken
+
+        let registerPushNotificationToken = RegisterPushNotificationTokenRequest()
+        registerPushNotificationToken.pushNotificationToken = token
+
+        guard registerPushNotificationToken.valid() else {
+            completion(ServerAPIError.couldNotCreateRequest)
+            return
+        }
+        
+        guard let parameters = registerPushNotificationToken.urlParameters() else {
+            completion(ServerAPIError.couldNotCreateRequest)
+            return
+        }
+
+        let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: parameters)
+
+        networking.sendRequestTo(serverURL, method: endpoint.method) { [weak self] response, httpStatus, error in
+            guard let self = self else { return }
+            
+            if let resultError = self.checkForError(statusCode: httpStatus, error: error) {
+                completion(resultError)
+            }
+            else {
+                if let response = response,
+                    let _ = try? RegisterPushNotificationTokenResponse.decode(response) {
+                    completion(nil)
+                }
+                else {
+                    completion(ServerAPIError.couldNotCreateResponse)
+                }
+            }
+        }
+    }
 }

@@ -274,5 +274,15 @@ public class SyncServer {
             }
         }
     }
+    
+    // MARK: Push Notifications
+    
+    public func registerPushNotificationToken(_ token: String, completion: @escaping (Error?)->()) {
+        api.registerPushNotificationToken(token) { [weak self] error in
+            self?.dispatchQueue.async {
+                completion(error)
+            }
+        }
+    }
 }
 
