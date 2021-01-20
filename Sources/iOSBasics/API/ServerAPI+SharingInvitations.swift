@@ -4,7 +4,7 @@ import iOSShared
 
 extension ServerAPI {
     // The non-error result is the sharingInvitationUUID.
-    func createSharingInvitation(withPermission permission:Permission, sharingGroupUUID: UUID, numberAcceptors: UInt, allowSocialAcceptance: Bool, completion: @escaping (Result<UUID, Error>)->()) {
+    func createSharingInvitation(withPermission permission:Permission, sharingGroupUUID: UUID, numberAcceptors: UInt, allowSocialAcceptance: Bool, expiryDuration: TimeInterval = ServerConstants.sharingInvitationExpiryDuration, completion: @escaping (Result<UUID, Error>)->()) {
     
         let endpoint = ServerEndpoints.createSharingInvitation
 
@@ -13,6 +13,7 @@ extension ServerAPI {
         invitationRequest.sharingGroupUUID = sharingGroupUUID.uuidString
         invitationRequest.allowSocialAcceptance = allowSocialAcceptance
         invitationRequest.numberOfAcceptors = numberAcceptors
+        invitationRequest.expiryDuration = expiryDuration
                 
         guard let parameters = invitationRequest.urlParameters() else {
             completion(.failure(ServerAPIError.couldNotCreateRequest))

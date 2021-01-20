@@ -69,7 +69,7 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSDropbox.git",
         "state": {
           "branch": "master",
-          "revision": "6daf2247fa4d6dabf3f246bb6f536ac9080e273b",
+          "revision": "7c2296da3d85e54bfd90a1ee9adbbab3385ef531",
           "version": null
         }
       },
@@ -78,7 +78,7 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSShared.git",
         "state": {
           "branch": "master",
-          "revision": "41fe05d0c698f4fd3140d50ac90d63ed7468ffb2",
+          "revision": "af73b91e6b6526842bc4e4d07cac6bf7e13a25d2",
           "version": null
         }
       },
@@ -87,7 +87,7 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSSignIn.git",
         "state": {
           "branch": "master",
-          "revision": "ba373d64232c20fea00cc5bbcea5f6681bddc564",
+          "revision": "773422ef0f92a3ced9dbde72da731f2ed4d23246",
           "version": null
         }
       },
@@ -186,7 +186,7 @@
         "repositoryURL": "https://github.com/SyncServerII/ServerShared.git",
         "state": {
           "branch": "master",
-          "revision": "3321be105e430ca5dab5c3c2019841fdb1d12479",
+          "revision": "ab5b7c0abb653d5d4cd772c3133932ad9031f18e",
           "version": null
         }
       },

@@ -239,8 +239,8 @@ public class SyncServer {
     // MARK: Sharing invitations
 
     // The non-error result is the code for the sharing invitation, a UUID.
-    public func createSharingInvitation(withPermission permission:Permission, sharingGroupUUID: UUID, numberAcceptors: UInt, allowSocialAcceptance: Bool, completion: @escaping (Swift.Result<UUID, Error>)->()) {
-        api.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: numberAcceptors, allowSocialAcceptance: allowSocialAcceptance) { [weak self] result in
+    public func createSharingInvitation(withPermission permission:Permission, sharingGroupUUID: UUID, numberAcceptors: UInt, allowSocialAcceptance: Bool, expiryDuration:TimeInterval = ServerConstants.sharingInvitationExpiryDuration, completion: @escaping (Swift.Result<UUID, Error>)->()) {
+        api.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: numberAcceptors, allowSocialAcceptance: allowSocialAcceptance, expiryDuration: expiryDuration) { [weak self] result in
             guard let self = self else { return }
             self.dispatchQueue.async {
                 completion(result)
