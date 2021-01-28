@@ -19,18 +19,18 @@ let package = Package(
             targets: ["iOSBasics"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/crspybits/FileMD5Hash.git", .branch("master")),
+        .package(url: "https://github.com/crspybits/FileMD5Hash.git", from: "2.1.0"),
 
-        .package(url: "https://github.com/SyncServerII/ChangeResolvers.git", .branch("master")),
+        .package(url: "https://github.com/SyncServerII/ChangeResolvers.git", from: "0.0.2"),
 
         //.package(path: "../iOSShared"),
-        .package(url: "https://github.com/SyncServerII/iOSShared.git", .branch("master")),
+        .package(url: "https://github.com/SyncServerII/iOSShared.git", from: "0.0.2"),
         
         //.package(path: "../ServerShared"),
-        .package(url: "https://github.com/SyncServerII/ServerShared.git", .branch("master")),
+        .package(url: "https://github.com/SyncServerII/ServerShared.git", from: "0.0.4"),
         
         //.package(path: "../iOSSignIn"),
-        .package(url: "https://github.com/SyncServerII/iOSSignIn.git", .branch("master")),
+        .package(url: "https://github.com/SyncServerII/iOSSignIn.git", from: "0.0.2"),
         
         .package(url: "https://github.com/stephencelis/SQLite.swift.git", from: "0.12.0"),
         .package(url: "https://github.com/mrackwitz/Version.git", from: "0.8.0"),
@@ -38,7 +38,7 @@ let package = Package(
         
         // For testing only
         // .package(path: "../iOSDropbox"),
-        .package(url: "https://github.com/SyncServerII/iOSDropbox.git", .branch("master")),
+        .package(url: "https://github.com/SyncServerII/iOSDropbox.git", from: "0.0.3"),
 
     ],
     targets: [

@@ -41,18 +41,18 @@
         "package": "ChangeResolvers",
         "repositoryURL": "https://github.com/SyncServerII/ChangeResolvers.git",
         "state": {
-          "branch": "master",
-          "revision": "30b73253204a79e036f133465005d5f16f923b9a",
-          "version": null
+          "branch": null,
+          "revision": "91e0f2a6b3121e83e1a369198d54141bb3e37b08",
+          "version": "0.0.2"
         }
       },
       {
         "package": "FileMD5Hash",
         "repositoryURL": "https://github.com/crspybits/FileMD5Hash.git",
         "state": {
-          "branch": "master",
-          "revision": "56279e6fbad92354ab6dff74afe8cb14a540902a",
-          "version": null
+          "branch": null,
+          "revision": "57861d188514a3e7a90728b1ab91020f3eb32476",
+          "version": "2.1.0"
         }
       },
       {
@@ -68,27 +68,27 @@
         "package": "iOSDropbox",
         "repositoryURL": "https://github.com/SyncServerII/iOSDropbox.git",
         "state": {
-          "branch": "master",
-          "revision": "7c2296da3d85e54bfd90a1ee9adbbab3385ef531",
-          "version": null
+          "branch": null,
+          "revision": "250cfdf83d477094333cce2dc0e713a34cc176b0",
+          "version": "0.0.3"
         }
       },
       {
         "package": "iOSShared",
         "repositoryURL": "https://github.com/SyncServerII/iOSShared.git",
         "state": {
-          "branch": "master",
-          "revision": "af73b91e6b6526842bc4e4d07cac6bf7e13a25d2",
-          "version": null
+          "branch": null,
+          "revision": "d610a64a56dad57bfa8fa9c21daa19f135e4f2fd",
+          "version": "0.0.2"
         }
       },
       {
         "package": "iOSSignIn",
         "repositoryURL": "https://github.com/SyncServerII/iOSSignIn.git",
         "state": {
-          "branch": "master",
-          "revision": "773422ef0f92a3ced9dbde72da731f2ed4d23246",
-          "version": null
+          "branch": null,
+          "revision": "607419febc79046269932d64ccdc2748a62654e4",
+          "version": "0.0.2"
         }
       },
       {
@@ -96,8 +96,8 @@
         "repositoryURL": "https://github.com/kishikawakatsumi/KeychainAccess.git",
         "state": {
           "branch": null,
-          "revision": "654d52d30f3dd4592e944c3e0bccb53178c992f6",
-          "version": "4.2.1"
+          "revision": "8d33ffd6f74b3bcfc99af759d4204c6395a3f918",
+          "version": "3.2.1"
         }
       },
       {
@@ -167,27 +167,27 @@
         "package": "PersistentValue",
         "repositoryURL": "https://github.com/crspybits/PersistentValue.git",
         "state": {
-          "branch": "master",
-          "revision": "74adb41533af3e1205faf7f1852f2f7e6693f8c4",
-          "version": null
+          "branch": null,
+          "revision": "995657d86a2101abfc1bb72a2c631d8433707df0",
+          "version": "0.6.0"
         }
       },
       {
         "package": "ServerAccount",
         "repositoryURL": "https://github.com/SyncServerII/ServerAccount.git",
         "state": {
-          "branch": "master",
-          "revision": "d15e402dfdccf49349ba2d525ff66b1167df7f0c",
-          "version": null
+          "branch": null,
+          "revision": "8dc5b24eb55f97c90bc989fac746302be53a1a0d",
+          "version": "0.0.8"
         }
       },
       {
         "package": "ServerShared",
         "repositoryURL": "https://github.com/SyncServerII/ServerShared.git",
         "state": {
-          "branch": "master",
-          "revision": "ab5b7c0abb653d5d4cd772c3133932ad9031f18e",
-          "version": null
+          "branch": null,
+          "revision": "6c725c50cdb575c183943dcfcdb7394390a5e933",
+          "version": "0.0.4"
         }
       },
       {
