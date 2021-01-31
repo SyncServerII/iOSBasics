@@ -355,7 +355,11 @@ extension SyncServer {
                     if let pushNotificationMessage = objectTracker.pushNotificationMessage {
                         let sharingGroupUUID = try objectTracker.getSharingGroup()
                         api.sendPushNotification(pushNotificationMessage, sharingGroupUUID: sharingGroupUUID) { [weak self] error in
+                            if let error = error {
                                 self?.reportError(SyncServerError.internalError("Failed sending push notification"))
+                                logger.error("\(error)")
+                                return
+                            }
                         }
                     }
                 }
@@ -411,7 +415,11 @@ extension SyncServer {
         if let pushNotificationMessage = objectTracker.pushNotificationMessage {
             let sharingGroupUUID = try objectTracker.getSharingGroup()
             api.sendPushNotification(pushNotificationMessage, sharingGroupUUID: sharingGroupUUID) { [weak self] error in
+                if let error = error {
                     self?.reportError(SyncServerError.internalError("Failed sending push notification"))
+                    logger.error("\(error)")
+                    return
+                }
             }
         }
     }

@@ -1,4 +1,7 @@
 iOSBasics
 
+Version 0.0.2 (1/30/21)
+	Fix push notification error reporting.
+	
 Version 0.0.1 (1/27/21)
 	Beta testing.

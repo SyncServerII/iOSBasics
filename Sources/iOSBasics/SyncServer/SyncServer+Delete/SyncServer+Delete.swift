@@ -1,6 +1,7 @@
 
 import Foundation
 import SQLite
+import iOSShared
 
 extension SyncServer {
     // This currently only supports a `deletionType` (see UploadDeletionTracker) of `fileGroupUUID`.
@@ -178,7 +179,11 @@ extension SyncServer {
         
         if let pushNotificationMessage = tracker.pushNotificationMessage {
             api.sendPushNotification(pushNotificationMessage, sharingGroupUUID: sharingGroupUUID) { [weak self] error in
-                self?.reportError(SyncServerError.internalError("Failed sending push notification"))
+                if let error = error {
+                    self?.reportError(SyncServerError.internalError("Failed sending push notification"))
+                    logger.error("\(error)")
+                    return
+                }
             }
         }
     }
