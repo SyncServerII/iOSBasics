@@ -121,7 +121,7 @@ extension APITests where Self: XCTestCase {
         var returnResult:Swift.Result<DownloadFileResult, Error>?
         let exp = expectation(description: "exp")
 
-        func downloadCompletedHandler(result: Swift.Result<DownloadFileResult, Error>) {
+        func downloadCompletedHandler(result: Swift.Result<DownloadFileResult, Error>, file: Filenaming) {
             returnResult = result
             self.handlers.api.downloadCompletedHandler = nil
             exp.fulfill()

@@ -22,7 +22,7 @@ class DelegateHandlers {
     
     class ServerAPIHandlers {
         var uploadCompletedHandler: ((_ result: Swift.Result<UploadFileResult, Error>) -> ())?
-        var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>) -> ())?
+        var downloadCompletedHandler: ((_ result: Swift.Result<DownloadFileResult, Error>, _ file: Filenaming) -> ())?
         var backgroundRequestCompletedHandler: ((_ result: Swift.Result<BackgroundRequestResult, Error>) -> ())?
     }
     let api = ServerAPIHandlers()

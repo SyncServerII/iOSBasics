@@ -181,14 +181,14 @@ extension DirectoryObjectEntry {
             
             if entry.deletedOnServer != fileInfo.deleted {
                 try entry.update(setters: DirectoryObjectEntry.deletedOnServerField.description <- fileInfo.deleted)
-                logger.debug("fileInfo.deleted: \(fileInfo.deleted)")
+                logger.debug("fileInfo.deleted: \(String(describing: fileInfo.deleted))")
             }
             
             return entry
         }
         else {
             let newEntry = try DirectoryObjectEntry(db: db, objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, cloudStorageType: cloudStorageType, deletedLocally: fileInfo.deleted, deletedOnServer: fileInfo.deleted)
-            logger.debug("fileInfo.deleted: \(fileInfo.deleted)")
+            logger.debug("fileInfo.deleted: \(String(describing: fileInfo.deleted))")
             try newEntry.insert()
             return newEntry
         }

@@ -30,8 +30,8 @@ extension ServerAPIDelegator {
         XCTFail("\(String(describing: error))")
     }
     
-    func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
-        handlers.api.downloadCompletedHandler?(result)
+    func downloadCompleted(_ delegated: AnyObject, file: Filenaming, result: Swift.Result<DownloadFileResult, Error>) {
+        handlers.api.downloadCompletedHandler?(result, file)
     }
     
     func uploadCompleted(_ delegated: AnyObject, file: Filenaming, result: Swift.Result<UploadFileResult, Error>) {
