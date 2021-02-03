@@ -151,7 +151,7 @@ extension SyncServer {
                     }
                 }
             }
-            
+
             guard deletedCount == 0 || deletedCount == fileGroup.count else {
                 throw SyncServerError.internalError("Some but not all of file group deleted.")
             }

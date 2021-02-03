@@ -174,18 +174,18 @@ public class SyncServer {
     // The list of files returned here survive app relaunch. A given object declaration will appear at most once in the returned list.
     // If a specific fileGroupUUID is already being downloaded, or queued for download, then `DownloadObject`'s with this fileGroupUUID will not be returned.
     // TODO: `DownloadObject` has a sharingGroupUUID member, but we're passing a sharingGroupUUID-- so that's not really needed.
-    public func objectsNeedingDownload(sharingGroupUUID: UUID) throws -> [DownloadObject] {
+    public func objectsNeedingDownload(sharingGroupUUID: UUID, includeGone: Bool = false) throws -> [DownloadObject] {
         let filtered = try sharingGroups().filter { $0.sharingGroupUUID == sharingGroupUUID }
         guard filtered.count == 1 else {
             throw SyncServerError.sharingGroupNotFound
         }
         
-        return try filesNeedingDownloadHelper(sharingGroupUUID: sharingGroupUUID)
+        return try filesNeedingDownloadHelper(sharingGroupUUID: sharingGroupUUID, includeGone: includeGone)
     }
     
     // Do any of the files of the object need downloading? Analogous to `objectsNeedingDownload`, but for just a single object in a sharing group.
-    public func objectNeedsDownload(fileGroupUUID: UUID) throws -> DownloadObject? {
-        return try objectNeedsDownloadHelper(object:fileGroupUUID)
+    public func objectNeedsDownload(fileGroupUUID: UUID, includeGone: Bool = false) throws -> DownloadObject? {
+        return try objectNeedsDownloadHelper(object:fileGroupUUID, includeGone: includeGone)
     }
 
     // Call this method so that, after you download an object, it doesn't appear again in `objectsNeedingDownload` (for those file versions).

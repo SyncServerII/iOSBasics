@@ -11,6 +11,8 @@ import ServerShared
 protocol Filenaming {
     var fileUUID: String! {get}
     var fileVersion: FileVersionInt! {get}
+    
+    // id field of a DownloadObjectTracker
     var trackerId: Int64 {get}
 }
 

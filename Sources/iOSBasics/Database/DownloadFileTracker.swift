@@ -88,6 +88,30 @@ class DownloadFileTracker: DatabaseModel {
     }
 }
 
+extension DownloadFileTracker {
+    static func reset(fileUUID: String?, objectTrackerId: Int64, db: Connection) throws {
+        guard let fileUUIDString = fileUUID,
+            let fileUUID = try UUID.from(fileUUIDString) else {
+            throw SyncServerError.internalError("UUID conversion failed")
+        }
+        
+        guard let fileTracker =
+            try DownloadFileTracker.fetchSingleRow(db: db, where:
+                DownloadFileTracker.downloadObjectTrackerIdField.description == objectTrackerId &&
+                DownloadFileTracker.fileUUIDField.description == fileUUID) else {
+            throw SyncServerError.internalError("Nil DownloadFileTracker")
+        }
+        
+        try fileTracker.update(setters: DownloadFileTracker.statusField.description <- .notStarted)
+        
+        if let localURL = fileTracker.localURL {
+            logger.debug("Removing file: \(localURL)")
+            try FileManager.default.removeItem(at: localURL)
+            try fileTracker.update(setters: DownloadFileTracker.localURLField.description <- nil)
+        }
+    }
+}
+
 extension DownloadObjectTracker {
     func dependentFileTrackers() throws -> [DownloadFileTracker] {
         guard let id = id else {

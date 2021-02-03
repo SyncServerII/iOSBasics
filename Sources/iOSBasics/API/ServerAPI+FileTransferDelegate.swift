@@ -10,12 +10,12 @@ extension ServerAPI: FileTransferDelegate {
     func downloadCompleted(_ network: Any, file: Filenaming, url: URL?, response: HTTPURLResponse?, _ statusCode: Int?) {
 
         if let resultError = self.checkForError(statusCode: statusCode, error: nil) {
-            delegate.downloadCompleted(self, result: .failure(resultError))
+            delegate.downloadCompleted(self, file: file, result: .failure(resultError))
             return
         }
         
         guard let response = response else {
-            delegate.downloadCompleted(self, result: .failure(ServerAPIError.nilResponse))
+            delegate.downloadCompleted(self, file: file, result: .failure(ServerAPIError.nilResponse))
             return
         }
         
@@ -24,7 +24,7 @@ extension ServerAPI: FileTransferDelegate {
         guard let parms = response.allHeaderFields[ServerConstants.httpResponseMessageParams] as? String,
             let jsonDict = self.toJSONDictionary(jsonString: parms),
             let downloadFileResponse = try? DownloadFileResponse.decode(jsonDict)  else {
-            delegate.downloadCompleted(self, result: .failure(ServerAPIError.couldNotObtainHeaderParameters))
+            delegate.downloadCompleted(self, file: file, result: .failure(ServerAPIError.couldNotObtainHeaderParameters))
             return
         }
         
@@ -32,7 +32,7 @@ extension ServerAPI: FileTransferDelegate {
         
         guard let cloudStorageTypeRaw = downloadFileResponse.cloudStorageType,
             let cloudStorageType = CloudStorageType(rawValue: cloudStorageTypeRaw) else {
-            delegate.downloadCompleted(self, result: .failure(ServerAPIError.couldNotGetCloudStorageType))
+            delegate.downloadCompleted(self, file: file, result: .failure(ServerAPIError.couldNotGetCloudStorageType))
             return
         }
         
@@ -44,14 +44,14 @@ extension ServerAPI: FileTransferDelegate {
 
         guard let fileUUIDString = file.fileUUID,
             let fileUUID = UUID(uuidString: fileUUIDString) else {
-            delegate.downloadCompleted(self, result: .failure(ServerAPIError.badUUID))
+            delegate.downloadCompleted(self, file: file, result: .failure(ServerAPIError.badUUID))
             return
         }
             
         if let goneRaw = downloadFileResponse.gone,
             let gone = GoneReason(rawValue: goneRaw) {
             let result = DownloadFileResult.gone(objectTrackerId: file.trackerId, fileUUID: fileUUID, gone)
-            delegate.downloadCompleted(self, result: .success(result))
+            delegate.downloadCompleted(self, file: file, result: .success(result))
             return
         }
         
@@ -62,7 +62,7 @@ extension ServerAPI: FileTransferDelegate {
             let contentsChanged = downloadFileResponse.contentsChanged {
 
             guard let url = url else {
-                delegate.downloadCompleted(self, result: .failure(ServerAPIError.resultURLObtainedWasNil))
+                delegate.downloadCompleted(self, file: file, result: .failure(ServerAPIError.resultURLObtainedWasNil))
                 return
             }
 
@@ -71,21 +71,21 @@ extension ServerAPI: FileTransferDelegate {
                 let hasher = try self.delegate.hasher(self, forCloudStorageType: cloudStorageType)
                 hash = try hasher.hash(forURL: url)
             } catch (let error) {
-                delegate.downloadCompleted(self, result: .failure(error))
+                delegate.downloadCompleted(self, file: file, result: .failure(error))
                 return
             }
             
             guard hash == checkSum else {
                 // Considering this to be a networking error and not something we want to pass up to the client app. This shouldn't happen in normal operation.
-                delegate.downloadCompleted(self, result: .failure(ServerAPIError.networkingHashMismatch))
+                delegate.downloadCompleted(self, file: file, result: .failure(ServerAPIError.networkingHashMismatch))
                 return
             }
             
             let result = DownloadFileResult.Download(fileUUID: fileUUID, url: url, checkSum: checkSum, contentsChangedOnServer: contentsChanged, appMetaData: appMetaData?.contents)
-            delegate.downloadCompleted(self, result: .success(.success(objectTrackerId: file.trackerId, result)))
+            delegate.downloadCompleted(self, file: file, result: .success(.success(objectTrackerId: file.trackerId, result)))
         }
         else {
-            delegate.downloadCompleted(self, result: .failure(ServerAPIError.noExpectedResultKey))
+            delegate.downloadCompleted(self, file: file, result: .failure(ServerAPIError.noExpectedResultKey))
         }
     }
     

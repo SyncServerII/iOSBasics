@@ -4,7 +4,8 @@ import SQLite
 extension SyncServer {
     // Re-check of queued downloads.
     func triggerDownloads() throws {
-        let notStartedDownloads = try DownloadObjectTracker.allDownloadsWith(status: .notStarted, db: db)
+        // What DownloadObjectTracker's have some files not started?
+        let notStartedDownloads = try DownloadObjectTracker.downloadsWith(status: .notStarted, scope: .some, db: db)
         guard notStartedDownloads.count > 0 else {
             self.delegator { [weak self] delegate in
                 guard let self = self else { return }
@@ -13,8 +14,8 @@ extension SyncServer {
             return
         }
         
-        // What downloads are currently in-progress?
-        let inProgress = try DownloadObjectTracker.allDownloadsWith(status: .downloading, db: db)
+        // What downloads are currently completely in-progress?
+        let inProgress = try DownloadObjectTracker.downloadsWith(status: .downloading, scope: .all, db: db)
         let fileGroupsInProgress = Set<UUID>(inProgress.map { $0.object.fileGroupUUID })
         
         // These are the objects we want to `exclude` from downloading. Start off with the file groups actively downloading. Don't want parallel downloads for the same file group.
@@ -51,7 +52,7 @@ extension SyncServer {
                 throw SyncServerError.internalError("Could not get object id")
             }
             
-            for file in downloadObject.files {
+            for file in downloadObject.files {                
                 try singleDownload(fileUUID: file.fileUUID, fileVersion: file.fileVersion, tracker: file, objectTrackerId: objectId, sharingGroupUUID: objectEntry.sharingGroupUUID)
             }
         }

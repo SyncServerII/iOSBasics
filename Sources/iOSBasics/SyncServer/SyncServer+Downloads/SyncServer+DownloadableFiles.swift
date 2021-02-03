@@ -4,7 +4,7 @@ import SQLite
 import ServerShared
 
 extension SyncServer {
-    func filesNeedingDownloadHelper(sharingGroupUUID: UUID) throws -> [DownloadObject] {
+    func filesNeedingDownloadHelper(sharingGroupUUID: UUID, includeGone: Bool) throws -> [DownloadObject] {
         let objectEntries = try DirectoryObjectEntry.fetch(db: db, where:
             DirectoryObjectEntry.sharingGroupUUIDField.description == sharingGroupUUID)
         guard objectEntries.count > 0 else {
@@ -17,7 +17,8 @@ extension SyncServer {
         for fileGroupUUID in fileGroupUUIDs {
             let fileEntries = try DirectoryFileEntry.fetch(db: db, where:
                 DirectoryFileEntry.fileGroupUUIDField.description == fileGroupUUID)
-            let downloads = fileEntries.filter { $0.fileState == .needsDownload }
+            let downloads = fileEntries.filter
+                { $0.fileState(includeGone: includeGone) == .needsDownload }
             allDownloads += downloads
         }
 
@@ -58,7 +59,7 @@ extension SyncServer {
     }
     
     // Returns nil if the file (a) doesn't need download or (b) if it's currently being downloaded or is queued for download. Returns non-nil otherwise.
-    func objectNeedsDownloadHelper(object fileGroupUUID: UUID) throws -> DownloadObject? {
+    func objectNeedsDownloadHelper(object fileGroupUUID: UUID, includeGone: Bool) throws -> DownloadObject? {
         let fileEntries = try DirectoryFileEntry.fetch(db: db, where:
             DirectoryFileEntry.fileGroupUUIDField.description == fileGroupUUID)
         guard fileEntries.count > 0 else {
@@ -66,7 +67,8 @@ extension SyncServer {
             throw DatabaseError.noObject
         }
         
-        let downloads = fileEntries.filter { $0.fileState == .needsDownload }
+        let downloads = fileEntries.filter
+            { $0.fileState(includeGone: includeGone) == .needsDownload }
         
         if downloads.count == 0 {
             // No files needing download for this file group.

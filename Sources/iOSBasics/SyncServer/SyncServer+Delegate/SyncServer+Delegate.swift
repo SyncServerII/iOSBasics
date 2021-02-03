@@ -36,8 +36,8 @@ extension SyncServer: ServerAPIDelegate {
         uploadCompletedHelper(delegated, file: file, result: result)
     }
     
-    func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
-        downloadCompletedHelper(delegated, result: result)
+    func downloadCompleted(_ delegated: AnyObject, file: Filenaming, result: Swift.Result<DownloadFileResult, Error>) {
+        downloadCompletedHelper(delegated, file: file, result: result)
     }
     
     func backgroundRequestCompleted(_ delegated: AnyObject, result: Swift.Result<BackgroundRequestResult, Error>) {

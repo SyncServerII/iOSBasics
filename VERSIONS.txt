@@ -1,5 +1,9 @@
 iOSBasics
 
+Version 0.0.3
+	* Working on download issues:
+		https://github.com/SyncServerII/iOSBasics/issues/2
+		
 Version 0.0.2 (1/30/21)
 	Fix push notification error reporting.
 	

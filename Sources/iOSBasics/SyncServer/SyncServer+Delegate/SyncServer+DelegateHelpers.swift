@@ -96,13 +96,13 @@ extension SyncServer {
         }
     }
     
-    func downloadCompletedHelper(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>) {
+    func downloadCompletedHelper(_ delegated: AnyObject, file: Filenaming, result: Swift.Result<DownloadFileResult, Error>) {
         switch result {
         case .success(let downloadResult):
             switch downloadResult {
-            case .gone(let objectTrackerId, let fileUUID, _):
+            case .gone(let objectTrackerId, let fileUUID, let goneReason):
                 do {
-                    try cleanupAfterDownloadCompleted(fileUUID: fileUUID, url: nil, objectTrackerId: objectTrackerId)
+                    try cleanupAfterDownloadCompleted(fileUUID: fileUUID, contents: .gone(goneReason), objectTrackerId: objectTrackerId)
                 } catch let error {
                     delegator { [weak self] delegate in
                         guard let self = self else { return }
@@ -120,7 +120,7 @@ extension SyncServer {
                 
             case .success(let objectTrackerId, let result):
                 do {
-                    try cleanupAfterDownloadCompleted(fileUUID: result.fileUUID, url: result.url, objectTrackerId: objectTrackerId)
+                    try cleanupAfterDownloadCompleted(fileUUID: result.fileUUID, contents: .download(result.url), objectTrackerId: objectTrackerId)
                 } catch let error {
                     delegator { [weak self] delegate in
                         guard let self = self else { return }
@@ -136,10 +136,22 @@ extension SyncServer {
             }
 
         case .failure(let error):
-            delegator { [weak self] delegate in
-                guard let self = self else { return }
-                delegate.userEvent(self, event: .error(error))
+            logger.error("Download failed: \(error)")
+            // The download failed. It needs to be restarted.
+            // 1/31/21: I added this originally because I'd been getting download failures due to the limitations I'm seeing with ngrok.
+            
+            do {
+                try DownloadFileTracker.reset(fileUUID: file.fileUUID, objectTrackerId: file.trackerId, db: db)
+            } catch let error {
+                logger.error("\(error)")
+                delegator { [weak self] delegate in
+                    guard let self = self else { return }
+                    delegate.userEvent(self, event: .error(error))
+                }
+                return
             }
+            
+            logger.debug("Reset DownloadFileTracker status to: notStarted")
         }
     }
     
@@ -245,16 +257,29 @@ extension SyncServer {
         try objectTracker.delete()
     }
     
-    func cleanupAfterDownloadCompleted(fileUUID:UUID, url: URL?, objectTrackerId: Int64) throws {
+    enum Contents {
+        case url
+        case gone
+    }
+    
+    func cleanupAfterDownloadCompleted(fileUUID:UUID, contents: DownloadedFile.Contents, objectTrackerId: Int64) throws {
         // There can be more than one row in DownloadFileTracker with the same fileUUID here because we can queue the same download multiple times. Therefore, need to also search by objectTrackerId.
         guard let fileTracker = try DownloadFileTracker.fetchSingleRow(db: db, where: fileUUID == DownloadFileTracker.fileUUIDField.description &&
             objectTrackerId == DownloadFileTracker.downloadObjectTrackerIdField.description) else {
             throw SyncServerError.internalError("Problem in fetchSingleRow for DownloadFileTracker")
         }
         
-        if let url = url {
+        guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) else {
+            throw SyncServerError.internalError("Could not get DirectoryFileEntry for file")
+        }
+                
+        switch contents {
+        case .download(let url):
             try fileTracker.update(setters:
                 DownloadFileTracker.localURLField.description <- url)
+            try fileEntry.update(setters: DirectoryFileEntry.goneReasonField.description <- nil)
+        case .gone(goneReason: let goneReason):
+            try fileEntry.update(setters: DirectoryFileEntry.goneReasonField.description <- goneReason.rawValue)
         }
         
         guard let objectTracker = try DownloadObjectTracker.fetchSingleRow(db: db, where: fileTracker.downloadObjectTrackerId  == DownloadObjectTracker.idField.description) else {
@@ -266,9 +291,9 @@ extension SyncServer {
             
         // Have all downloads successfully completed? If so, can delete all trackers, including those for files and the overall object.
         let fileTrackers = try objectTracker.dependentFileTrackers()
-        let remainingUploads = fileTrackers.filter {$0.status != .downloaded}
+        let remainingDownloads = fileTrackers.filter {$0.status != .downloaded}
         
-        if remainingUploads.count == 0 {
+        if remainingDownloads.count == 0 {
             guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == objectTracker.fileGroupUUID) else {
                 throw SyncServerError.internalError("Could not get DirectoryObjectEntry for DownloadObjectTracker")
             }
@@ -303,7 +328,12 @@ extension SyncServer {
                     contents = .download(url)
                 }
                 else {
-                    contents = .gone
+                    guard let goneReasonString = fileEntry.goneReason,
+                        let goneReason = GoneReason(rawValue: goneReasonString)
+                        else {
+                        throw SyncServerError.internalError("Could not get goneReason for DirectoryFileEntry")
+                    }
+                    contents = .gone(goneReason)
                 }
                 
                 let downloadFile = DownloadedFile(uuid: file.fileUUID, fileVersion: file.fileVersion, fileLabel: fileEntry.fileLabel, mimeType: fileEntry.mimeType, contents: contents)
@@ -427,7 +457,7 @@ extension SyncServer {
     // Called when an upload or download detects that a file is `gone`.
     private func goneDeleted(fileUUID: UUID) {
         do {
-            guard let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where:
+            guard let _ = try DirectoryFileEntry.fetchSingleRow(db: db, where:
                 fileUUID == DirectoryFileEntry.fileUUIDField.description) else {
                 delegator { [weak self] delegate in
                     guard let self = self else { return }
@@ -436,9 +466,9 @@ extension SyncServer {
                 return
             }
             
+            // Previously marked this `DirectoryFileEntry` as deleted. But that interferes with attempting to re-download a gone file.
             // Specifically *not* changing `deletedLocallyField` because the difference between these two (i.e., deletedLocally false, and deletedOnServer true) will be used to drive local deletion for the client.
-            try entry.update(setters:
-                DirectoryFileEntry.deletedOnServerField.description <- true)
+            // try entry.update(setters: DirectoryFileEntry.deletedOnServerField.description <- true)
 
             delegator { [weak self] delegate in
                 guard let self = self else { return }

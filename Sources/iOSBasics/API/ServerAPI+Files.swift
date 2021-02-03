@@ -180,7 +180,7 @@ extension ServerAPI {
         
         guard downloadFileRequest.valid() else {
             let error = ServerAPIError.couldNotCreateRequest
-            delegate.downloadCompleted(self, result: .failure(error))
+            delegate.downloadCompleted(self, file: file, result: .failure(error))
             return error
         }
 

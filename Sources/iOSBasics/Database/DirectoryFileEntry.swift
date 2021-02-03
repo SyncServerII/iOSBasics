@@ -46,7 +46,11 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
         case noChange
     }
     
-    var fileState: FileState {
+    func fileState(includeGone: Bool = false) -> FileState {
+        if includeGone, let _ = goneReason {
+            return .needsDownload
+        }
+        
         switch (fileVersion, serverFileVersion) {
         case (.none, .none):
             // File has just been created.

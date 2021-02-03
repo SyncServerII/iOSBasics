@@ -120,7 +120,7 @@ public struct DownloadedFile: FileWasDownloaded {
     public let mimeType: MimeType
     
     public enum Contents {
-        case gone
+        case gone(GoneReason)
         
         // When returned to the client, this file needs to be moved or copied to a client location for persistence.
         case download(URL)

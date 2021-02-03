@@ -34,7 +34,7 @@ protocol NetworkingDelegate: AnyObject {
     func deviceUUID(_ delegated: AnyObject) -> UUID
     
     func uploadCompleted(_ delegated: AnyObject, file: Filenaming, result: Swift.Result<UploadFileResult, Error>)
-    func downloadCompleted(_ delegated: AnyObject, result: Swift.Result<DownloadFileResult, Error>)
+    func downloadCompleted(_ delegated: AnyObject, file: Filenaming, result: Swift.Result<DownloadFileResult, Error>)
     func backgroundRequestCompleted(_ delegated: AnyObject, result: Swift.Result<BackgroundRequestResult, Error>)
 }
 
@@ -329,7 +329,7 @@ class Networking: NSObject {
             try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: task.taskIdentifier)
         } catch let error {
             task.cancel()
-            delegate.downloadCompleted(self, result: .failure(error))
+            delegate.downloadCompleted(self, file: file, result: .failure(error))
             return error
         }
 

@@ -68,18 +68,34 @@ extension DownloadObjectTracker {
     
     // Get all download object trackers
     //  Get their dependent file trackers
-    //    Check the status of *all* of these trackers: Do they match `status`?
+    //    Check the status of these trackers: Do they match `status`?
     // Each returned `DownloadWithStatus` will have an `DownloadObjectTracker` with at least one file tracker.
-    static func allDownloadsWith(status: DownloadFileTracker.Status, db: Connection) throws -> [DownloadWithStatus] {
+    enum StatusCheckScope {
+        case all // all dependent trackers must have the given status
+        case some // > 0 dependent trackers must have the given status
+    }
+    
+    static func downloadsWith(status: DownloadFileTracker.Status, scope: StatusCheckScope, db: Connection) throws -> [DownloadWithStatus] {
         var uploads = [DownloadWithStatus]()
         let objectTrackers = try DownloadObjectTracker.fetch(db: db)
         for objectTracker in objectTrackers {
             let fileTrackers = try objectTracker.dependentFileTrackers()
             let filtered = fileTrackers.filter {$0.status == status}
-            if filtered.count == fileTrackers.count && filtered.count > 0 {
-                uploads += [
-                    DownloadWithStatus(object: objectTracker, files: fileTrackers)
-                ]
+            
+            switch scope {
+            case .all:
+                if filtered.count == fileTrackers.count && filtered.count > 0 {
+                    uploads += [
+                        DownloadWithStatus(object: objectTracker, files: fileTrackers)
+                    ]
+                }
+                
+            case .some:
+                if filtered.count > 0 {
+                    uploads += [
+                        DownloadWithStatus(object: objectTracker, files: filtered)
+                    ]
+                }
             }
         }
         
