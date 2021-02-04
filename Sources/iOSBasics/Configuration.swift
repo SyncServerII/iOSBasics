@@ -28,6 +28,14 @@ public struct Configuration {
     
     public let deviceUUID: UUID
     
+    // See https://developer.apple.com/documentation/foundation/nsurlsessionconfiguration/1408259-timeoutintervalforrequest
+    public static let defaultTimeoutIntervalForRequest:TimeInterval = 60 // 1 minute
+    public let timeoutIntervalForRequest: TimeInterval
+    
+    // See https://developer.apple.com/documentation/foundation/nsurlsessionconfiguration/1408153-timeoutintervalforresource
+    public static let defaultTimeoutIntervalForResource:TimeInterval = 60 * 30 // 1/2 hour
+    public let timeoutIntervalForResource: TimeInterval
+    
     /// Provide details about temporary files.
     ///
     /// - Parameters:
@@ -59,7 +67,7 @@ public struct Configuration {
         return TemporaryFiles(directory: directory, filePrefix: "SyncServer", fileExtension: "dat")
     }
     
-    public init(appGroupIdentifier: String?, urlSessionBackgroundIdentifier: String? = nil, serverURL: URL, minimumServerVersion:Version?, currentClientAppVersion: Version? = nil, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryFiles:TemporaryFiles = Self.defaultTemporaryFiles, packageTests: Bool = false) {
+    public init(appGroupIdentifier: String?, urlSessionBackgroundIdentifier: String? = nil, serverURL: URL, minimumServerVersion:Version?, currentClientAppVersion: Version? = nil, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryFiles:TemporaryFiles = Self.defaultTemporaryFiles, packageTests: Bool = false, timeoutIntervalForRequest: TimeInterval = Self.defaultTimeoutIntervalForRequest, timeoutIntervalForResource: TimeInterval = Self.defaultTimeoutIntervalForResource) {
         self.appGroupIdentifier = appGroupIdentifier
         self.urlSessionBackgroundIdentifier = urlSessionBackgroundIdentifier
         self.serverURL = serverURL
@@ -69,6 +77,8 @@ public struct Configuration {
         self.deviceUUID = deviceUUID
         self.temporaryFiles = temporaryFiles
         self.currentClientAppVersion = currentClientAppVersion
+        self.timeoutIntervalForRequest = timeoutIntervalForRequest
+        self.timeoutIntervalForResource = timeoutIntervalForResource
         
 #if !DEBUG
         assert(!packageTests)

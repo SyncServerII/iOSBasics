@@ -89,7 +89,8 @@ class Networking: NSObject {
             return nil
         }
         
-        sessionConfiguration.timeoutIntervalForRequest = 60
+        sessionConfiguration.timeoutIntervalForRequest = config.timeoutIntervalForRequest
+        sessionConfiguration.timeoutIntervalForResource = config.timeoutIntervalForResource
         
         let urlSession = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: OperationQueue.main)
         return urlSession
