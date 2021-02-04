@@ -36,7 +36,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
     static let fileVersionField = Field("fileVersion", \M.fileVersion)
     var fileVersion: Int32?
     
-    // The version of the file on the server.
+    // The version of the file on the server. Note that this currently only gets updated when doing a sync. It's not getting updated when we just do a download of a specific file. The reasoning for this is: In order to download a file, you have to know the version of the file that's on the server. The only way to know that is to do a sync to get the version.
     static let serverFileVersionField = Field("serverFileVersion", \M.serverFileVersion)
     var serverFileVersion: Int32?
     

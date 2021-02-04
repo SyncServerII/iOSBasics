@@ -65,6 +65,7 @@ let package = Package(
                 .copy("Cat.jpg")]
             ),
 
+        // The applicable test cases make use of a server running at: http://localhost:8080
         .testTarget(
             name: "iOSBasicsTests",
             dependencies: [

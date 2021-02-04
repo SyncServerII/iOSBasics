@@ -108,4 +108,60 @@ class DownloadObjectTrackerTests: XCTestCase {
         
         try entry.delete()
     }
+    
+    func testDownloadsWithAllScope() throws {
+        try DownloadObjectTracker.createTable(db: database)
+        try entry.insert()
+        try DownloadFileTracker.createTable(db: database)
+
+        // 1) No downloads-- because db is empty
+        let downloads1 = try DownloadObjectTracker.downloadsWith(status: .downloaded, scope: .all, db: database)
+        XCTAssert(downloads1.count == 0)
+        
+        // 2) No downloads because of no match
+        let fileTracker1 = try DownloadFileTracker(db: database, downloadObjectTrackerId: entry.id, status: .downloaded, fileUUID: UUID(), fileVersion: 0, localURL: nil)
+        try fileTracker1.insert()
+        
+        let fileTracker2 = try DownloadFileTracker(db: database, downloadObjectTrackerId: entry.id, status: .downloading, fileUUID: UUID(), fileVersion: 0, localURL: nil)
+        try fileTracker2.insert()
+
+        let downloads2 = try DownloadObjectTracker.downloadsWith(status: .downloaded, scope: .all, db: database)
+        XCTAssert(downloads2.count == 0)
+
+        // 3) A match
+        try fileTracker2.update(setters: DownloadFileTracker.statusField.description <- .downloaded)
+        let downloads3 = try DownloadObjectTracker.downloadsWith(status: .downloaded, scope: .all, db: database)
+        XCTAssert(downloads3.count == 1)
+    }
+    
+    func testDownloadsWithSomeScope() throws {
+        try DownloadObjectTracker.createTable(db: database)
+        try entry.insert()
+        try DownloadFileTracker.createTable(db: database)
+
+        // 1) No downloads-- because db is empty
+        let downloads1 = try DownloadObjectTracker.downloadsWith(status: .downloaded, scope: .some, db: database)
+        XCTAssert(downloads1.count == 0)
+        
+        // 2) Downloads
+        let fileTracker1 = try DownloadFileTracker(db: database, downloadObjectTrackerId: entry.id, status: .downloaded, fileUUID: UUID(), fileVersion: 0, localURL: nil)
+        try fileTracker1.insert()
+        
+        let fileTracker2 = try DownloadFileTracker(db: database, downloadObjectTrackerId: entry.id, status: .downloading, fileUUID: UUID(), fileVersion: 0, localURL: nil)
+        try fileTracker2.insert()
+
+        let downloads2 = try DownloadObjectTracker.downloadsWith(status: .downloaded, scope: .some, db: database)
+        guard downloads2.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        guard downloads2[0].files.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        let file = downloads2[0].files[0]
+        XCTAssert(file.fileUUID == fileTracker1.fileUUID)
+    }
 }
