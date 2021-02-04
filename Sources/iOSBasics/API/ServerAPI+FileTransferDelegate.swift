@@ -6,11 +6,22 @@ extension ServerAPI: FileTransferDelegate {
     func error(_ network: Any, file: Filenaming?, statusCode: Int?, error: Error?) {
         delegate.error(self, error: error)
     }
-    
-    func downloadCompleted(_ network: Any, file: Filenaming, url: URL?, response: HTTPURLResponse?, _ statusCode: Int?) {
 
-        if let resultError = self.checkForError(statusCode: statusCode, error: nil) {
-            delegate.downloadCompleted(self, file: file, result: .failure(resultError))
+    func downloadEnded(_ network: Any, file: Filenaming, event: FileTransferDownloadEvent, response: HTTPURLResponse?) {
+    
+        let url: URL
+        
+        switch event {
+        case .success(let urlResult):
+            url = urlResult
+        case .failure(error: let error, statusCode: let statusCode):
+            if let error = error {
+                delegate.downloadCompleted(self, file: file, result: .failure(error))
+            }
+            else {
+                let resultError = self.checkForError(statusCode: statusCode, error: error) ?? ServerAPIError.generic("Unknown")
+                delegate.downloadCompleted(self, file: file, result: .failure(resultError))
+            }
             return
         }
         
@@ -60,11 +71,6 @@ extension ServerAPI: FileTransferDelegate {
         
         if let checkSum = downloadFileResponse.checkSum,
             let contentsChanged = downloadFileResponse.contentsChanged {
-
-            guard let url = url else {
-                delegate.downloadCompleted(self, file: file, result: .failure(ServerAPIError.resultURLObtainedWasNil))
-                return
-            }
 
             let hash: String
             do {

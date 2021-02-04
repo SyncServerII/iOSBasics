@@ -67,6 +67,15 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
         }
     }
     
+    private func validStatusCode(_ statusCode: Int?) -> Bool {
+        if let statusCode = statusCode, statusCode >= 200, statusCode <= 299 {
+            return true
+        }
+        else {
+            return false
+        }
+    }
+    
     // For downloads: This gets called even when there was no error, but I believe only it (and not the `didFinishDownloadingTo` method) gets called if there is an error.
     // For uploads: This gets called to indicate successful completion or an error.
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
@@ -80,30 +89,46 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
             cache = try backgroundCache.lookupCache(taskIdentifer: task.taskIdentifier)
         } catch let error {
             try? cache?.delete()
+            // May not have the cache. Responding with generic error.
             transferDelegate.error(self, file: nil, statusCode: response?.statusCode, error: error)
             return
         }
         
         let file = FileObject(fileUUID: cache.uuid.uuidString, fileVersion: cache.fileVersion, trackerId: cache.trackerId)
 
+        func errorResponse(error: Error) {
+            switch cache.transfer {
+            case .download:
+                transferDelegate.downloadEnded(self, file: file, event: .failure(error: error, statusCode: response?.statusCode), response: response)
+                
+            case .upload, .request, .none:
+                transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
+            }
+        }
+        
         if response == nil {
             try? cache.delete()
-            transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
+            errorResponse(error: NetworkingError.couldNotGetHTTPURLResponse)
             return
         }
 
         if let error = error {
             try? cache.delete()
-            transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
+            errorResponse(error: error)
             return
         }
-            
+                    
         switch cache.transfer {
         case .upload(let uploadBody):
             transferDelegate.uploadCompleted(self, file: file, response: response, responseBody: uploadBody?.dictionary, statusCode: response?.statusCode)
 
         case .download(let url):
-            transferDelegate.downloadCompleted(self, file: file, url: url, response: response, response?.statusCode)
+            if validStatusCode(response?.statusCode), let url = url {
+                transferDelegate.downloadEnded(self, file: file, event: .success(url), response: response)
+            }
+            else {
+                transferDelegate.downloadEnded(self, file: file, event: .failure(error: nil, statusCode: response?.statusCode), response: response)
+            }
 
         case .request(let url):
             transferDelegate.backgroundRequestCompleted(self, url: url, trackerId: file.trackerId, response: response, requestInfo: cache.requestInfo, statusCode: response?.statusCode)
@@ -151,5 +176,6 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
     }
     
     func urlSession(_ session: URLSession, didBecomeInvalidWithError error: Error?) {
+        logger.error("didBecomeInvalidWithError: \(String(describing: error))")
     }
 }

@@ -89,8 +89,12 @@ class Networking: NSObject {
             return nil
         }
         
+        // See also https://stackoverflow.com/questions/23288780
+        // https://developer.apple.com/forums/thread/101993
+        // https://developer.apple.com/forums/thread/22690
         sessionConfiguration.timeoutIntervalForRequest = config.timeoutIntervalForRequest
         sessionConfiguration.timeoutIntervalForResource = config.timeoutIntervalForResource
+        sessionConfiguration.waitsForConnectivity = true
         
         let urlSession = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: OperationQueue.main)
         return urlSession

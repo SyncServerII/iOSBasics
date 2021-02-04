@@ -21,12 +21,14 @@ class ServerAPI {
         case couldNotObtainHeaderParameters
         case couldNotGetCloudStorageType
         case resultURLObtainedWasNil
+        case noURLObtained
         case couldNotComputeHash
         case networkingHashMismatch
         case badUploadIndex
         case badURLParameters
         case badUUID
         case socialAcceptanceNotAllowed
+        case generic(String)
     }
     
     let networking: Networking
