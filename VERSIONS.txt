@@ -1,6 +1,6 @@
 iOSBasics
 
-Version 0.0.3
+Version 0.0.3 (2/3/21)
 	* Working on download issues:
 		https://github.com/SyncServerII/iOSBasics/issues/2
 		
