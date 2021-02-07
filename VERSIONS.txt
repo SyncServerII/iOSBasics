@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.2.0 (2/7/21)
+	* Improved error reporting.
+	
 Version 0.1.0 (2/6/21)
 	* Added UpdateUser endpoint.
 	
