@@ -25,7 +25,7 @@ extension ServerAPI {
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: urlParameters)
         
         networking.sendRequestTo(serverURL, method: endpoint.method) { response,  httpStatus, error in
-            let resultError = self.checkForError(statusCode: httpStatus, error: error)
+            let resultError = self.checkForError(statusCode: httpStatus, error: error, serverResponse: .dictionary(response))
             
             if let resultError = resultError {
                 completion(.failure(resultError))
@@ -149,7 +149,7 @@ extension ServerAPI {
                 return
             }
             
-            if let error = self.checkForError(statusCode: httpStatus, error: error) {
+            if let error = self.checkForError(statusCode: httpStatus, error: error, serverResponse: .dictionary(response)) {
                 logger.error("getUploadsResults: \(error)")
                 completion(.failure(error))
                 return
@@ -278,7 +278,7 @@ extension ServerAPI {
                 return
             }
             
-            if let error = self.checkForError(statusCode: httpStatus, error: error) {
+            if let error = self.checkForError(statusCode: httpStatus, error: error, serverResponse: .dictionary(response)) {
                 completion(.failure(error))
                 return
             }

@@ -26,6 +26,7 @@ enum NetworkingError: Error {
     case unexpectedTransferType
     case moreThanOneNetworkCache
     case couldNotGetCache
+    case versionError
 }
 
 protocol NetworkingDelegate: AnyObject {
@@ -165,65 +166,62 @@ class Networking: NSObject {
         logger.info("sendRequestTo: serverURL: \(serverURL)")
         
         let uploadTask:URLSessionDataTask = session.dataTask(with: request) { (data, urlResponse, error) in
-            self.processResponse(data: data, urlResponse: urlResponse, error: error, completion: completion)
+            let (serverResponse, statusCode, error) = self.processResponse(data: data, urlResponse: urlResponse, error: error)
+            completion?(serverResponse, statusCode, error)
         }
         
         uploadTask.resume()
     }
 
-    private func processResponse(data:Data?, urlResponse:URLResponse?, error: Error?, completion:((_ serverResponse:[String:Any]?, _ statusCode:Int?, _ error:Error?)->())?) {
-        if error == nil {
-            // With an HTTP or HTTPS request, we get HTTPURLResponse back. See https://developer.apple.com/reference/foundation/urlsession/1407613-datatask
-            guard let response = urlResponse as? HTTPURLResponse else {
-                completion?(nil, nil, NetworkingError.couldNotGetHTTPURLResponse)
-                return
-            }
-            
-            // Treating unauthorized specially because we attempt a credentials refresh in some cases when we get this.
-            if response.statusCode == HTTPStatus.unauthorized.rawValue {
-                completion?(nil, response.statusCode, nil)
-                return
-            }
-            
-            if response.statusCode == HTTPStatus.serviceUnavailable.rawValue {
-                completion?(nil, response.statusCode, nil)
-                return
-            }
-            
-            guard let data = data else {
-                completion?(nil, response.statusCode, NetworkingError.couldNotGetData)
-                return
-            }
-            
-            if versionsAreOK(headerFields: response.allHeaderFields) {
-                var json:Any?
-                do {
-                    try json = JSONSerialization.jsonObject(with: data, options: JSONSerialization.ReadingOptions(rawValue: UInt(0)))
-                } catch (let error) {
-                    let stringFromData = String(data: data, encoding: .utf8)
-                    logger.error("processResponse: Error in JSON conversion: \(error); statusCode= \(response.statusCode); stringFromData: \(String(describing: stringFromData))")
-                    completion?(nil, response.statusCode, NetworkingError.jsonSerializationError(error))
-                    return
-                }
-                
-                guard let jsonDict = json as? [String: Any] else {
-                    completion?(nil, response.statusCode, NetworkingError.errorConvertingServerResponse)
-                    return
-                }
-                
-                var resultDict = jsonDict
-                
-                // Some responses (from endpoints doing sharing operations) have ServerConstants.httpResponseOAuth2AccessTokenKey in their header. Pass it up using the same key.
-                if let accessTokenResponse = response.allHeaderFields[ServerConstants.httpResponseOAuth2AccessTokenKey] {
-                    resultDict[ServerConstants.httpResponseOAuth2AccessTokenKey] = accessTokenResponse
-                }
-                
-                completion?(resultDict, response.statusCode, nil)
-            }
+    private func processResponse(data:Data?, urlResponse:URLResponse?, error: Error?) -> (serverResponse:[String:Any]?, statusCode:Int?, error:Error?) {
+    
+        if let error = error {
+            return (nil, nil, NetworkingError.urlSessionError(error))
         }
-        else {
-            completion?(nil, nil, NetworkingError.urlSessionError(error))
+        
+        // With an HTTP or HTTPS request, we get HTTPURLResponse back. See https://developer.apple.com/reference/foundation/urlsession/1407613-datatask
+        guard let response = urlResponse as? HTTPURLResponse else {
+            return (nil, nil, NetworkingError.couldNotGetHTTPURLResponse)
         }
+        
+        // Treating unauthorized specially because we attempt a credentials refresh in some cases when we get this.
+        if response.statusCode == HTTPStatus.unauthorized.rawValue {
+            return (nil, response.statusCode, nil)
+        }
+        
+        if response.statusCode == HTTPStatus.serviceUnavailable.rawValue {
+            return (nil, response.statusCode, nil)
+        }
+        
+        guard let data = data else {
+            return (nil, response.statusCode, NetworkingError.couldNotGetData)
+        }
+        
+        guard versionsAreOK(headerFields: response.allHeaderFields) else {
+            return (nil, response.statusCode, NetworkingError.versionError)
+        }
+        
+        var json:Any?
+        do {
+            try json = JSONSerialization.jsonObject(with: data, options: JSONSerialization.ReadingOptions(rawValue: UInt(0)))
+        } catch (let error) {
+            let stringFromData = String(data: data, encoding: .utf8)
+            logger.error("processResponse: Error in JSON conversion: \(error); statusCode= \(response.statusCode); stringFromData: \(String(describing: stringFromData))")
+            return (nil, response.statusCode, NetworkingError.jsonSerializationError(error))
+        }
+        
+        guard let jsonDict = json as? [String: Any] else {
+            return (nil, response.statusCode, NetworkingError.errorConvertingServerResponse)
+        }
+        
+        var resultDict = jsonDict
+        
+        // Some responses (from endpoints doing sharing operations) have ServerConstants.httpResponseOAuth2AccessTokenKey in their header. Pass it up using the same key.
+        if let accessTokenResponse = response.allHeaderFields[ServerConstants.httpResponseOAuth2AccessTokenKey] {
+            resultDict[ServerConstants.httpResponseOAuth2AccessTokenKey] = accessTokenResponse
+        }
+        
+        return (resultDict, response.statusCode, nil)
     }
     
     private func serverVersionTooLow(serverVersion: Version?, configMinimumServerVersion:Version?) -> Bool {

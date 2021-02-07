@@ -33,7 +33,7 @@ extension ServerAPI {
         networking.sendRequestTo(serverURL, method: endpoint.method) { [weak self] response, httpStatus, error in
             guard let self = self else { return }
             
-            if let resultError = self.checkForError(statusCode: httpStatus, error: error) {
+            if let resultError = self.checkForError(statusCode: httpStatus, error: error, serverResponse: .dictionary(response)) {
                 completion(resultError)
             }
             else {
@@ -70,7 +70,7 @@ extension ServerAPI {
         networking.sendRequestTo(serverURL, method: endpoint.method) { [weak self] response, httpStatus, error in
             guard let self = self else { return }
             
-            if let resultError = self.checkForError(statusCode: httpStatus, error: error) {
+            if let resultError = self.checkForError(statusCode: httpStatus, error: error, serverResponse: .dictionary(response)) {
                 completion(resultError)
             }
             else {

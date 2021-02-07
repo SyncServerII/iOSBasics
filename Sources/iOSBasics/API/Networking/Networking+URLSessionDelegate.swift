@@ -15,7 +15,7 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
         // With an HTTP or HTTPS request, we get HTTPURLResponse back. See https://developer.apple.com/reference/foundation/urlsession/1407613-datatask
         let possiblyNilResponse = downloadTask.response as? HTTPURLResponse
 
-        logger.info("download completed: location: \( originalDownloadLocation);  status: \(String(describing: possiblyNilResponse?.statusCode))")
+        logger.info("download completed: location: \(originalDownloadLocation);  status: \(String(describing: possiblyNilResponse?.statusCode))")
 
         do {
             cache = try backgroundCache.lookupCache(taskIdentifer: downloadTask.taskIdentifier)
@@ -96,10 +96,12 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
         
         let file = FileObject(fileUUID: cache.uuid.uuidString, fileVersion: cache.fileVersion, trackerId: cache.trackerId)
 
+        // processResponse(data:Data?, urlResponse:URLResponse?, error: Error?)
+        
         func errorResponse(error: Error) {
             switch cache.transfer {
             case .download:
-                transferDelegate.downloadEnded(self, file: file, event: .failure(error: error, statusCode: response?.statusCode), response: response)
+                transferDelegate.downloadEnded(self, file: file, event: .failure(error: error, statusCode: response?.statusCode, responseHeaders: response?.allHeaderFields), response: response)
                 
             case .upload, .request, .none:
                 transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
@@ -127,7 +129,7 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
                 transferDelegate.downloadEnded(self, file: file, event: .success(url), response: response)
             }
             else {
-                transferDelegate.downloadEnded(self, file: file, event: .failure(error: nil, statusCode: response?.statusCode), response: response)
+                transferDelegate.downloadEnded(self, file: file, event: .failure(error: nil, statusCode: response?.statusCode, responseHeaders: response?.allHeaderFields), response: response)
             }
 
         case .request(let url):

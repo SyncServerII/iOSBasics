@@ -65,11 +65,34 @@ class ServerAPI {
         return URL(string: baseURL + path)!
     }
     
-    func checkForError(statusCode:Int?, error:Error?) -> Error? {
+    enum ServerResponse {
+        case dictionary([AnyHashable:Any]?)
+        case file(URL?)
+        
+        var contents: String? {
+            switch self {
+            case .dictionary(let dict):
+                return "\(String(describing: dict))"
+            case .file(let url):
+                guard let url = url else {
+                    return nil
+                }
+                
+                guard let data = try? Data(contentsOf: url) else {
+                    return nil
+                }
+                
+                return String(data: data, encoding: .utf8)
+            }
+        }
+    }
+    
+    func checkForError(statusCode:Int?, error:Error?, serverResponse:ServerResponse?) -> Error? {
         if statusCode == HTTPStatus.ok.rawValue || statusCode == nil  {
             return error
         }
         else {
+            logger.error("\(String(describing: error)); serverResponse: \(String(describing: serverResponse?.contents))")
             return ServerAPIError.non200StatusCode(statusCode!)
         }
     }
@@ -83,7 +106,7 @@ class ServerAPI {
         networking.sendRequestTo(serverURL, method: endpoint.method) {
             response, httpStatus, error in
             
-            if let resultError = self.checkForError(statusCode: httpStatus, error: error) {
+            if let resultError = self.checkForError(statusCode: httpStatus, error: error, serverResponse: .dictionary(response)) {
                 completion(.failure(resultError))
             }
             else {
@@ -135,7 +158,7 @@ class ServerAPI {
                 return
             }
             
-            if let error = self.checkForError(statusCode: httpStatus, error: error) {
+            if let error = self.checkForError(statusCode: httpStatus, error: error, serverResponse: .dictionary(response)) {
                 completion(.failure(error))
                 return
             }
@@ -193,7 +216,7 @@ class ServerAPI {
                 completion(.success(result))
             }
             else {
-                if let errorResult = self.checkForError(statusCode: httpStatus, error: error) {
+                if let errorResult = self.checkForError(statusCode: httpStatus, error: error, serverResponse: .dictionary(response)) {
                     completion(.failure(errorResult))
                 }
                 else {
@@ -247,7 +270,7 @@ class ServerAPI {
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL)
         
         networking.sendRequestTo(serverURL, method: endpoint.method) { response,  httpStatus, error in
-            completion(self.checkForError(statusCode: httpStatus, error: error))
+            completion(self.checkForError(statusCode: httpStatus, error: error, serverResponse: .dictionary(response)))
         }
     }
 }

@@ -11,7 +11,7 @@ enum FileTransferDownloadEvent {
     case success(URL)
     
     // Non-2XX status code or other failure. Download needs to be retried by app.
-    case failure(error: Error?, statusCode:Int?)
+    case failure(error: Error?, statusCode:Int?, responseHeaders:[AnyHashable: Any]?)
 }
 
 protocol FileTransferDelegate: AnyObject {

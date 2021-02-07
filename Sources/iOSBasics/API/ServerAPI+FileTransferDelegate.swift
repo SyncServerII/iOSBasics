@@ -14,12 +14,12 @@ extension ServerAPI: FileTransferDelegate {
         switch event {
         case .success(let urlResult):
             url = urlResult
-        case .failure(error: let error, statusCode: let statusCode):
+        case .failure(error: let error, statusCode: let statusCode, let responseHeaders):
             if let error = error {
                 delegate.downloadCompleted(self, file: file, result: .failure(error))
             }
             else {
-                let resultError = self.checkForError(statusCode: statusCode, error: error) ?? ServerAPIError.generic("Unknown")
+                let resultError = self.checkForError(statusCode: statusCode, error: error, serverResponse: .dictionary(responseHeaders)) ?? ServerAPIError.generic("Unknown")
                 delegate.downloadCompleted(self, file: file, result: .failure(resultError))
             }
             return
@@ -111,7 +111,7 @@ extension ServerAPI: FileTransferDelegate {
             return
         }
 
-        if let resultError = self.checkForError(statusCode: statusCode, error: nil) {
+        if let resultError = self.checkForError(statusCode: statusCode, error: nil, serverResponse: .dictionary(responseBody)) {
             logger.error("ServerAPI+FileTransferDelegate.uploadCompleted: \(resultError)")
             delegate.uploadCompleted(self, file: file, result: .failure(resultError))
             return
@@ -152,7 +152,7 @@ extension ServerAPI: FileTransferDelegate {
             return
         }
 
-        if let resultError = self.checkForError(statusCode: statusCode, error: nil) {
+        if let resultError = self.checkForError(statusCode: statusCode, error: nil, serverResponse: .file(url)) {
             logger.error("backgroundRequestCompleted: \(resultError)")
             delegate.backgroundRequestCompleted(self, result: .failure(resultError))
             return
