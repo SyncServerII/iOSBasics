@@ -62,6 +62,28 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
         XCTAssert(handlers.user.addUser())
     }
     
+    func testUpdateUser() {
+        let newUserName = "XXX YYY"
+        let exp = expectation(description: "exp")
+        api.updateUser(userName: newUserName) { result in
+            XCTAssert(result == nil)
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        guard let result = checkCreds() else {
+            XCTFail()
+            return
+        }
+        
+        switch result {
+        case .noUser:
+            XCTFail()
+        case .user(userInfo: let userInfo, accessToken: _):
+            XCTAssert(userInfo.fullUserName == newUserName)
+        }
+    }
+    
     func testRemoveUser() {
         _ = handlers.user.removeUser()
         _ = handlers.user.addUser()

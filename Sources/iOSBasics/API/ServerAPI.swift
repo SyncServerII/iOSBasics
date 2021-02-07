@@ -9,6 +9,7 @@ import SQLite
 
 class ServerAPI {
     enum ServerAPIError: Error {
+        case nilStatusCode
         case non200StatusCode(Int)
         case couldNotCreateResponse
         case badCheckCreds
@@ -199,6 +200,45 @@ class ServerAPI {
                     completion(.failure(ServerAPIError.unknownServerError))
                 }
             }
+        }
+    }
+    
+    func updateUser(userName: String, completion: @escaping (Error?)->(Void)) {
+        let endpoint = ServerEndpoints.updateUser
+
+        let updateUserRequest = UpdateUserRequest()
+        updateUserRequest.userName = userName
+        
+        guard updateUserRequest.valid() else {
+            completion(ServerAPIError.couldNotCreateRequest)
+            return
+        }
+        
+        guard let parameters = updateUserRequest.urlParameters() else {
+            completion(ServerAPIError.couldNotCreateRequest)
+            return
+        }
+
+        let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: parameters)
+        
+        networking.sendRequestTo(serverURL, method: endpoint.method) { response, httpStatus, error in
+        
+            if let error = error {
+                completion(error)
+                return
+            }
+            
+            guard let httpStatus = httpStatus else {
+                completion(ServerAPIError.nilStatusCode)
+                return
+            }
+        
+            guard httpStatus == HTTPStatus.ok.rawValue else {
+                completion(ServerAPIError.non200StatusCode(httpStatus))
+                return
+            }
+
+            completion(nil)
         }
     }
     

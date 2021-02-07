@@ -87,8 +87,8 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSSignIn.git",
         "state": {
           "branch": null,
-          "revision": "607419febc79046269932d64ccdc2748a62654e4",
-          "version": "0.0.2"
+          "revision": "a7679f9aeeefba4dd3ba30e33028910f934ce429",
+          "version": "0.0.3"
         }
       },
       {
@@ -96,8 +96,8 @@
         "repositoryURL": "https://github.com/kishikawakatsumi/KeychainAccess.git",
         "state": {
           "branch": null,
-          "revision": "8d33ffd6f74b3bcfc99af759d4204c6395a3f918",
-          "version": "3.2.1"
+          "revision": "654d52d30f3dd4592e944c3e0bccb53178c992f6",
+          "version": "4.2.1"
         }
       },
       {
@@ -132,8 +132,8 @@
         "repositoryURL": "https://github.com/Kitura/Kitura-Session.git",
         "state": {
           "branch": null,
-          "revision": "774509e7fb48a01400c177c771faa5f8ff7842e4",
-          "version": "3.3.200"
+          "revision": "501de45890c6942f263a56145c9bca571002e09f",
+          "version": "3.3.201"
         }
       },
       {
@@ -168,8 +168,8 @@
         "repositoryURL": "https://github.com/crspybits/PersistentValue.git",
         "state": {
           "branch": null,
-          "revision": "995657d86a2101abfc1bb72a2c631d8433707df0",
-          "version": "0.6.0"
+          "revision": "ede36cf07a63eec41f5cf100cd907d87e442843a",
+          "version": "0.7.1"
         }
       },
       {
@@ -186,8 +186,8 @@
         "repositoryURL": "https://github.com/SyncServerII/ServerShared.git",
         "state": {
           "branch": null,
-          "revision": "6c725c50cdb575c183943dcfcdb7394390a5e933",
-          "version": "0.0.4"
+          "revision": "e193b9e79351a2f4a68af0cd784fde84e1032a77",
+          "version": "0.1.0"
         }
       },
       {

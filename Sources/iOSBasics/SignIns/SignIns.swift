@@ -139,6 +139,14 @@ public class SignIns {
         self.delegate?.userIsSignedOut(self)
         delegate?.setCredentials(self, credentials: nil)
     }
+    
+    public func updateUser(userName: String, completion: @escaping (Error?) -> ()) {
+        api.updateUser(userName: userName) { error in
+            DispatchQueue.main.async {
+                completion(error)
+            }
+        }
+    }
 }
 
 // The `iOSSignIn.SignInsDelegate` and `SyncServerCredentials` conformances are critical to integration between iOSSignIn and iOSBasics.
