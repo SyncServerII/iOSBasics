@@ -95,8 +95,6 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
         }
         
         let file = FileObject(fileUUID: cache.uuid.uuidString, fileVersion: cache.fileVersion, trackerId: cache.trackerId)
-
-        // processResponse(data:Data?, urlResponse:URLResponse?, error: Error?)
         
         func errorResponse(error: Error) {
             switch cache.transfer {
