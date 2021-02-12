@@ -359,7 +359,7 @@ extension SyncServer {
         }
 
         guard let objectTracker = try UploadObjectTracker.fetchSingleRow(db: db, where: uploadObjectTrackerId == UploadObjectTracker.idField.description) else {
-            throw SyncServerError.internalError("Problem in fetchSingleRow for UploadObjectTracker")
+            throw SyncServerError.internalError("Problem in fetchSingleRow for UploadObjectTracker (a)")
         }
 
         try fileTracker.update(setters:
@@ -436,7 +436,7 @@ extension SyncServer {
     
     func cleanupAfterVNUploadCompleted(uploadObjectTrackerId: Int64) throws {
         guard let objectTracker = try UploadObjectTracker.fetchSingleRow(db: db, where: uploadObjectTrackerId == UploadObjectTracker.idField.description) else {
-            throw SyncServerError.internalError("Problem in fetchSingleRow for UploadObjectTracker")
+            throw SyncServerError.internalError("Problem in fetchSingleRow for UploadObjectTracker (b)")
         }
         
         let fileTrackers = try objectTracker.dependentFileTrackers()

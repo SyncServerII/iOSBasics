@@ -101,7 +101,7 @@ extension SyncServer {
         func apply(tracker: UploadDeletionTracker, completion: @escaping (Swift.Result<Void, Error>) -> ()) {
 
             guard let deferredUploadId = tracker.deferredUploadId else {
-                completion(.failure(SyncServerError.internalError("Did not have deferredUploadId.")))
+                completion(.failure(SyncServerError.internalError("checkOnDeferredDeletions: Did not have deferredUploadId.")))
                 return
             }
                         

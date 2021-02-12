@@ -46,6 +46,7 @@ extension SyncServer {
     // This does *not* call SyncServer delegate methods. You may want to report errors thrown using SyncServer delegate methods if needed after calling this.
     // On success, returns the number of deferred uploads detected as successfully completed.
     func checkOnDeferredUploads() throws -> Int {
+        // We consider all of these to be vN: Because, once a v0 upload completes for an object, the trackers are immediately removed (see cleanupAfterUploadCompleted).
         let vNCompletedUploads = try UploadObjectTracker.allUploadsWith(status: .uploaded, db: db)
         
         guard (vNCompletedUploads.compactMap { $0.object.v0Upload }).count == vNCompletedUploads.count else {
@@ -68,10 +69,10 @@ extension SyncServer {
         func apply(upload: UploadObjectTracker.UploadWithStatus, completion: @escaping (Swift.Result<Void, Error>) -> ()) {
 
             guard let deferredUploadId = upload.object.deferredUploadId else {
-                completion(.failure(SyncServerError.internalError("Did not have deferredUploadId.")))
+                completion(.failure(SyncServerError.internalError("checkOnDeferredUploads: Did not have deferredUploadId.")))
                 return
             }
-            
+
             guard let uploadObjectTrackerId = upload.object.id else {
                 completion(.failure(SyncServerError.internalError("Did not have tracker object id.")))
                 return
