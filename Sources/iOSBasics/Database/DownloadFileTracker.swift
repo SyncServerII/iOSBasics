@@ -25,6 +25,10 @@ class DownloadFileTracker: DatabaseModel {
     
     static let statusField = Field("status", \M.status)
     var status: Status
+    
+    // The number of times that the download has failed, and has been restarted.
+    static let numberRetriesField = Field("numberRetries", \M.numberRetries)
+    var numberRetries: Int
 
     static let fileVersionField = Field("fileVersion", \M.fileVersion)
     var fileVersion: FileVersionInt
@@ -37,6 +41,7 @@ class DownloadFileTracker: DatabaseModel {
         id: Int64! = nil,
         downloadObjectTrackerId: Int64,
         status: Status,
+        numberRetries: Int = 0,
         fileUUID: UUID,
         fileVersion: FileVersionInt,
         localURL:URL?) throws {
@@ -45,6 +50,7 @@ class DownloadFileTracker: DatabaseModel {
         self.id = id
         self.downloadObjectTrackerId = downloadObjectTrackerId
         self.status = status
+        self.numberRetries = numberRetries
         self.fileUUID = fileUUID
         self.fileVersion = fileVersion
         self.localURL = localURL
@@ -57,6 +63,7 @@ class DownloadFileTracker: DatabaseModel {
             t.column(idField.description, primaryKey: true)
             t.column(downloadObjectTrackerIdField.description)
             t.column(statusField.description)
+            t.column(numberRetriesField.description)
             
             // Not making this unique because allowing queueing (but not parallel downloading) of the same file group.
             t.column(fileUUIDField.description)
@@ -71,6 +78,7 @@ class DownloadFileTracker: DatabaseModel {
             id: row[Self.idField.description],
             downloadObjectTrackerId: row[Self.downloadObjectTrackerIdField.description],
             status: row[Self.statusField.description],
+            numberRetries: row[Self.numberRetriesField.description],
             fileUUID: row[Self.fileUUIDField.description],
             fileVersion: row[Self.fileVersionField.description],
             localURL: row[Self.localURLField.description]
@@ -81,6 +89,7 @@ class DownloadFileTracker: DatabaseModel {
         try doInsertRow(db: db, values:
             Self.downloadObjectTrackerIdField.description <- downloadObjectTrackerId,
             Self.statusField.description <- status,
+            Self.numberRetriesField.description <- numberRetries,
             Self.fileUUIDField.description <- fileUUID,
             Self.fileVersionField.description <- fileVersion,
             Self.localURLField.description <- localURL
@@ -89,7 +98,8 @@ class DownloadFileTracker: DatabaseModel {
 }
 
 extension DownloadFileTracker {
-    static func reset(fileUUID: String?, objectTrackerId: Int64, db: Connection) throws {
+    // Returns the `DownloadFileTracker` corresponding to the fileUUID and objectTrackerId.
+    static func reset(fileUUID: String?, objectTrackerId: Int64, db: Connection) throws -> DownloadFileTracker {
         guard let fileUUIDString = fileUUID,
             let fileUUID = try UUID.from(fileUUIDString) else {
             throw SyncServerError.internalError("UUID conversion failed")
@@ -102,13 +112,16 @@ extension DownloadFileTracker {
             throw SyncServerError.internalError("Nil DownloadFileTracker")
         }
         
-        try fileTracker.update(setters: DownloadFileTracker.statusField.description <- .notStarted)
+        try fileTracker.update(setters: DownloadFileTracker.statusField.description <- .notStarted,
+            DownloadFileTracker.numberRetriesField.description <- fileTracker.numberRetries + 1)
         
         if let localURL = fileTracker.localURL {
             logger.debug("Removing file: \(localURL)")
             try FileManager.default.removeItem(at: localURL)
             try fileTracker.update(setters: DownloadFileTracker.localURLField.description <- nil)
         }
+        
+        return fileTracker
     }
 }
 

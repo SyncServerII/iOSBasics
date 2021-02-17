@@ -101,4 +101,22 @@ extension DownloadObjectTracker {
         
         return uploads
     }
+    
+    static let maxRetriesPerFile = 5
+    
+    // Check if the number of download retries for the file has been exceeded. If yes, then the `DownloadFileTracker` is removed. If there are no more, then remove the object tracker too.
+    static func removeIfTooManyRetries(fileTracker: DownloadFileTracker, db: Connection) throws {
+        if fileTracker.numberRetries >= maxRetriesPerFile {
+            try fileTracker.delete()
+        }
+        
+        guard let objectTracker = try DownloadObjectTracker.fetchSingleRow(db: db, where: DownloadObjectTracker.idField.description == fileTracker.downloadObjectTrackerId) else {
+            throw DatabaseError.noObject
+        }
+        
+        let fileTrackers = try objectTracker.dependentFileTrackers()
+        if fileTrackers.count == 0 {
+            try objectTracker.delete()
+        }
+    }
 }

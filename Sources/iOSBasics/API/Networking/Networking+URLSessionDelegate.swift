@@ -45,6 +45,15 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
             transferDelegate.error(self, file: downloadFile, statusCode: response.statusCode, error: error)
             return
         }
+        
+        logger.info("Downloaded and moved file: \(String(describing: movedDownloadedFile))")
+#if DEBUG
+        if let movedDownloadedFile = movedDownloadedFile,
+            let data = try? Data(contentsOf: movedDownloadedFile) {
+            let string = String(data: data, encoding: .utf8)?.prefix(200)
+            logger.debug("Downloaded file contents: \(String(describing: string))")
+        }
+#endif
 
         switch cache?.transfer {
         case .download:
@@ -107,12 +116,14 @@ extension Networking: URLSessionDelegate, URLSessionTaskDelegate, URLSessionDown
         }
         
         if response == nil {
+            // The background download failed. I'm assuming that this is definitive and that the download will not be retried automatically by iOS. So, am removing the NetworkCache object.
             try? cache.delete()
             errorResponse(error: NetworkingError.couldNotGetHTTPURLResponse)
             return
         }
 
         if let error = error {
+            // Same kind of assumption as above.
             try? cache.delete()
             errorResponse(error: error)
             return

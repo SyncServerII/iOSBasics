@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.3.0
+	* Improved retry mechanism for downloads.
+
 Version 0.2.0 (2/7/21)
 	* Improved error reporting.
 	

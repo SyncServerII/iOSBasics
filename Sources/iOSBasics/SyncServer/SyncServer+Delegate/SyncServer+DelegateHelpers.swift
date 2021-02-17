@@ -141,7 +141,10 @@ extension SyncServer {
             // 1/31/21: I added this originally because I'd been getting download failures due to the limitations I'm seeing with ngrok.
             
             do {
-                try DownloadFileTracker.reset(fileUUID: file.fileUUID, objectTrackerId: file.trackerId, db: db)
+                let fileTracker = try DownloadFileTracker.reset(fileUUID: file.fileUUID, objectTrackerId: file.trackerId, db: db)
+                
+                // Have we exceeded the number of restarts allowed? In an edge case, we might be trying to download a file version that doesn't exist any more on the server. See https://github.com/SyncServerII/ServerMain/issues/3
+                try DownloadObjectTracker.removeIfTooManyRetries(fileTracker: fileTracker, db: db)
             } catch let error {
                 logger.error("\(error)")
                 delegator { [weak self] delegate in
