@@ -139,12 +139,14 @@ extension SyncServer {
             logger.error("Download failed: \(error)")
             // The download failed. It needs to be restarted.
             // 1/31/21: I added this originally because I'd been getting download failures due to the limitations I'm seeing with ngrok.
-            
             do {
                 let fileTracker = try DownloadFileTracker.reset(fileUUID: file.fileUUID, objectTrackerId: file.trackerId, db: db)
-                
+
                 // Have we exceeded the number of restarts allowed? In an edge case, we might be trying to download a file version that doesn't exist any more on the server. See https://github.com/SyncServerII/ServerMain/issues/3
-                try DownloadObjectTracker.removeIfTooManyRetries(fileTracker: fileTracker, db: db)
+                let objectTracker = try DownloadObjectTracker.removeIfTooManyRetries(fileTracker: fileTracker, db: db)
+                
+                // It's possible that no more downloads are available-- if the last `DownloadFileTracker` has been removed due to too many retries. Or that the remaining downloads were successful after a failure was removed.
+                try checkIfAllDownloadsCompleted(objectTracker: objectTracker)
             } catch let error {
                 logger.error("\(error)")
                 delegator { [weak self] delegate in
@@ -252,6 +254,7 @@ extension SyncServer {
 }
 
 extension SyncServer {
+    // fileTrackers.count may be 0.
     func deleteDownloadTrackers(fileTrackers: [DownloadFileTracker], objectTracker: DownloadObjectTracker) throws {
         for fileTracker in fileTrackers {
             try fileTracker.delete()
@@ -292,7 +295,11 @@ extension SyncServer {
         try fileTracker.update(setters:
             DownloadFileTracker.statusField.description <- .downloaded)
             
-        // Have all downloads successfully completed? If so, can delete all trackers, including those for files and the overall object.
+        try checkIfAllDownloadsCompleted(objectTracker: objectTracker)
+    }
+
+    // Have all downloads successfully completed? If so, can delete all trackers, including those for files and the overall object.
+    func checkIfAllDownloadsCompleted(objectTracker: DownloadObjectTracker) throws {
         let fileTrackers = try objectTracker.dependentFileTrackers()
         let remainingDownloads = fileTrackers.filter {$0.status != .downloaded}
         
@@ -343,8 +350,11 @@ extension SyncServer {
                 downloadedFiles += [downloadFile]
             }
             
-            let downloadObject = DownloadedObject(sharingGroupUUID: objectEntry.sharingGroupUUID, fileGroupUUID: objectTracker.fileGroupUUID, creationDate: creationDate, downloads: downloadedFiles)
-            try downloadHandler.objectWasDownloaded(object: downloadObject)
+            // When handling errors, there may be no downloadedFiles.
+            if downloadedFiles.count > 0 {
+                let downloadObject = DownloadedObject(sharingGroupUUID: objectEntry.sharingGroupUUID, fileGroupUUID: objectTracker.fileGroupUUID, creationDate: creationDate, downloads: downloadedFiles)
+                try downloadHandler.objectWasDownloaded(object: downloadObject)
+            }
             
             try deleteDownloadTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
         }
