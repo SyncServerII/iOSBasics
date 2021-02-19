@@ -19,6 +19,7 @@ extension SyncServer {
 
         switch result {
         case .failure(let error):
+            logger.error("\(error)")
             reportUploadError(fileUUID: fileUUID, trackerId: file.trackerId, error: error)
             
         case .success(let uploadFileResult):
@@ -61,6 +62,7 @@ extension SyncServer {
                     }
                     
                 } catch let error {
+                    logger.error("\(error)")
                     reportUploadError(fileUUID: fileUUID, trackerId: file.trackerId, error: error)
                     return
                 }
@@ -75,6 +77,7 @@ extension SyncServer {
     }
 
     private func reportUploadError(fileUUID: UUID, trackerId: Int64, error: Error) {
+        logger.error("\(error)")
         delegator { [weak self] delegate in
             guard let self = self else { return }
             delegate.userEvent(self, event: .error(error))
@@ -89,6 +92,7 @@ extension SyncServer {
             try fileTracker.update(setters:
                 UploadFileTracker.statusField.description <- .notStarted)
         } catch let error {
+            logger.error("\(error)")
             delegator { [weak self] delegate in
                 guard let self = self else { return }
                 delegate.userEvent(self, event: .error(error))
@@ -101,9 +105,12 @@ extension SyncServer {
         case .success(let downloadResult):
             switch downloadResult {
             case .gone(let objectTrackerId, let fileUUID, let goneReason):
+                logger.error("\(goneReason)")
+                
                 do {
                     try cleanupAfterDownloadCompleted(fileUUID: fileUUID, contents: .gone(goneReason), objectTrackerId: objectTrackerId)
                 } catch let error {
+                    logger.error("\(error)")
                     delegator { [weak self] delegate in
                         guard let self = self else { return }
                         delegate.userEvent(self, event: .error(error))
@@ -122,6 +129,7 @@ extension SyncServer {
                 do {
                     try cleanupAfterDownloadCompleted(fileUUID: result.fileUUID, contents: .download(result.url), objectTrackerId: objectTrackerId)
                 } catch let error {
+                    logger.error("\(error)")
                     delegator { [weak self] delegate in
                         guard let self = self else { return }
                         delegate.userEvent(self, event: .error(error))
