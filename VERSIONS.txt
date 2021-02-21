@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.7.1 (2/21/21)
+	* Fix build issue.
+	
 Version 0.7.0 (2/21/21)
 	* Improving deletion queuing.
 	
