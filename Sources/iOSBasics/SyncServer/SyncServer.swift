@@ -46,6 +46,7 @@ public class SyncServer {
     ///     - hashingManager: Used to compute hashes of files for upload and
     ///         download.
     ///     - db: SQLite database connection
+    ///     - reachability: Determine network reachability. SyncServer will retain this object.
     ///     - configuration: The sync server configuration.
     ///     - signIns: Sign in helper for when iOSSignIn is used.
     ///         The caller must retain the instance and call the
@@ -57,6 +58,7 @@ public class SyncServer {
     ///         Also used for any callbacks defined on this interface.
     public init(hashingManager: HashingManager,
         db:Connection,
+        reachability: NetworkReachability,
         configuration: Configuration,
         signIns: SignIns,
         dispatchQueue: DispatchQueue = DispatchQueue.main) throws {
@@ -69,7 +71,7 @@ public class SyncServer {
 
         self.signIns = signIns
         
-        guard let api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, config: configuration) else {
+        guard let api = ServerAPI(database: db, hashingManager: hashingManager, reachability:reachability, delegate: self, config: configuration) else {
             throw SyncServerError.internalError("Could not create ServerAPI")
         }
         self.api = api

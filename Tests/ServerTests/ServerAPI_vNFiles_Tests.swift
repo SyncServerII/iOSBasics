@@ -33,7 +33,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         let config = Configuration(appGroupIdentifier: nil, serverURL: URL(string: Self.baseURL())!, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
         hashingManager = HashingManager()
         try? hashingManager.add(hashing: DropboxHashing())
-        api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, config: config)
+        api = ServerAPI(database: database, hashingManager: hashingManager, reachability: FakeReachability(), delegate: self, config: config)
         _ = handlers.user.removeUser()
         XCTAssert(handlers.user.addUser())
     }

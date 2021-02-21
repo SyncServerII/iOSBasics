@@ -19,7 +19,6 @@ let package = Package(
             targets: ["iOSBasics"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/rwbutler/Hyperconnectivity.git", from: "1.1.0"),
         .package(url: "https://github.com/crspybits/FileMD5Hash.git", from: "2.1.0"),
 
         .package(url: "https://github.com/SyncServerII/ChangeResolvers.git", from: "0.0.2"),
@@ -49,7 +48,7 @@ let package = Package(
             name: "iOSBasics",
             dependencies: [
                 "ServerShared",
-                "iOSShared", "iOSSignIn", "Version", "FileMD5Hash", "ChangeResolvers", "Hyperconnectivity",
+                "iOSShared", "iOSSignIn", "Version", "FileMD5Hash", "ChangeResolvers",
                 .product(name: "SQLite", package: "SQLite.swift")
             ]),
         // This wasn't working with .testTarget, but changed it to .target and it works: https://stackoverflow.com/questions/63716793
