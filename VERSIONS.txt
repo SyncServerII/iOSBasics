@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.7.0 (2/21/21)
+	* Improving deletion queuing.
+	
 Version 0.6.0 (2/20/21)
 	* sync method now throws error if no network connection.
 	
