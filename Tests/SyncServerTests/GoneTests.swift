@@ -26,7 +26,6 @@ class GoneTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, SyncS
 
     override func setUpWithError() throws {
         try super.setUpWithError()
-        set(logLevel: .trace)
         handlers = DelegateHandlers()
         handlers.user = try dropboxUser()
         deviceUUID = UUID()

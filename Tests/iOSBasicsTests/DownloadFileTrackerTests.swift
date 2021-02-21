@@ -10,7 +10,6 @@ class DownloadFileTrackerTests: XCTestCase {
     var entry:DownloadFileTracker!
     
     override func setUpWithError() throws {
-        set(logLevel: .trace)
         database = try Connection(.inMemory)
         entry = try DownloadFileTracker(db: database, downloadObjectTrackerId: 0, status: .downloaded, fileUUID: fileUUID, fileVersion: 0, localURL: nil)
     }

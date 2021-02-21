@@ -24,7 +24,6 @@ class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
     
     override func setUpWithError() throws {
         try super.setUpWithError()
-        set(logLevel: .trace)
         deviceUUID = UUID()
         let database = try Connection(.inMemory)
         let config = Configuration(appGroupIdentifier: nil, serverURL: URL(string: Self.baseURL())!, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)

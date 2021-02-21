@@ -18,7 +18,6 @@ class SharingEntryTests: XCTestCase {
     var userName: String!
     
     override func setUpWithError() throws {
-        set(logLevel: .trace)
         database = try Connection(.inMemory)
         userName = "Foobly"
         let user = iOSBasics.SharingGroupUser(name: userName)

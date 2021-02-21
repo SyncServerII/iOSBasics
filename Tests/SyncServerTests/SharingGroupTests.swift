@@ -26,7 +26,6 @@ class SharingGroupTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITest
     
     override func setUpWithError() throws {
         try super.setUpWithError()
-        set(logLevel: .trace)
         handlers = DelegateHandlers()
         handlers.user = try dropboxUser()
         deviceUUID = UUID()

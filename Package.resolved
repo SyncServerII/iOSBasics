@@ -78,8 +78,8 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSDropbox.git",
         "state": {
           "branch": null,
-          "revision": "250cfdf83d477094333cce2dc0e713a34cc176b0",
-          "version": "0.0.3"
+          "revision": "f78664365026108c0ed4a1d89c7b12a336502923",
+          "version": "0.1.0"
         }
       },
       {
@@ -87,8 +87,8 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSShared.git",
         "state": {
           "branch": null,
-          "revision": "d610a64a56dad57bfa8fa9c21daa19f135e4f2fd",
-          "version": "0.0.2"
+          "revision": "39ced317d617ce2795a143d490ad02d6c7fd886c",
+          "version": "0.3.0"
         }
       },
       {
@@ -96,8 +96,8 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSSignIn.git",
         "state": {
           "branch": null,
-          "revision": "a7679f9aeeefba4dd3ba30e33028910f934ce429",
-          "version": "0.0.3"
+          "revision": "f986002fc948c320c259206aab8bbc7f6bb7101f",
+          "version": "0.2.0"
         }
       },
       {
@@ -218,6 +218,15 @@
         }
       },
       {
+        "package": "swift-log-file",
+        "repositoryURL": "https://github.com/crspybits/swift-log-file.git",
+        "state": {
+          "branch": null,
+          "revision": "aa94b38bf88c7d9cbc87ceafcdffadaffbc2bffa",
+          "version": "0.1.0"
+        }
+      },
+      {
         "package": "SwiftyDropbox",
         "repositoryURL": "https://github.com/dropbox/SwiftyDropbox.git",
         "state": {
@@ -251,6 +260,15 @@
           "branch": null,
           "revision": "fd4b0eb5756aa7f1c33977fb626cf37d2140a3a0",
           "version": "0.8.0"
+        }
+      },
+      {
+        "package": "XCGLogger",
+        "repositoryURL": "https://github.com/DaveWoodCom/XCGLogger.git",
+        "state": {
+          "branch": null,
+          "revision": "a9c4667b247928a29bdd41be2ec2c8d304215a54",
+          "version": "7.0.1"
         }
       }
     ]

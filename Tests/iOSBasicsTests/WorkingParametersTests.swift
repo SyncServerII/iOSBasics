@@ -10,7 +10,6 @@ class WorkingParametersTests: XCTestCase {
     var entry:WorkingParameters!
     
     override func setUpWithError() throws {
-        set(logLevel: .trace)
         database = try Connection(.inMemory)
         entry = try WorkingParameters(db: database, currentSharingGroup: UUID())
     }

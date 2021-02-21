@@ -11,7 +11,6 @@ class UploadObjectTrackerTests: XCTestCase {
     let message = "Message"
     
     override func setUpWithError() throws {
-        set(logLevel: .trace)
         database = try Connection(.inMemory)
         entry = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID, v0Upload: true, pushNotificationMessage: message)
     }

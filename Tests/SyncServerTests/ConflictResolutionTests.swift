@@ -29,7 +29,6 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
     var fakeHelper:SignInServicesHelperFake!
     
     override func setUpWithError() throws {
-        set(logLevel: .trace)
         handlers = DelegateHandlers()
         try super.setUpWithError()
         handlers.user = try dropboxUser()

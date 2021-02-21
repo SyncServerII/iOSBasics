@@ -12,7 +12,6 @@ final class DirectoryObjectEntryTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
-        set(logLevel: .trace)
         do {
             database = try Connection(.inMemory)
             entry = try DirectoryObjectEntry(db: database, objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: UUID(), cloudStorageType: .Dropbox, deletedLocally: false, deletedOnServer: false)

@@ -12,7 +12,6 @@ import iOSShared
 
 class UtilityTests: XCTestCase, TestFiles {
     override func setUpWithError() throws {
-        set(logLevel: .trace)
     }
 
     override func tearDownWithError() throws {

@@ -23,7 +23,6 @@ class SharingInvitationTests2: XCTestCase, UserSetup, ServerBasics, TestFiles, A
 
     override func setUpWithError() throws {
         try super.setUpWithError()
-        set(logLevel: .trace)
         handlers = DelegateHandlers()
         handlers.user = try dropboxUser(selectUser: .second)
         deviceUUID = UUID()

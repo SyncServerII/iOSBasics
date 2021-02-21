@@ -11,7 +11,6 @@ class UploadDeletionTrackerTests: XCTestCase {
     let message = "Message"
     
     override func setUpWithError() throws {
-        set(logLevel: .trace)
         database = try Connection(.inMemory)
         entry = try UploadDeletionTracker(db: database, uuid: fileUUID, deletionType: .fileUUID, deferredUploadId: 0, status: .waitingForDeferredDeletion, pushNotificationMessage: message)
     }

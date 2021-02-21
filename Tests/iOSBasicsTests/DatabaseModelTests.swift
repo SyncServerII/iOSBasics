@@ -10,7 +10,6 @@ class DatabaseModelTests: XCTestCase {
     var entry:UploadFileTracker!
     
     override func setUpWithError() throws {
-        set(logLevel: .trace)
         database = try Connection(.inMemory)
         try UploadFileTracker.createTable(db: database)
         entry = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: .notStarted, fileUUID: UUID(), mimeType: .text, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"),  goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: "Foo")

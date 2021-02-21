@@ -12,7 +12,6 @@ class DeclaredObjectModelTests: XCTestCase {
     let objectType = "Foo"
     
     override func setUpWithError() throws {
-        set(logLevel: .trace)
         database = try Connection(.inMemory)
         entry = try DeclaredObjectModel(db: database, objectType: objectType, files: [fileDeclaration])
     }

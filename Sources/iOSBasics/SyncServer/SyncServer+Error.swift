@@ -1,5 +1,6 @@
 
 import Foundation
+import iOSShared
 
 public enum SyncServerError: Error, Equatable {
     case declarationDifferentThanSyncedObject(String)
@@ -308,6 +309,12 @@ public enum SyncServerError: Error, Equatable {
             }
             return true
         }
+    }
+}
+
+extension SyncServerError: Errors {
+    public var networkIsNotReachable: Bool {
+        return self == .networkNotReachable
     }
 }
 

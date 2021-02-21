@@ -12,7 +12,6 @@ final class DirectoryFileEntryTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
-        set(logLevel: .trace)
         do {
             database = try Connection(.inMemory)
             entry = try DirectoryFileEntry(db: database, fileUUID: uuid, fileLabel: "One", mimeType: .text, fileGroupUUID: UUID(), fileVersion: 1, serverFileVersion: nil, deletedLocally: false, deletedOnServer: true, creationDate: Date(), updateCreationDate: true, goneReason: GoneReason.userRemoved.rawValue)
