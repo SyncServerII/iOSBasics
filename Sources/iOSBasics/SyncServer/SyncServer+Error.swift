@@ -1,7 +1,7 @@
 
 import Foundation
 
-public enum SyncServerError: Error {
+public enum SyncServerError: Error, Equatable {
     case declarationDifferentThanSyncedObject(String)
     case tooManyObjects
     case noObject
@@ -54,7 +54,7 @@ public enum SyncServerError: Error {
     
     case networkNotReachable
     
-    static func ==(lhs: Self, rhs: Self) -> Bool {
+    public static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
          case networkNotReachable:
             guard case .networkNotReachable = rhs else {
