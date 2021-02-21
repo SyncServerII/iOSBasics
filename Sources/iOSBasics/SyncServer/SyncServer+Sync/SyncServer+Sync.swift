@@ -20,6 +20,7 @@ extension SyncServer {
         
         try triggerUploads()
         try triggerDownloads()
+        try triggerDeletions()
 
         // `checkOnDeferredUploads` and `checkOnDeferredDeletions` do networking calls *synchronously*. So run them asynchronously as to not block the caller for a long period of time.
         DispatchQueue.global().async {

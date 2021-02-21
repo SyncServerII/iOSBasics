@@ -36,29 +36,12 @@ extension SyncServer {
         let tracker = try UploadDeletionTracker(db: db, uuid: objectInfo.objectEntry.fileGroupUUID, deletionType: .fileGroupUUID, status: .notStarted, pushNotificationMessage: pushNotificationMessage)
         try tracker.insert()
         
-        guard let trackerId = tracker.id else {
-            throw SyncServerError.internalError("No tracker id")
-        }
-        
-        let file = ServerAPI.DeletionFile.fileGroupUUID(
-            objectInfo.objectEntry.fileGroupUUID.uuidString)
-        
         guard api.networking.reachability.isReachable else {
             logger.warning("Could not queue deletion request: Network not reachable")
             return
         }
         
-        // Queue the deletion request.
-        if let error = api.uploadDeletion(file: file, sharingGroupUUID: objectInfo.objectEntry.sharingGroupUUID.uuidString, trackerId: trackerId) {
-            // As with uploads and downloads, don't make this a fatal error. We can restart this later.
-            delegator { [weak self] delegate in
-                guard let self = self else { return }
-                delegate.userEvent(self, event: .error(error))
-            }
-        }
-        else {
-            try tracker.update(setters: UploadDeletionTracker.statusField.description <- .deleting)
-        }
+        try startSingleDeletion(tracker: tracker)
     }
     
     func completeInitialDeletion(tracker: UploadDeletionTracker, deferredUploadId: Int64?) {

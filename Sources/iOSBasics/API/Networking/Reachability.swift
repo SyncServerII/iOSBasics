@@ -18,6 +18,14 @@ class Reachability: ObservableObject {
     private var cancellable: AnyCancellable!
     
     init() {
+        // See also https://stackoverflow.com/questions/27500940
+#if DEBUG
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            isReachable = true
+            return
+        }
+#endif
+
         cancellable = Hyperconnectivity.Publisher()
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()

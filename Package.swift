@@ -51,8 +51,10 @@ let package = Package(
                 "ServerShared",
                 "iOSShared", "iOSSignIn", "Version", "FileMD5Hash", "ChangeResolvers", "Hyperconnectivity",
                 .product(name: "SQLite", package: "SQLite.swift")
+            ],
+            swiftSettings: [
+                .define("REACHABILITY"),
             ]),
-        
         // This wasn't working with .testTarget, but changed it to .target and it works: https://stackoverflow.com/questions/63716793
         .target(
             name: "TestsCommon",
