@@ -19,7 +19,7 @@ class Reachability: ObservableObject {
     
     init() {
 #if DEBUG
-        // See also https://stackoverflow.com/questions/27500940#if DEBUG
+        // See also https://stackoverflow.com/questions/27500940
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
             isReachable = true
             return
