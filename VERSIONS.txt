@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.6.0 (2/20/21)
+	* sync method now throws error if no network connection.
+	
 Version 0.5.0 (2/20/21)
 	* Fix issue due to dependent iOSShared library, and add Errors protocol compliance.
 	

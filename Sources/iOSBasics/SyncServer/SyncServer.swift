@@ -136,6 +136,7 @@ public class SyncServer {
     5) If a nil sharingGroupUUID is given, this fetches all sharing groups for this user from the server.
     Each call to this method does make at least one request (an `index` request) to the server. Therefore, client app developers should not make a call to this method too often. For example, calling it when a client app transitions to the foreground, and/or when a user refreshes a sharing group in their UI.
     At least one call to this method should be done prior to any other call on this interface. For example, such a call is required for non-owning (e.g., Facebook users) in order for them to upload files.
+    Throws SyncServerError.networkNotReachable if there is no network connection.
     */
     public func sync(sharingGroupUUID: UUID? = nil) throws {
         try syncHelper(sharingGroupUUID: sharingGroupUUID)

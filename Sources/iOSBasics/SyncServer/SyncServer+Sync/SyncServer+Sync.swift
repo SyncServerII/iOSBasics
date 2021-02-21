@@ -13,7 +13,7 @@ extension SyncServer {
     func syncHelper(sharingGroupUUID: UUID? = nil) throws {
         guard api.networking.reachability.isReachable else {
             logger.info("Could not sync: Network not reachable")
-            return
+            throw SyncServerError.networkNotReachable
         }
         
         getIndex(sharingGroupUUID: sharingGroupUUID)
