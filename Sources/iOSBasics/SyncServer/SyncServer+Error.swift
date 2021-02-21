@@ -1,7 +1,7 @@
 
 import Foundation
 
-enum SyncServerError: Error {
+public enum SyncServerError: Error {
     case declarationDifferentThanSyncedObject(String)
     case tooManyObjects
     case noObject
@@ -52,8 +52,16 @@ enum SyncServerError: Error {
     case attemptToUploadWithDifferentMimeType
     case mimeTypeNotInDeclaration
     
+    case networkNotReachable
+    
     static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
+         case networkNotReachable:
+            guard case .networkNotReachable = rhs else {
+                return false
+            }
+            return true
+            
          case mimeTypeNotInDeclaration:
             guard case .mimeTypeNotInDeclaration = rhs else {
                 return false

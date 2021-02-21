@@ -186,7 +186,8 @@ extension SyncServer {
         // This is an upload for existing file instances.
         try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- false)
         
-        if activeUploadsForThisFileGroup {
+        
+        if activeUploadsForThisFileGroup || !api.networking.reachability.isReachable {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
                 delegate.uploadQueue(self, event: .queued(fileGroupUUID: upload.fileGroupUUID))
@@ -216,7 +217,7 @@ extension SyncServer {
         // Since this is the first upload for a new object instance or at least for the specific files of the object, all uploads are v0.
         try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- true)
 
-        if activeUploadsForThisFileGroup {
+        if activeUploadsForThisFileGroup || !api.networking.reachability.isReachable {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
                 delegate.uploadQueue(self, event: .queued(fileGroupUUID: upload.fileGroupUUID))

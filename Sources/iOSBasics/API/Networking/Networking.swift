@@ -47,6 +47,7 @@ class Networking: NSObject {
     var backgroundSession: URLSession!
     let backgroundCache: BackgroundCache
     var handleEventsForBackgroundURLSessionCompletionHandler: (() -> Void)?
+    let reachability = Reachability()
     
     init?(database:Connection, delegate: NetworkingDelegate, transferDelegate:FileTransferDelegate? = nil, config: Configuration) {
         self.delegate = delegate

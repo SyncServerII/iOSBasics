@@ -19,6 +19,7 @@ let package = Package(
             targets: ["iOSBasics"]),
     ],
     dependencies: [
+        .package(url: "https://github.com/rwbutler/Hyperconnectivity.git", from: "1.1.0"),
         .package(url: "https://github.com/crspybits/FileMD5Hash.git", from: "2.1.0"),
 
         .package(url: "https://github.com/SyncServerII/ChangeResolvers.git", from: "0.0.2"),
@@ -48,7 +49,7 @@ let package = Package(
             name: "iOSBasics",
             dependencies: [
                 "ServerShared",
-                "iOSShared", "iOSSignIn", "Version", "FileMD5Hash", "ChangeResolvers",
+                "iOSShared", "iOSSignIn", "Version", "FileMD5Hash", "ChangeResolvers", "Hyperconnectivity",
                 .product(name: "SQLite", package: "SQLite.swift")
             ]),
         

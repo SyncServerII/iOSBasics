@@ -43,6 +43,11 @@ extension SyncServer {
         let file = ServerAPI.DeletionFile.fileGroupUUID(
             objectInfo.objectEntry.fileGroupUUID.uuidString)
         
+        guard api.networking.reachability.isReachable else {
+            logger.warning("Could not queue deletion request: Network not reachable")
+            return
+        }
+        
         // Queue the deletion request.
         if let error = api.uploadDeletion(file: file, sharingGroupUUID: objectInfo.objectEntry.sharingGroupUUID.uuidString, trackerId: trackerId) {
             // As with uploads and downloads, don't make this a fatal error. We can restart this later.

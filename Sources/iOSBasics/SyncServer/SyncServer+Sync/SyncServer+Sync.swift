@@ -7,9 +7,15 @@
 
 import Foundation
 import SQLite
+import iOSShared
 
 extension SyncServer {
     func syncHelper(sharingGroupUUID: UUID? = nil) throws {
+        guard api.networking.reachability.isReachable else {
+            logger.info("Could not sync: Network not reachable")
+            return
+        }
+        
         getIndex(sharingGroupUUID: sharingGroupUUID)
         
         try triggerUploads()

@@ -3,9 +3,16 @@ import Foundation
 import SQLite
 import ServerShared
 import iOSSignIn
+import iOSShared
 
 extension SyncServer {
-    func createSharingGroupHelper(sharingGroupUUID: UUID, sharingGroupName: String? = nil, completion: @escaping (Error?)->()) {        
+    func createSharingGroupHelper(sharingGroupUUID: UUID, sharingGroupName: String? = nil, completion: @escaping (Error?)->()) {
+        guard api.networking.reachability.isReachable else {
+            logger.info("Could not sync: Network not reachable")
+            completion(SyncServerError.networkNotReachable)
+            return
+        }
+        
         do {
             let entry = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID)
             guard entry == nil else {
@@ -30,6 +37,11 @@ extension SyncServer {
     }
     
     func updateSharingGroupHelper(sharingGroupUUID: UUID, newSharingGroupName: String?, completion:@escaping (Error?)->()) {
+        guard api.networking.reachability.isReachable else {
+            logger.info("Could not sync: Network not reachable")
+            completion(SyncServerError.networkNotReachable)
+            return
+        }
         
         do {
             guard let _ = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID) else {
@@ -53,7 +65,12 @@ extension SyncServer {
     }
     
     func removeFromSharingGroupHelper(sharingGroupUUID: UUID, completion:@escaping (Error?)->()) {
-    
+        guard api.networking.reachability.isReachable else {
+            logger.info("Could not sync: Network not reachable")
+            completion(SyncServerError.networkNotReachable)
+            return
+        }
+        
         do {
             guard let _ = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID) else {
                 completion(SyncServerError.sharingGroupNotFound)

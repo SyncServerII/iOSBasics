@@ -210,7 +210,7 @@ public class SyncServer {
 
     // MARK: Sharing groups
 
-    // Also does a `sync` after successful creation.
+    // Also does a `sync` after successful creation. `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func createSharingGroup(sharingGroupUUID: UUID, sharingGroupName: String? = nil, completion:@escaping (Error?)->()) {
         createSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, sharingGroupName: sharingGroupName) { [weak self] error in
             self?.dispatchQueue.async {
@@ -219,7 +219,7 @@ public class SyncServer {
         }
     }
     
-    // Also does a `sync` after successful update.
+    // Also does a `sync` after successful update. `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func updateSharingGroup(sharingGroupUUID: UUID, newSharingGroupName: String?, completion:@escaping (Error?)->()) {
         updateSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, newSharingGroupName: newSharingGroupName) { [weak self] error in
             self?.dispatchQueue.async {
@@ -228,7 +228,7 @@ public class SyncServer {
         }
     }
 
-    // Remove the current user from the sharing group. Also does a `sync` after successful update.
+    // Remove the current user from the sharing group. Also does a `sync` after successful update. `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func removeFromSharingGroup(sharingGroupUUID: UUID, completion:@escaping (Error?)->()) {
         removeFromSharingGroupHelper(sharingGroupUUID: sharingGroupUUID) { [weak self] error in
             self?.dispatchQueue.async {
@@ -239,8 +239,15 @@ public class SyncServer {
     
     // MARK: Sharing invitations
 
-    // The non-error result is the code for the sharing invitation, a UUID.
+    // The non-error result is the code for the sharing invitation, a UUID.  `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func createSharingInvitation(withPermission permission:Permission, sharingGroupUUID: UUID, numberAcceptors: UInt, allowSocialAcceptance: Bool, expiryDuration:TimeInterval = ServerConstants.sharingInvitationExpiryDuration, completion: @escaping (Swift.Result<UUID, Error>)->()) {
+    
+        guard api.networking.reachability.isReachable else {
+            logger.info("Could not sync: Network not reachable")
+            completion(.failure(SyncServerError.networkNotReachable))
+            return
+        }
+        
         api.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: numberAcceptors, allowSocialAcceptance: allowSocialAcceptance, expiryDuration: expiryDuration) { [weak self] result in
             guard let self = self else { return }
             self.dispatchQueue.async {
@@ -249,9 +256,15 @@ public class SyncServer {
         }
     }
     
-    // On success, automatically syncs index before returning.
+    /// On success, automatically syncs index before returning. `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func redeemSharingInvitation(sharingInvitationUUID:UUID, completion: @escaping (Swift.Result<RedeemResult, Error>)->()) {
 
+        guard api.networking.reachability.isReachable else {
+            logger.info("Could not sync: Network not reachable")
+            completion(.failure(SyncServerError.networkNotReachable))
+            return
+        }
+        
         api.redeemSharingInvitation(sharingInvitationUUID: sharingInvitationUUID, cloudFolderName: configuration.cloudFolderName) { [weak self] result in
             guard let self = self else { return }
 
@@ -268,7 +281,14 @@ public class SyncServer {
         }
     }
     
+    /// `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func getSharingInvitationInfo(sharingInvitationUUID: UUID, completion: @escaping (Swift.Result<SharingInvitationInfo, Error>)->()) {
+        guard api.networking.reachability.isReachable else {
+            logger.info("Could not sync: Network not reachable")
+            completion(.failure(SyncServerError.networkNotReachable))
+            return
+        }
+        
         api.getSharingInvitationInfo(sharingInvitationUUID: sharingInvitationUUID) { [weak self] result in
             self?.dispatchQueue.async {
                 completion(result)
@@ -278,7 +298,14 @@ public class SyncServer {
     
     // MARK: Push Notifications
     
+    /// `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func registerPushNotificationToken(_ token: String, completion: @escaping (Error?)->()) {
+        guard api.networking.reachability.isReachable else {
+            logger.info("Could not sync: Network not reachable")
+            completion(SyncServerError.networkNotReachable)
+            return
+        }
+        
         api.registerPushNotificationToken(token) { [weak self] error in
             self?.dispatchQueue.async {
                 completion(error)
