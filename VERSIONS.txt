@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.4.0 (2/20/21)
+	* Added checks for networking connectivity.
+	
 Version 0.3.1 (2/18/21)
 	* Added logging.
 	
