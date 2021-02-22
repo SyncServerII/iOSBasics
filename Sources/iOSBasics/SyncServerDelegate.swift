@@ -37,7 +37,19 @@ extension SyncServerHelpers {
 }
 
 public enum SyncResult {
-    case noIndex
+    public struct SharingGroup {
+        public struct FileGroupSummary {
+            public let fileGroupUUID: UUID
+            public let mostRecentDate: Date
+            public let deleted: Bool
+        }
+        
+        public let sharingGroupUUID: UUID
+        public let deleted: Bool
+        public let contentsSummary:[FileGroupSummary]
+    }
+    
+    case noIndex([SyncResult.SharingGroup])
     case index(sharingGroupUUID: UUID, index: [IndexObject])
 }
 
@@ -122,7 +134,7 @@ public protocol SyncServerDelegate: AnyObject {
     // These probably need to be shown to the user.
     func userEvent(_ syncServer: SyncServer, event: UserEvent)
     
-    // Called after the `sync` method is successful. If nil sharing group was given, the result is .noResult. If non-nil sharing group, the index is given.
+    // Called after the `sync` method is successful. If nil sharing group was given, the result is .noIndex. If non-nil sharing group, the .index is given.
     func syncCompleted(_ syncServer: SyncServer, result: SyncResult)
     
     // A uuid that was initially generated on the client 

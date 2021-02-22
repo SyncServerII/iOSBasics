@@ -23,9 +23,17 @@ extension SyncServer {
                 }
                 
                 guard let sharingGroupUUID = sharingGroupUUID else {
-                    self.delegator { [weak self] delegate in
-                        guard let self = self else { return }
-                        delegate.syncCompleted(self, result: .noIndex)
+                    do {
+                        let noIndexResult = try self.getNoIndexResult(indexResult: indexResult)
+                        self.delegator { [weak self] delegate in
+                            guard let self = self else { return }
+                            delegate.syncCompleted(self, result: .noIndex(noIndexResult))
+                        }
+                    } catch let error {
+                        self.delegator { [weak self] delegate in
+                            guard let self = self else { return }
+                            delegate.userEvent(self, event: .error(error))
+                        }
                     }
                     return
                 }

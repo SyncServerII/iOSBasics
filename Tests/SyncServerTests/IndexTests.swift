@@ -592,4 +592,133 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
             return
         }
     }
+    
+    // MARK: Get content summary with index
+    
+    func testGetEmptyContentSummary() throws {
+        let exp = expectation(description: "exp")
+        
+        handlers.syncCompleted = { _, result in
+            guard case .noIndex(let sharingGroups) = result else {
+                XCTFail()
+                exp.fulfill()
+                return
+            }
+            
+            guard sharingGroups.count == 1 else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssert(sharingGroups[0].contentsSummary.count == 0)
+            
+            exp.fulfill()
+        }
+        
+        handlers.userEvent = { _, error in
+            XCTFail()
+            exp.fulfill()
+        }
+        
+        try syncServer.sync(sharingGroupUUID: nil)
+
+        waitForExpectations(timeout: 10, handler: nil)
+    }
+        
+    func testGetContentSummaryWithOneFileGroup() throws {
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+        let fileGroupUUID1 = UUID()
+
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        let objectType1 = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: CommentFile.changeResolverName)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeTypes: [.text], changeResolverName: CommentFile.changeResolverName)
+        let example1 = ExampleDeclaration(objectType: objectType1, declaredFiles: [fileDeclaration1, fileDeclaration2])
+        try syncServer.register(object: example1)
+
+        let commentFile = CommentFile()
+        let commentFileData = try commentFile.getData()
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID1)
+        let file2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID2)
+        let upload1 = ObjectUpload(objectType: objectType1, fileGroupUUID: fileGroupUUID1, sharingGroupUUID: sharingGroupUUID, uploads: [file1, file2])
+        try syncServer.queue(upload: upload1)
+
+        waitForUploadsToComplete(numberUploads: 2)
+        
+        let exp = expectation(description: "exp")
+        
+        handlers.syncCompleted = { _, result in
+            guard case .noIndex(let sharingGroups) = result else {
+                XCTFail()
+                exp.fulfill()
+                return
+            }
+            
+            guard sharingGroups.count == 1 else {
+                XCTFail()
+                return
+            }
+            
+            guard sharingGroups[0].contentsSummary.count == 1 else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssert(!sharingGroups[0].contentsSummary[0].deleted)
+            XCTAssert(sharingGroups[0].contentsSummary[0].fileGroupUUID == fileGroupUUID1)
+
+            exp.fulfill()
+        }
+        
+        handlers.userEvent = { _, error in
+            XCTFail()
+            exp.fulfill()
+        }
+        
+        try syncServer.sync(sharingGroupUUID: nil)
+
+        waitForExpectations(timeout: 10, handler: nil)
+    }
+    
+    func testGetContentSummaryWithTwoFileGroups() throws {
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        let _ = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
+        let _ = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID)
+        
+        let exp = expectation(description: "exp")
+        
+        handlers.syncCompleted = { _, result in
+            guard case .noIndex(let sharingGroups) = result else {
+                XCTFail()
+                exp.fulfill()
+                return
+            }
+            
+            guard sharingGroups.count == 1 else {
+                XCTFail()
+                return
+            }
+            
+            guard sharingGroups[0].contentsSummary.count == 2 else {
+                XCTFail()
+                return
+            }
+
+            exp.fulfill()
+        }
+        
+        handlers.userEvent = { _, error in
+            XCTFail()
+            exp.fulfill()
+        }
+        
+        try syncServer.sync(sharingGroupUUID: nil)
+
+        waitForExpectations(timeout: 10, handler: nil)
+    }
 }
