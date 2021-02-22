@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.9.0 (2/21/21)
+	* Index now returning summary of file groups, when given with now sharing group parameter.
+
 Version 0.8.0 (2/21/21)
 	* Using NetworkReachability protocol and fake reachability for testing.
 	
