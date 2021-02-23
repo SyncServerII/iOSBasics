@@ -101,12 +101,16 @@ public struct IndexObject: IndexableObject {
     public let fileGroupUUID: UUID
     public let creationDate: Date
     
+    // This is the most recent update date of any file in the object.
+    public let updateDate: Date?
+    
     public let downloads: [DownloadFile]
     
-    public init(sharingGroupUUID: UUID, fileGroupUUID: UUID, objectType: String, creationDate: Date, deleted: Bool, downloads: [DownloadFile]) {
+    public init(sharingGroupUUID: UUID, fileGroupUUID: UUID, objectType: String, creationDate: Date, updateDate: Date?, deleted: Bool, downloads: [DownloadFile]) {
         self.sharingGroupUUID = sharingGroupUUID
         self.fileGroupUUID = fileGroupUUID
         self.creationDate = creationDate
+        self.updateDate = updateDate
         self.downloads = downloads
         self.deleted = deleted
         self.objectType = objectType

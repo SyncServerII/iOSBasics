@@ -1,7 +1,10 @@
 iOSBasics
 
+Version 0.9.1 (2/22/21)
+	* Refactoring related to Index returning summary of file groups.
+	
 Version 0.9.0 (2/21/21)
-	* Index now returning summary of file groups, when given with now sharing group parameter.
+	* Index now returning summary of file groups, when given with no sharing group parameter.
 
 Version 0.8.0 (2/21/21)
 	* Using NetworkReachability protocol and fake reachability for testing.

@@ -162,7 +162,7 @@ extension SharingEntry {
         let entries = try SharingEntry.fetch(db: db)
 
         return try entries.map { entry -> iOSBasics.SharingGroup in
-            let sharingGroup = iOSBasics.SharingGroup(sharingGroupUUID: entry.sharingGroupUUID, sharingGroupName: entry.sharingGroupName, deleted: entry.deleted, permission: entry.permission, sharingGroupUsers: try entry.sharingGroupUsers(), cloudStorageType: entry.cloudStorageType)
+            let sharingGroup = iOSBasics.SharingGroup(sharingGroupUUID: entry.sharingGroupUUID, sharingGroupName: entry.sharingGroupName, deleted: entry.deleted, permission: entry.permission, sharingGroupUsers: try entry.sharingGroupUsers(), cloudStorageType: entry.cloudStorageType, contentsSummary: nil)
              return sharingGroup
         }
     }

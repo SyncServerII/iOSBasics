@@ -266,6 +266,7 @@ extension Array where Element == FileInfo {
             var downloadFiles = [DownloadFile]()
 
             var creationDate: Date!
+            var mostRecentUpdateDate: Date?
             
             for file in fileGroup {
                 guard let fileCreationDate = file.creationDate else {
@@ -277,6 +278,15 @@ extension Array where Element == FileInfo {
                 }
                 else {
                     creationDate = Swift.min(creationDate, fileCreationDate)
+                }
+                
+                if let updateDate = file.updateDate {
+                    if let mrud = mostRecentUpdateDate {
+                        mostRecentUpdateDate = Swift.max(mrud, updateDate)
+                    }
+                    else {
+                        mostRecentUpdateDate = updateDate
+                    }
                 }
                 
                 guard let fileUUID = try UUID.from(file.fileUUID) else {
@@ -313,7 +323,7 @@ extension Array where Element == FileInfo {
             let anyDeleted = fileGroup.filter {$0.deleted == true}
             let objectDeleted = anyDeleted.count > 0
             
-            indexObjects += [IndexObject(sharingGroupUUID: sharingGroupUUID, fileGroupUUID: fileGroupUUID, objectType: objectType, creationDate: objectCreationDate, deleted: objectDeleted, downloads: downloadFiles)]
+            indexObjects += [IndexObject(sharingGroupUUID: sharingGroupUUID, fileGroupUUID: fileGroupUUID, objectType: objectType, creationDate: objectCreationDate, updateDate: mostRecentUpdateDate, deleted: objectDeleted, downloads: downloadFiles)]
         }
 
         return indexObjects

@@ -6,16 +6,17 @@
 //
 
 import Foundation
+import ServerShared
 
 extension SyncServer {
     // When no sharing group was passed to the server.
-    func getNoIndexResult(indexResult: ServerAPI.IndexResult) throws -> [SyncResult.SharingGroup] {
-        return try indexResult.sharingGroups.map { sharingGroup -> SyncResult.SharingGroup in
+    func getNoIndexResult(indexResult: ServerAPI.IndexResult) throws -> [iOSBasics.SharingGroup] {
+        return try indexResult.sharingGroups.map { sharingGroup -> iOSBasics.SharingGroup in
             let deleted = sharingGroup.deleted ?? false
-            var summaries = [SyncResult.SharingGroup.FileGroupSummary]()
+            var summaries = [iOSBasics.SharingGroup.FileGroupSummary]()
         
             if let fileGroupSummary = sharingGroup.contentsSummary {
-                let contentsSummary = try fileGroupSummary.map { summary -> SyncResult.SharingGroup.FileGroupSummary in
+                let contentsSummary = try fileGroupSummary.map { summary -> iOSBasics.SharingGroup.FileGroupSummary in
                     guard let fileGroupUUID = try UUID.from(summary.fileGroupUUID) else {
                         throw SyncServerError.internalError("Could not get fileGroupUUID")
                     }
@@ -24,7 +25,7 @@ extension SyncServer {
                         throw SyncServerError.internalError("Could not get mostRecentDate")
                     }
             
-                    return SyncResult.SharingGroup.FileGroupSummary(fileGroupUUID: fileGroupUUID, mostRecentDate: mostRecentDate, deleted: summary.deleted ?? false)
+                    return iOSBasics.SharingGroup.FileGroupSummary(fileGroupUUID: fileGroupUUID, mostRecentDate: mostRecentDate, deleted: summary.deleted ?? false)
                 }
                 
                 summaries = contentsSummary
@@ -33,8 +34,24 @@ extension SyncServer {
             guard let sharingGroupUUID = try UUID.from(sharingGroup.sharingGroupUUID) else {
                 throw SyncServerError.internalError("Could not get sharingGroupUUID")
             }
-                    
-            return SyncResult.SharingGroup(sharingGroupUUID: sharingGroupUUID, deleted: deleted, contentsSummary: summaries)
+            
+            guard let permission = sharingGroup.permission else {
+                throw SyncServerError.internalError("Could not get Permission")
+            }
+            
+            let sharingGroupUsers = try (sharingGroup.sharingGroupUsers ?? []).map { user -> iOSBasics.SharingGroupUser in
+                guard let userName = user.name else {
+                    throw SyncServerError.internalError("Could not get sharingGroupUUID")
+                }
+                return iOSBasics.SharingGroupUser(name: userName)
+            }
+            
+            var cloudStorageType: CloudStorageType?
+            if let type = sharingGroup.cloudStorageType {
+                cloudStorageType = CloudStorageType(rawValue: type)
+            }
+            
+            return iOSBasics.SharingGroup(sharingGroupUUID: sharingGroupUUID, sharingGroupName: sharingGroup.sharingGroupName, deleted: deleted, permission: permission, sharingGroupUsers: sharingGroupUsers, cloudStorageType: cloudStorageType, contentsSummary: summaries)
         }
     }
 }

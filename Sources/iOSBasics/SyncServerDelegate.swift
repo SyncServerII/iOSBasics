@@ -36,20 +36,8 @@ extension SyncServerHelpers {
     }
 }
 
-public enum SyncResult {
-    public struct SharingGroup {
-        public struct FileGroupSummary {
-            public let fileGroupUUID: UUID
-            public let mostRecentDate: Date
-            public let deleted: Bool
-        }
-        
-        public let sharingGroupUUID: UUID
-        public let deleted: Bool
-        public let contentsSummary:[FileGroupSummary]
-    }
-    
-    case noIndex([SyncResult.SharingGroup])
+public enum SyncResult {    
+    case noIndex([iOSBasics.SharingGroup])
     case index(sharingGroupUUID: UUID, index: [IndexObject])
 }
 
