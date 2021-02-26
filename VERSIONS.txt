@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.10.0 (2/25/21)
+	* Changed delegate method: Now explicitly reporting file group UUIDs upon completion of deferred operations.
+	
 Version 0.9.1 (2/22/21)
 	* Refactoring related to Index returning summary of file groups.
 	
