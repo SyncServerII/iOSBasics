@@ -138,8 +138,8 @@ public protocol SyncServerDelegate: AnyObject {
     // Request to server for upload deletion completed successfully.
     func deletionCompleted(_ syncServer: SyncServer, forObjectWith fileGroupUUID: UUID)
 
-    // Called when vN deferred upload(s), or deferred deletions, successfully completed, is/are detected.
-    func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, numberCompleted: Int)
+    // Called when vN deferred upload(s), or deferred deletions, successfully completed, is/are detected. `fileGroupUUIDs` has the file group UUID's of the uploads or deletions completed.
+    func deferredCompleted(_ syncServer: SyncServer, operation: DeferredOperation, fileGroupUUIDs: [UUID])
     
     // Another client deleted a file/file group.
     func downloadDeletion(_ syncServer: SyncServer, details: DownloadDeletion)

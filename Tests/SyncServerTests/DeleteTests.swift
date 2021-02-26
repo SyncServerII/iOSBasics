@@ -131,9 +131,9 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         try syncServer.sync()
         
         let exp2 = expectation(description: "exp2")
-        handlers.deferredCompleted = { _, operation, count in
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
             XCTAssert(operation == .deletion)
-            XCTAssert(count == 1)
+            XCTAssert(fileGroupUUIDs.count == 1)
             exp2.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -189,9 +189,9 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         try syncServer.sync()
 
         let exp2 = expectation(description: "exp2")
-        handlers.deferredCompleted = { _, operation, count in
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
             XCTAssert(operation == .deletion)
-            XCTAssert(count == 1)
+            XCTAssert(fileGroupUUIDs.count == 1)
             exp2.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -264,9 +264,9 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         try syncServer.sync()
 
         let exp2 = expectation(description: "exp2")
-        handlers.deferredCompleted = { _, operation, count in
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
             XCTAssert(operation == .deletion)
-            XCTAssert(count == 1)
+            XCTAssert(fileGroupUUIDs.count == 1)
             exp2.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -315,9 +315,9 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         try syncServer.sync()
         
         let exp2 = expectation(description: "exp2")
-        handlers.deferredCompleted = { _, operation, count in
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
             XCTAssert(operation == .deletion)
-            XCTAssert(count == 1)
+            XCTAssert(fileGroupUUIDs.count == 1)
             exp2.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -409,9 +409,9 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         try syncServer.sync()
         
         let exp3 = expectation(description: "exp2")
-        handlers.deferredCompleted = { _, operation, count in
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
             XCTAssert(operation == .deletion)
-            XCTAssert(count == 1)
+            XCTAssert(fileGroupUUIDs.count == 1)
             exp3.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)

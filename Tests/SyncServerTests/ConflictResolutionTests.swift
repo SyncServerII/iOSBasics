@@ -104,9 +104,9 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         try syncServer.sync()
 
         let exp2 = expectation(description: "exp2")
-        handlers.deferredCompleted = { _, operation, count in
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
             XCTAssert(operation == .deletion)
-            XCTAssert(count == 1)
+            XCTAssert(fileGroupUUIDs.count == 1)
             exp2.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -195,9 +195,9 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         try syncServer.sync()
 
         let exp2 = expectation(description: "exp2")
-        handlers.deferredCompleted = { _, operation, count in
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
             XCTAssert(operation == .deletion)
-            XCTAssert(count == 1)
+            XCTAssert(fileGroupUUIDs.count == 1)
             exp2.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)

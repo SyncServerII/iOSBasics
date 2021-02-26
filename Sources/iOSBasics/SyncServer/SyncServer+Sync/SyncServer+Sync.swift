@@ -25,19 +25,19 @@ extension SyncServer {
         // `checkOnDeferredUploads` and `checkOnDeferredDeletions` do networking calls *synchronously*. So run them asynchronously as to not block the caller for a long period of time.
         DispatchQueue.global().async {
             do {
-                let count1 = try self.checkOnDeferredUploads()
-                if count1 > 0 {
+                let fileGroupUUIDs1 = try self.checkOnDeferredUploads()
+                if fileGroupUUIDs1.count > 0 {
                     self.delegator { [weak self] delegate in
                         guard let self = self else { return }
-                        delegate.deferredCompleted(self, operation: .upload, numberCompleted: count1)
+                        delegate.deferredCompleted(self, operation: .upload, fileGroupUUIDs: fileGroupUUIDs1)
                     }
                 }
                 
-                let count2 = try self.checkOnDeferredDeletions()
-                if count2 > 0 {
+                let fileGroupUUIDs2 = try self.checkOnDeferredDeletions()
+                if fileGroupUUIDs2.count > 0 {
                     self.delegator { [weak self] delegate in
                         guard let self = self else { return }
-                        delegate.deferredCompleted(self, operation: .deletion, numberCompleted: count2)
+                        delegate.deferredCompleted(self, operation: .deletion, fileGroupUUIDs: fileGroupUUIDs2)
                     }
                 }
             } catch let error {
@@ -51,8 +51,8 @@ extension SyncServer {
 
     // This can take appreciable time to complete-- it *synchronously* makes requests to server endpoint(s). You probably want to use DispatchQueue to asynchronously let this do it's work.
     // This does *not* call SyncServer delegate methods. You may want to report errors thrown using SyncServer delegate methods if needed after calling this.
-    // On success, returns the number of deferred uploads detected as successfully completed.
-    func checkOnDeferredUploads() throws -> Int {
+    // On success, returns the UUID's of the file groups of deferred uploads detected as successfully completed.
+    func checkOnDeferredUploads() throws -> [UUID] {
         // We consider all of these to be vN: Because, once a v0 upload completes for an object, the trackers are immediately removed (see cleanupAfterUploadCompleted).
         let vNCompletedUploads = try UploadObjectTracker.allUploadsWith(status: .uploaded, db: db)
         
@@ -68,12 +68,11 @@ extension SyncServer {
         
         guard vNCompletedUploads.count > 0 else {
             // This just means that there are no vN uploads we are waiting for to have their final deferred upload completed. It's the typical expected case when calling the current method.
-            return 0
+            return []
         }
-        
-        var numberSuccessfullyCompleted = 0
-        
-        func apply(upload: UploadObjectTracker.UploadWithStatus, completion: @escaping (Swift.Result<Void, Error>) -> ()) {
+                
+        // The non-error completion result is the UUID of the file group that was uploaded if it's deferral is completed.
+        func apply(upload: UploadObjectTracker.UploadWithStatus, completion: @escaping (Swift.Result<UUID?, Error>) -> ()) {
 
             guard let deferredUploadId = upload.object.deferredUploadId else {
                 completion(.failure(SyncServerError.internalError("checkOnDeferredUploads: Did not have deferredUploadId.")))
@@ -98,12 +97,11 @@ extension SyncServer {
                             SyncServerError.internalError("Error reported within the `success` from getUploadsResults.")))
                     case .pendingChange, .pendingDeletion:
                         // A "success" only in the sense of non-failure. The deferred upload is not completed, so not doing a cleanup yet.
-                        completion(.success(()))
+                        completion(.success(nil))
                     case .completed:
                         do {
                             try self.cleanupAfterVNUploadCompleted(uploadObjectTrackerId: uploadObjectTrackerId)
-                            numberSuccessfullyCompleted += 1
-                            completion(.success(()))
+                            completion(.success(upload.object.fileGroupUUID))
                         } catch let error {
                             completion(.failure(error))
                         }
@@ -116,11 +114,11 @@ extension SyncServer {
             }
         }
         
-        let (_, errors) = vNCompletedUploads.synchronouslyRun(apply: apply)
+        let (fileGroupUUIDs, errors) = vNCompletedUploads.synchronouslyRun(apply: apply)
         guard errors.count == 0 else {
             throw SyncServerError.internalError("synchronouslyRun: \(errors)")
         }
-        
-        return numberSuccessfullyCompleted
+                
+        return fileGroupUUIDs.compactMap {$0}
     }
 }

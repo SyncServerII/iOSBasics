@@ -193,9 +193,9 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
         try syncServer.sync()
 
         let exp = expectation(description: "exp")
-        handlers.deferredCompleted = { _, operation, numberCompleted in
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
             XCTAssert(operation == .upload)
-            XCTAssert(numberCompleted == 2)
+            XCTAssert(fileGroupUUIDs.count == 2)
             exp.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
@@ -307,9 +307,9 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
         try syncServer.sync()
 
         let exp = expectation(description: "exp")
-        handlers.deferredCompleted = { _, operation, numberCompleted in
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
             XCTAssert(operation == .upload)
-            XCTAssert(numberCompleted == 1)
+            XCTAssert(fileGroupUUIDs.count == 1)
             exp.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)

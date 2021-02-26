@@ -76,23 +76,26 @@ extension SyncServer {
     
     // This can take appreciable time to complete-- it *synchronously* makes requests to server endpoint(s). You probably want to use DispatchQueue to asynchronously let this do it's work.
     // This does *not* call SyncServer delegate methods. You may want to report errors thrown using SyncServer delegate methods if needed after calling this.
-    // On success, returns the number of deferred deletions detected as successfully completed.
-    func checkOnDeferredDeletions() throws -> Int {
+    // On success, returns the file group UUID's of deferred deletions detected as successfully completed.
+    func checkOnDeferredDeletions() throws -> [UUID] {
         let deletions = try UploadDeletionTracker.fetch(db: db, where: UploadDeletionTracker.statusField.description == .waitingForDeferredDeletion)
         
         guard deletions.count > 0 else {
-            return 0
+            return []
         }
-        
-        var numberSuccessfullyCompleted = 0
-        
-        func apply(tracker: UploadDeletionTracker, completion: @escaping (Swift.Result<Void, Error>) -> ()) {
+                
+        func apply(tracker: UploadDeletionTracker, completion: @escaping (Swift.Result<UUID?, Error>) -> ()) {
 
             guard let deferredUploadId = tracker.deferredUploadId else {
                 completion(.failure(SyncServerError.internalError("checkOnDeferredDeletions: Did not have deferredUploadId.")))
                 return
             }
-                        
+            
+            guard tracker.deletionType == .fileGroupUUID else {
+                completion(.failure(SyncServerError.internalError("checkOnDeferredDeletions: Did not have deletionType == .fileGroupUUID.")))
+                return
+            }
+            
             api.getUploadsResults(deferredUploadId: deferredUploadId) { [weak self] result in
                 guard let self = self else { return }
                 switch result {
@@ -107,13 +110,12 @@ extension SyncServer {
                             
                     case .pendingChange, .pendingDeletion:
                         // A "success" only in the sense of non-failure. The deferred upload is not completed, so not doing a cleanup yet.
-                        completion(.success(()))
+                        completion(.success(nil))
                         
                     case .completed:
                         do {
                             try self.finishAfterDeletion(tracker: tracker)
-                            numberSuccessfullyCompleted += 1
-                            completion(.success(()))
+                            completion(.success(tracker.uuid))
                         } catch let error {
                             completion(.failure(error))
                         }
@@ -127,12 +129,12 @@ extension SyncServer {
             }
         }
         
-        let (_, errors) = deletions.synchronouslyRun(apply: apply)
+        let (fileGroupUUIDs, errors) = deletions.synchronouslyRun(apply: apply)
         guard errors.count == 0 else {
             throw SyncServerError.internalError("synchronouslyRun: \(errors)")
         }
         
-        return numberSuccessfullyCompleted
+        return fileGroupUUIDs.compactMap {$0}
     }
     
     private func finishAfterDeletion(tracker: UploadDeletionTracker) throws {

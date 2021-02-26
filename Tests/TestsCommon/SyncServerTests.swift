@@ -126,10 +126,10 @@ extension SyncServerTests where Self: XCTestCase {
         logger.debug("delete: Done sync")
         
         let exp3 = expectation(description: "exp2")
-        handlers.deferredCompleted = { _, operation, count in
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
             logger.debug("delete: handlers.deferredCompleted")
             XCTAssert(operation == .deletion)
-            XCTAssert(count == 1)
+            XCTAssert(fileGroupUUIDs.count == 1)
             exp3.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
