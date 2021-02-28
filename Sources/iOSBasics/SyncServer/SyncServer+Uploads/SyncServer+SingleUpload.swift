@@ -55,6 +55,10 @@ extension SyncServer {
         else {
             try fileTracker.update(setters:
                 UploadFileTracker.statusField.description <- .uploading)
+            if !v0Upload {
+                // vNUpload, so we'll start to poll for completion of deferred uploads.
+                startTimedDeferredCheckIfNeeded()
+            }
         }
     }
 }

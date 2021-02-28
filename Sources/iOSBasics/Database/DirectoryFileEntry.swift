@@ -91,6 +91,9 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
     // See `creationDate`.
     static let updateCreationDateField = Field("updateCreationDate", \M.updateCreationDate)
     var updateCreationDate: Bool
+
+    static let updateDateField = Field("updateDate", \M.updateDate)
+    var updateDate: Date?
     
     static func == (lhs: DirectoryFileEntry, rhs: DirectoryFileEntry) -> Bool {
         return lhs.id == rhs.id &&
@@ -103,6 +106,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             lhs.goneReason == rhs.goneReason &&
             lhs.fileLabel == rhs.fileLabel &&
             lhs.creationDate == rhs.creationDate &&
+            lhs.updateDate == rhs.updateDate &&
             lhs.mimeType == rhs.mimeType
     }
     
@@ -157,6 +161,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
         deletedOnServer: Bool,
         creationDate: Date,
         updateCreationDate: Bool,
+        updateDate: Date? = nil,
         goneReason: String? = nil) throws {
         
         if let goneReason = goneReason {
@@ -178,6 +183,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
         self.goneReason = goneReason
         self.creationDate = creationDate
         self.updateCreationDate = updateCreationDate
+        self.updateDate = updateDate
     }
     
     // MARK: DatabaseModel
@@ -195,6 +201,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             t.column(goneReasonField.description)
             t.column(creationDateField.description)
             t.column(updateCreationDateField.description)
+            t.column(updateDateField.description)
             t.column(mimeTypeField.description)
         }
     }
@@ -212,6 +219,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             deletedOnServer: row[Self.deletedOnServerField.description],
             creationDate: row[Self.creationDateField.description],
             updateCreationDate: row[Self.updateCreationDateField.description],
+            updateDate: row[Self.updateDateField.description],
             goneReason: row[Self.goneReasonField.description]
         )
     }
@@ -227,6 +235,7 @@ class DirectoryFileEntry: DatabaseModel, Equatable {
             Self.deletedOnServerField.description <- deletedOnServer,
             Self.creationDateField.description <- creationDate,
             Self.updateCreationDateField.description <- updateCreationDate,
+            Self.updateDateField.description <- updateDate,
             Self.goneReasonField.description <- goneReason,
             Self.mimeTypeField.description <- mimeType
         )
@@ -278,6 +287,12 @@ extension DirectoryFileEntry {
                 try entry.update(setters:
                     DirectoryFileEntry.creationDateField.description <- creationDate,
                     DirectoryFileEntry.updateCreationDateField.description <- false
+                )
+            }
+            
+            if let updateDate = fileInfo.updateDate {
+                try entry.update(setters:
+                    DirectoryFileEntry.updateDateField.description <- updateDate
                 )
             }
             

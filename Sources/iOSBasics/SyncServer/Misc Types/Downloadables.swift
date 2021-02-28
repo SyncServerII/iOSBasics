@@ -31,6 +31,9 @@ public protocol FileWasDownloaded: DownloadableFile {
     var fileVersion: FileVersionInt { get }
     var fileLabel: String { get }
     var mimeType: MimeType { get }
+    
+    // Will be nil if this is v0 of file-- only has a creation date.
+    var updateDate: Date? { get }
 }
 
 public protocol ObjectWasDownloaded {

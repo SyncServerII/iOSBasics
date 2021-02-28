@@ -34,6 +34,7 @@ public struct Configuration {
     
     // See https://developer.apple.com/documentation/foundation/nsurlsessionconfiguration/1408153-timeoutintervalforresource
     public static let defaultTimeoutIntervalForResource:TimeInterval = 60 * 30 // 1/2 hour
+    
     public let timeoutIntervalForResource: TimeInterval
     
     /// Provide details about temporary files.
@@ -56,6 +57,10 @@ public struct Configuration {
     }
     
     public let temporaryFiles: TemporaryFiles
+    
+    // After initial upload of a change to a mutable file has completed, polling is carried out to check for finalization of the deferrred upload. This is the interval of that polling.
+    public static let defaultDeferredCheckInterval:TimeInterval = 2
+    public let deferredCheckInterval: TimeInterval
             
     // Only for debugging
     // If you set this to false, and you are testing just within a package, you will see: BackgroundSession <F65F620A-40DF-47D8-8714-90D457380899> an error occurred on the xpc connection to setup the background session: Error Domain=NSCocoaErrorDomain Code=4097
@@ -67,7 +72,8 @@ public struct Configuration {
         return TemporaryFiles(directory: directory, filePrefix: "SyncServer", fileExtension: "dat")
     }
     
-    public init(appGroupIdentifier: String?, urlSessionBackgroundIdentifier: String? = nil, serverURL: URL, minimumServerVersion:Version?, currentClientAppVersion: Version? = nil, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryFiles:TemporaryFiles = Self.defaultTemporaryFiles, packageTests: Bool = false, timeoutIntervalForRequest: TimeInterval = Self.defaultTimeoutIntervalForRequest, timeoutIntervalForResource: TimeInterval = Self.defaultTimeoutIntervalForResource) {
+    public init(appGroupIdentifier: String?, urlSessionBackgroundIdentifier: String? = nil, serverURL: URL, minimumServerVersion:Version?, currentClientAppVersion: Version? = nil, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryFiles:TemporaryFiles = Self.defaultTemporaryFiles, packageTests: Bool = false, timeoutIntervalForRequest: TimeInterval = Self.defaultTimeoutIntervalForRequest, timeoutIntervalForResource: TimeInterval = Self.defaultTimeoutIntervalForResource,
+        deferredCheckInterval: TimeInterval = Self.defaultDeferredCheckInterval) {
         self.appGroupIdentifier = appGroupIdentifier
         self.urlSessionBackgroundIdentifier = urlSessionBackgroundIdentifier
         self.serverURL = serverURL
@@ -79,6 +85,7 @@ public struct Configuration {
         self.currentClientAppVersion = currentClientAppVersion
         self.timeoutIntervalForRequest = timeoutIntervalForRequest
         self.timeoutIntervalForResource = timeoutIntervalForResource
+        self.deferredCheckInterval = deferredCheckInterval
         
 #if !DEBUG
         assert(!packageTests)

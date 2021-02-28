@@ -39,6 +39,11 @@ public class SyncServer {
     
     // Maps from objectType to `DeclarableObject & ObjectDownloadHandler`.
     var objectDeclarations = [String: DeclarableObject & ObjectDownloadHandler]()
+    
+    var deferredOperationTimer: Timer?
+    
+    // Serializing *all* operations acting on iOSBasics held data structures with this queue so we don't mess up our database tables and and in-memory structures. E.g., with delegate calls from networking, timer callbacks, and client calls to the iOSBasics interface. (By default `DispatchQueue` gives a serial queue).
+    let serialQueue = DispatchQueue(label: "iOSBasics")
 
     /// Create a SyncServer instance.
     ///

@@ -354,7 +354,7 @@ extension SyncServer {
                     contents = .gone(goneReason)
                 }
                 
-                let downloadFile = DownloadedFile(uuid: file.fileUUID, fileVersion: file.fileVersion, fileLabel: fileEntry.fileLabel, mimeType: fileEntry.mimeType, contents: contents)
+                let downloadFile = DownloadedFile(uuid: file.fileUUID, fileVersion: file.fileVersion, fileLabel: fileEntry.fileLabel, mimeType: fileEntry.mimeType, updateDate: fileEntry.updateDate, contents: contents)
                 downloadedFiles += [downloadFile]
             }
             

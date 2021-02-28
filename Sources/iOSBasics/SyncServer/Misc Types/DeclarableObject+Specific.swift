@@ -122,6 +122,7 @@ public struct DownloadedFile: FileWasDownloaded {
     public let fileVersion: FileVersionInt
     public let fileLabel: String
     public let mimeType: MimeType
+    public let updateDate: Date?
     
     public enum Contents {
         case gone(GoneReason)
@@ -132,12 +133,13 @@ public struct DownloadedFile: FileWasDownloaded {
     
     public let contents: Contents
     
-    public init(uuid: UUID, fileVersion: FileVersionInt, fileLabel: String, mimeType: MimeType, contents: DownloadedFile.Contents) {
+    public init(uuid: UUID, fileVersion: FileVersionInt, fileLabel: String, mimeType: MimeType, updateDate: Date?, contents: DownloadedFile.Contents) {
         self.uuid = uuid
         self.fileVersion = fileVersion
         self.fileLabel = fileLabel
         self.mimeType = mimeType
         self.contents = contents
+        self.updateDate = updateDate
     }
 }
 
