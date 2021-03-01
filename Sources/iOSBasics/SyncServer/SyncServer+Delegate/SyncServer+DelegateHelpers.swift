@@ -12,7 +12,7 @@ extension SyncServer {
             let fileUUID = UUID(uuidString: fileUUIDString) else {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
-                delegate.userEvent(self, event: .error(SyncServerError.internalError("Bad UUID")))                
+                delegate.userEvent(self, event: .error(SyncServerError.internalError("Bad UUID")))
             }
             return
         }
@@ -361,7 +361,20 @@ extension SyncServer {
             // When handling errors, there may be no downloadedFiles.
             if downloadedFiles.count > 0 {
                 let downloadObject = DownloadedObject(sharingGroupUUID: objectEntry.sharingGroupUUID, fileGroupUUID: objectTracker.fileGroupUUID, creationDate: creationDate, downloads: downloadedFiles)
-                try downloadHandler.objectWasDownloaded(object: downloadObject)
+                
+                // This calls into client code. Need to use dispatchQueue.
+                dispatchQueue.async { [weak self] in
+                    guard let self = self else { return }
+                    
+                    do {
+                        try downloadHandler.objectWasDownloaded(object: downloadObject)
+                    } catch let error {
+                        self.delegator { [weak self] delegate in
+                            guard let self = self else { return }
+                            delegate.userEvent(self, event: .error(error))
+                        }
+                    }
+                }
             }
             
             try deleteDownloadTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)

@@ -27,6 +27,7 @@ enum NetworkingError: Error {
     case moreThanOneNetworkCache
     case couldNotGetCache
     case versionError
+    case invalidHTTPStatusCode
 }
 
 protocol NetworkingDelegate: AnyObject {

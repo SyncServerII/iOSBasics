@@ -19,7 +19,7 @@ extension ServerAPI: FileTransferDelegate {
                 delegate.downloadCompleted(self, file: file, result: .failure(error))
             }
             else {
-                let resultError = self.checkForError(statusCode: statusCode, error: error, serverResponse: .dictionary(responseHeaders)) ?? ServerAPIError.generic("Unknown")
+                let resultError = self.checkForError(statusCode: statusCode, error: error, serverResponse: .dictionary(responseHeaders)) ?? ServerAPIError.generic("Unknown: Failure, but nil error and resultError also nil.")
                 delegate.downloadCompleted(self, file: file, result: .failure(resultError))
             }
             return
