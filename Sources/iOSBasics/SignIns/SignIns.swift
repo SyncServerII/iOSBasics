@@ -172,11 +172,10 @@ extension SignIns: iOSSignIn.SignInsDelegate {
 
 extension SignIns: SyncServerCredentials {
     public func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials {
-        return try api.serialQueue.sync {
-            if let credentials = signInServicesHelper.currentCredentials {
-                return credentials
-            }
+        guard let credentials = signInServicesHelper.currentCredentials else {
             throw SignInsError.noSignedInUser
         }
+        
+        return credentials
     }
 }
