@@ -10,18 +10,13 @@ import SQLite
 import iOSShared
 
 extension SyncServer {
-    func syncHelper(sharingGroupUUID: UUID? = nil) throws {
-        guard api.networking.reachability.isReachable else {
-            logger.info("Could not sync: Network not reachable")
-            throw SyncServerError.networkNotReachable
-        }
-        
+    func syncHelper(sharingGroupUUID: UUID? = nil) throws {        
         getIndex(sharingGroupUUID: sharingGroupUUID)
         
         try triggerUploads()
         try triggerDownloads()
         try triggerDeletions()
-
+        
         checkOnDeferred()
     }
 }

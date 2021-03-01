@@ -36,10 +36,11 @@ class ServerAPI {
     let config: Configuration
     weak var delegate: ServerAPIDelegate!
     let hashingManager: HashingManager
+    let serialQueue:DispatchQueue
     
-    init?(database: Connection, hashingManager: HashingManager, reachability:NetworkReachability, delegate: ServerAPIDelegate, config: Configuration) {
+    init?(database: Connection, hashingManager: HashingManager, reachability:NetworkReachability, delegate: ServerAPIDelegate, serialQueue:DispatchQueue, config: Configuration) {
     
-        guard let networking = Networking(database: database, delegate: delegate, reachability: reachability, config: config) else {
+        guard let networking = Networking(database: database, serialQueue: serialQueue, delegate: delegate, reachability: reachability, config: config) else {
             return nil
         }
         
@@ -48,6 +49,7 @@ class ServerAPI {
         self.config = config
         self.delegate = delegate
         self.hashingManager = hashingManager
+        self.serialQueue = serialQueue
         self.networking.transferDelegate = self
     }
     
@@ -103,9 +105,9 @@ class ServerAPI {
         let endpoint = ServerEndpoints.healthCheck
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL)
         
-        networking.sendRequestTo(serverURL, method: endpoint.method) {
-            response, httpStatus, error in
-            
+        networking.sendRequestTo(serverURL, method: endpoint.method) { [weak self] response, httpStatus, error in
+            guard let self = self else { return }
+                
             if let resultError = self.checkForError(statusCode: httpStatus, error: error, serverResponse: .dictionary(response)) {
                 completion(.failure(resultError))
             }

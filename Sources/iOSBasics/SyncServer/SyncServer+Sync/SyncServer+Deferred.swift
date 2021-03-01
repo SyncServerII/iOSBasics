@@ -12,7 +12,7 @@ extension SyncServer {
     func checkOnDeferred() {
         DispatchQueue.global().async {
             do {
-                try self.asyncCheckOnDeferred()
+                try self.checkOnDeferredHelper()
             } catch let error {
                 self.delegator { [weak self] delegate in
                     guard let self = self else { return }
@@ -22,8 +22,8 @@ extension SyncServer {
         }
     }
     
-    // Call this asynchronously. In this, `checkOnDeferredUploads` and `checkOnDeferredDeletions` do networking calls *synchronously*. So run them asynchronously as to not block the caller for a long period of time.
-    private func asyncCheckOnDeferred() throws {
+    // In this, `checkOnDeferredUploads` and `checkOnDeferredDeletions` do networking calls *synchronously*. This can block the caller for a long period of time.
+    private func checkOnDeferredHelper() throws {
         let fileGroupUUIDs1 = try checkOnDeferredUploads()
         logger.debug("checkOnDeferredUploads: fileGroupUUIDs1: \(fileGroupUUIDs1)")
         
@@ -43,9 +43,12 @@ extension SyncServer {
         }
         
         // Check if there are more vN uploads waiting for deferred operations to complete.
-        let vNCompletedUploads = try deferredUploadsWaiting()
-        logger.debug("vNCompletedUploads: \(vNCompletedUploads)")
+        let vNCompletedUploads = try serialQueue.sync {
+            return try deferredUploadsWaiting()
+        }
         
+        logger.debug("vNCompletedUploads: \(vNCompletedUploads)")
+
         if vNCompletedUploads.count > 0 {
             startTimedDeferredCheckIfNeeded()
         }
@@ -73,7 +76,7 @@ extension SyncServer {
                 
                 // First, set timer to nil so we can restart it later.
                 self.deferredOperationTimer = nil
-                
+
                 self.checkOnDeferred()
             }
             

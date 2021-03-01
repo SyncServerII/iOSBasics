@@ -48,13 +48,16 @@ class Networking: NSObject {
     let backgroundCache: BackgroundCache
     var handleEventsForBackgroundURLSessionCompletionHandler: (() -> Void)?
     let reachability:NetworkReachability
-    
-    init?(database:Connection, delegate: NetworkingDelegate, reachability:NetworkReachability, transferDelegate:FileTransferDelegate? = nil, config: Configuration) {
+    let serialQueue:DispatchQueue
+
+    init?(database:Connection, serialQueue:DispatchQueue, delegate: NetworkingDelegate, reachability:NetworkReachability, transferDelegate:FileTransferDelegate? = nil, config: Configuration) {
         self.delegate = delegate
         self.transferDelegate = transferDelegate
         self.config = config
         self.backgroundCache = BackgroundCache(database: database)
         self.reachability = reachability
+        self.serialQueue = serialQueue
+        
         super.init()
         
         guard let session = createBackgroundURLSession() else {
@@ -167,9 +170,15 @@ class Networking: NSObject {
         
         logger.info("sendRequestTo: serverURL: \(serverURL)")
         
-        let uploadTask:URLSessionDataTask = session.dataTask(with: request) { (data, urlResponse, error) in
-            let (serverResponse, statusCode, error) = self.processResponse(data: data, urlResponse: urlResponse, error: error)
-            completion?(serverResponse, statusCode, error)
+        let uploadTask:URLSessionDataTask = session.dataTask(with: request) { [weak self] (data, urlResponse, error) in
+            guard let self = self else { return }
+
+            self.serialQueue.async { [weak self] in
+                guard let self = self else { return }
+                
+                let (serverResponse, statusCode, error) = self.processResponse(data: data, urlResponse: urlResponse, error: error)
+                completion?(serverResponse, statusCode, error)
+            }
         }
         
         uploadTask.resume()

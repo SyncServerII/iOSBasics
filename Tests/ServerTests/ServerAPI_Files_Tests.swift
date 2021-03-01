@@ -31,7 +31,8 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         let config = Configuration(appGroupIdentifier: nil, serverURL: URL(string: Self.baseURL())!, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
         hashingManager = HashingManager()
         try? hashingManager.add(hashing: DropboxHashing())
-        api = ServerAPI(database: database, hashingManager: hashingManager, reachability: FakeReachability(), delegate: self, config: config)
+        let serialQueue = DispatchQueue(label: "iOSBasicsTests")
+        api = ServerAPI(database: database, hashingManager: hashingManager, reachability: FakeReachability(), delegate: self, serialQueue: serialQueue, config: config)
         _ = handlers.user.removeUser()
         XCTAssert(handlers.user.addUser())
     }

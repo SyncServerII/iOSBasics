@@ -141,9 +141,13 @@ public class SignIns {
     }
     
     public func updateUser(userName: String, completion: @escaping (Error?) -> ()) {
-        api.updateUser(userName: userName) { error in
-            DispatchQueue.main.async {
-                completion(error)
+        api.serialQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            self.api.updateUser(userName: userName) { error in
+                DispatchQueue.main.async {
+                    completion(error)
+                }
             }
         }
     }
@@ -153,7 +157,11 @@ public class SignIns {
 
 extension SignIns: iOSSignIn.SignInsDelegate {
     public func signInCompleted(_ manager: SignInManager, signIn: GenericSignIn,  mode: AccountMode, autoSignIn: Bool) {
-        completeSignInProcess(accountMode: mode, autoSignIn: autoSignIn)
+        api.serialQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            self.completeSignInProcess(accountMode: mode, autoSignIn: autoSignIn)
+        }
     }
     
     public func userIsSignedOut(_ manager: SignInManager, signIn: GenericSignIn) {
@@ -164,9 +172,11 @@ extension SignIns: iOSSignIn.SignInsDelegate {
 
 extension SignIns: SyncServerCredentials {
     public func credentialsForServerRequests(_ syncServer: SyncServer) throws -> GenericCredentials {
-        if let credentials = signInServicesHelper.currentCredentials {
-            return credentials
+        return try api.serialQueue.sync {
+            if let credentials = signInServicesHelper.currentCredentials {
+                return credentials
+            }
+            throw SignInsError.noSignedInUser
         }
-        throw SignInsError.noSignedInUser
     }
 }

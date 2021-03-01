@@ -3,6 +3,7 @@ import Foundation
 import SQLite
 
 extension SyncServer {
+    // This method is synchronous.
     func declarationHelper(object: DeclarableObject & ObjectDownloadHandler) throws {
         let fileLabels = object.declaredFiles.map {$0.fileLabel}
         guard Set<String>(fileLabels).count == fileLabels.count else {

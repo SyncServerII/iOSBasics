@@ -34,14 +34,16 @@ public class SyncServer {
 
     let hashingManager: HashingManager
     private(set) var api:ServerAPI!
-    let dispatchQueue: DispatchQueue
     var signIns: SignIns
     
     // Maps from objectType to `DeclarableObject & ObjectDownloadHandler`.
     var objectDeclarations = [String: DeclarableObject & ObjectDownloadHandler]()
     
     var deferredOperationTimer: Timer?
-    
+
+    // Delegate and callback queue.
+    let dispatchQueue: DispatchQueue
+
     // Serializing *all* operations acting on iOSBasics held data structures with this queue so we don't mess up our database tables and and in-memory structures. E.g., with delegate calls from networking, timer callbacks, and client calls to the iOSBasics interface. (By default `DispatchQueue` gives a serial queue).
     let serialQueue = DispatchQueue(label: "iOSBasics")
 
@@ -76,7 +78,7 @@ public class SyncServer {
 
         self.signIns = signIns
         
-        guard let api = ServerAPI(database: db, hashingManager: hashingManager, reachability:reachability, delegate: self, config: configuration) else {
+        guard let api = ServerAPI(database: db, hashingManager: hashingManager, reachability:reachability, delegate: self, serialQueue: serialQueue, config: configuration) else {
             throw SyncServerError.internalError("Could not create ServerAPI")
         }
         self.api = api
@@ -93,7 +95,10 @@ public class SyncServer {
     public func application(_ application: UIApplication,
         handleEventsForBackgroundURLSession identifier: String,
         completionHandler: @escaping () -> Void) {
-        api.networking.application(application, handleEventsForBackgroundURLSession: identifier, completionHandler: completionHandler)
+        serialQueue.sync { [weak self] in
+            guard let self = self else { return }
+            self.api.networking.application(application, handleEventsForBackgroundURLSession: identifier, completionHandler: completionHandler)
+        }
     }
     
     // MARK: Declaring object types.
@@ -106,31 +111,49 @@ public class SyncServer {
     // Older or deprecated DeclarableObject's should still be registered on each app launch, unless new downloads can never happen for those DeclarableObject's. They should never happen also even for existing files when an app is removed and re-installed too.
     // It is not acceptable to remove DeclarableFile's from existing DeclarableObject's.
     // This class keeps strong references to the passed objects.
+    // This call is synchronous-- it doesn't call delegates or other callbacks after it completes.
     public func register(object: DeclarableObject & ObjectDownloadHandler) throws {
-        try declarationHelper(object: object)
+        // `sync` because this method is itself synchronous.
+        try serialQueue.sync { [weak self] in
+            guard let self = self else { return }
+            try self.declarationHelper(object: object)
+        }
     }
     
     // MARK: Persistent queuing for upload, download, and deletion.
     
-    // The first upload for a specific object instance (i.e., with a specific fileGroupUUID)
-    // If you upload an object that has a fileGroupUUID which is already queued or in progress of uploading, your request will be queued.
-    // All files that end up being uploaded in the same queued batch must either be v0 (their first upload) or vN (not their first upload). It is an error to attempt to upload v0 and vN files together in the same batch. This issue may not always be detected (i.e., an error thrown by this call). An error might instead be thrown on a subsequent call to `sync`.
+    // The first upload for a specific object instance (i.e., with a specific fileGroupUUID), or a subsequent upload of the same instance.
+    // If you upload an object that has a fileGroupUUID which is already queued or in progress of uploading, your request will be queued. i.e., the upload will not be triggered right now. It will be triggered later.
+    // All files that end up being uploaded in the same queued batch must either be v0 (their first upload) or vN (not their first upload). It is an error to attempt to upload v0 and vN files together in the same batch. This issue may not always be detected immediately (i.e., an error thrown by this call). An error might instead be thrown on a subsequent call to `sync`.
     // In this last regard, it is a best practice to do a v0 upload for all files in a declared object in it's first `queue` call. This way, having both v0 and vN files in the same queued batch *cannot* occur.
     // Uploads are done on a background networking URLSession.
     // You must do at least one `sync` call prior to this call after installing the app. (Not per launch of the app-- these results are persisted).
     public func queue(upload: UploadableObject) throws {
-        try queueHelper(upload: upload)
+        // `sync` because the immediate effect of this call is short running.
+        try serialQueue.sync { [weak self] in
+            guard let self = self else { return }
+            try self.queueHelper(upload: upload)
+        }
     }
 
     // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.
     // The files must have been uploaded by this client before, or be available because it was seen in `filesNeedingDownload`.
-    // If you queue an object that has a fileGroupUUID which is already queued or in progress of downloading, your request will be queued.
+    // If you queue an object that has a fileGroupUUID which is already queued or in progress of downloading, your request will be queued. i.e., the download will not be triggered right now. It will be triggered later.
     public func queue<DWL: DownloadableObject>(download: DWL) throws {
-        try queueHelper(download: download)
+        // `sync` because the immediate effect of this call is short running.
+        try serialQueue.sync { [weak self] in
+            guard let self = self else { return }
+            try self.queueHelper(download: download)
+        }
     }
     
+    // The deletion of an entire existing object, referenced by its file group.
     public func queue(objectDeletion fileGroupUUID: UUID, pushNotificationMessage: String? = nil) throws {
-        try deleteHelper(object: fileGroupUUID, pushNotificationMessage: pushNotificationMessage)
+        // `sync` because the immediate effect of this call is short running.
+        try serialQueue.sync { [weak self] in
+            guard let self = self else { return }
+            try self.deleteHelper(object: fileGroupUUID, pushNotificationMessage: pushNotificationMessage)
+        }
     }
 
     /* This performs a variety of actions:
@@ -146,7 +169,15 @@ public class SyncServer {
     Throws SyncServerError.networkNotReachable if there is no network connection.
     */
     public func sync(sharingGroupUUID: UUID? = nil) throws {
-        try syncHelper(sharingGroupUUID: sharingGroupUUID)
+        guard api.networking.reachability.isReachable else {
+            logger.info("Could not sync: Network not reachable")
+            throw SyncServerError.networkNotReachable
+        }
+        
+        try serialQueue.sync { [weak self] in
+            guard let self = self else { return }
+            try self.syncHelper(sharingGroupUUID: sharingGroupUUID)
+        }
     }
     
     // MARK: Getting information: These are local operations that do not interact with the server.
@@ -159,24 +190,40 @@ public class SyncServer {
     
     // Is a particular file group being uploaded, deleted, or downloaded?
     public func isQueued(_ queueType: QueueType, fileGroupUUID: UUID) throws -> Bool {
-        return try isQueuedHelper(queueType, fileGroupUUID: fileGroupUUID)
+        // `sync` because the immediate effect of this call is short running.
+        return try serialQueue.sync { [weak self] in
+            guard let self = self else { return false }
+            return try self.isQueuedHelper(queueType, fileGroupUUID: fileGroupUUID)
+        }
     }
     
     // Return the number of queued objects (not files) of the particular type, across sharing groups.
     public func numberQueued(_ queueType: QueueType) throws -> Int {
-        return try numberQueuedHelper(queueType)
+        // `sync` because the immediate effect of this call is short running.
+        return try serialQueue.sync { [weak self] in
+            guard let self = self else { return 0 }
+            return try self.numberQueuedHelper(queueType)
+        }
     }
 
     // Returns the same information as from the `downloadDeletion` delegate method-- other clients have removed these files.
     // Returns fileGroupUUID's of the objects needing local deletion-- they are deleted on the server but need local deletion.
     public func objectsNeedingLocalDeletion() throws -> [UUID]  {
-        return try objectsNeedingLocalDeletionHelper()
+        // `sync` because the immediate effect of this call is short running.
+        return try serialQueue.sync { [weak self] in
+            guard let self = self else { return [] }
+            return try self.objectsNeedingLocalDeletionHelper()
+        }
     }
     
     // Clients need to call this method to indicate they have deleted objects returned from either the deletion delegates or from `objectsNeedingDeletion`.
     // These files must have been already deleted on the server.
     public func markAsDeletedLocally(object fileGroupUUID: UUID) throws {
-        try objectDeletedLocallyHelper(object: fileGroupUUID)
+        // `sync` because the immediate effect of this call is short running.
+        try serialQueue.sync { [weak self] in
+            guard let self = self else { return }
+            try self.objectDeletedLocallyHelper(object: fileGroupUUID)
+        }
     }
 
     // The list of files returned here survive app relaunch. A given object declaration will appear at most once in the returned list.
@@ -184,34 +231,55 @@ public class SyncServer {
     // If specific files are `gone`, then they will be returned (in the relevant `DownloadObject`) as needing download.
     // TODO: `DownloadObject` has a sharingGroupUUID member, but we're passing a sharingGroupUUID-- so that's not really needed.
     public func objectsNeedingDownload(sharingGroupUUID: UUID, includeGone: Bool = false) throws -> [DownloadObject] {
-        let filtered = try sharingGroups().filter { $0.sharingGroupUUID == sharingGroupUUID }
-        guard filtered.count == 1 else {
-            throw SyncServerError.sharingGroupNotFound
+        // `sync` because the immediate effect of this call is short running.
+        return try serialQueue.sync { [weak self] in
+            guard let self = self else { return [] }
+            
+            let filtered = try self.getSharingGroupsHelper().filter { $0.sharingGroupUUID == sharingGroupUUID }
+            guard filtered.count == 1 else {
+                throw SyncServerError.sharingGroupNotFound
+            }
+            
+            return try self.filesNeedingDownloadHelper(sharingGroupUUID: sharingGroupUUID, includeGone: includeGone)
         }
-        
-        return try filesNeedingDownloadHelper(sharingGroupUUID: sharingGroupUUID, includeGone: includeGone)
     }
     
     // Do any of the files of the object need downloading? Analogous to `objectsNeedingDownload`, but for just a single object in a sharing group.
     public func objectNeedsDownload(fileGroupUUID: UUID, includeGone: Bool = false) throws -> DownloadObject? {
-        return try objectNeedsDownloadHelper(object:fileGroupUUID, includeGone: includeGone)
+        // `sync` because the immediate effect of this call is short running.
+        return try serialQueue.sync { [weak self] in
+            guard let self = self else { return nil }
+            return try self.objectNeedsDownloadHelper(object:fileGroupUUID, includeGone: includeGone)
+        }
     }
 
     // Call this method so that, after you download an object, it doesn't appear again in `objectsNeedingDownload` (for those file versions).
     public func markAsDownloaded<DWL: DownloadableObject>(object: DWL) throws {
-        try markAsDownloadedHelper(object: object)
+        // `sync` because the immediate effect of this call is short running.
+        try serialQueue.sync { [weak self] in
+            guard let self = self else { return }
+            try self.markAsDownloadedHelper(object: object)
+        }
     }
     
     // Call this method so that, after you download an file, it doesn't appear again in `objectsNeedingDownload` (for that file version).
     public func markAsDownloaded<DWL: DownloadableFile>(file: DWL) throws {
-        try markAsDownloadedHelper(file: file)
+        // `sync` because the immediate effect of this call is short running.
+        try serialQueue.sync { [weak self] in
+            guard let self = self else { return }
+            try self.markAsDownloadedHelper(file: file)
+        }
     }
 
     // MARK: Sharing
     
     // The sharing groups in which the signed in user is a member.
     public func sharingGroups() throws -> [iOSBasics.SharingGroup]  {
-        return try getSharingGroupsHelper()
+        // `sync` because the immediate effect of this call is short running.
+        return try serialQueue.sync { [weak self] in
+            guard let self = self else { return [] }
+            return try self.getSharingGroupsHelper()
+        }
     }
     
     // MARK: Unqueued server requests-- these will fail if they involve a file or other object currently queued for upload or deletion. They will also fail if the network is offline.
@@ -220,27 +288,45 @@ public class SyncServer {
 
     // Also does a `sync` after successful creation. `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func createSharingGroup(sharingGroupUUID: UUID, sharingGroupName: String? = nil, completion:@escaping (Error?)->()) {
-        createSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, sharingGroupName: sharingGroupName) { [weak self] error in
-            self?.dispatchQueue.async {
-                completion(error)
+        serialQueue.async { [weak self] in
+            guard let self = self else { return }
+
+            self.createSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, sharingGroupName: sharingGroupName) { [weak self] error in
+                guard let self = self else { return }
+                
+                self.dispatchQueue.async {
+                    completion(error)
+                }
             }
         }
     }
     
     // Also does a `sync` after successful update. `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func updateSharingGroup(sharingGroupUUID: UUID, newSharingGroupName: String?, completion:@escaping (Error?)->()) {
-        updateSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, newSharingGroupName: newSharingGroupName) { [weak self] error in
-            self?.dispatchQueue.async {
-                completion(error)
+        serialQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            self.updateSharingGroupHelper(sharingGroupUUID: sharingGroupUUID, newSharingGroupName: newSharingGroupName) { [weak self] error in
+                guard let self = self else { return }
+
+                self.dispatchQueue.async {
+                    completion(error)
+                }
             }
         }
     }
 
     // Remove the current user from the sharing group. Also does a `sync` after successful update. `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func removeFromSharingGroup(sharingGroupUUID: UUID, completion:@escaping (Error?)->()) {
-        removeFromSharingGroupHelper(sharingGroupUUID: sharingGroupUUID) { [weak self] error in
-            self?.dispatchQueue.async {
-                completion(error)
+        serialQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            self.removeFromSharingGroupHelper(sharingGroupUUID: sharingGroupUUID) { [weak self] error in
+                guard let self = self else { return }
+
+                self.dispatchQueue.async {
+                    completion(error)
+                }
             }
         }
     }
@@ -256,10 +342,15 @@ public class SyncServer {
             return
         }
         
-        api.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: numberAcceptors, allowSocialAcceptance: allowSocialAcceptance, expiryDuration: expiryDuration) { [weak self] result in
+        serialQueue.async { [weak self] in
             guard let self = self else { return }
-            self.dispatchQueue.async {
-                completion(result)
+            
+            self.api.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: numberAcceptors, allowSocialAcceptance: allowSocialAcceptance, expiryDuration: expiryDuration) { [weak self] result in
+                guard let self = self else { return }
+                
+                self.dispatchQueue.async {
+                    completion(result)
+                }
             }
         }
     }
@@ -272,19 +363,23 @@ public class SyncServer {
             completion(.failure(SyncServerError.networkNotReachable))
             return
         }
-        
-        api.redeemSharingInvitation(sharingInvitationUUID: sharingInvitationUUID, cloudFolderName: configuration.cloudFolderName) { [weak self] result in
-            guard let self = self else { return }
 
-            switch result {
-            case .success(let redeemResult):
-                self.getIndex(sharingGroupUUID: redeemResult.sharingGroupUUID)
-            case .failure:
-                break
-            }
+        serialQueue.async { [weak self] in
+            guard let self = self else { return }
             
-            self.dispatchQueue.async {
-                completion(result)
+            self.api.redeemSharingInvitation(sharingInvitationUUID: sharingInvitationUUID, cloudFolderName: self.configuration.cloudFolderName) { [weak self] result in
+                guard let self = self else { return }
+
+                switch result {
+                case .success(let redeemResult):
+                    self.getIndex(sharingGroupUUID: redeemResult.sharingGroupUUID)
+                case .failure:
+                    break
+                }
+                
+                self.dispatchQueue.async {
+                    completion(result)
+                }
             }
         }
     }
@@ -296,10 +391,16 @@ public class SyncServer {
             completion(.failure(SyncServerError.networkNotReachable))
             return
         }
-        
-        api.getSharingInvitationInfo(sharingInvitationUUID: sharingInvitationUUID) { [weak self] result in
-            self?.dispatchQueue.async {
-                completion(result)
+
+        serialQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            self.api.getSharingInvitationInfo(sharingInvitationUUID: sharingInvitationUUID) { [weak self] result in
+                guard let self = self else { return }
+
+                self.dispatchQueue.async {
+                    completion(result)
+                }
             }
         }
     }
@@ -313,10 +414,16 @@ public class SyncServer {
             completion(SyncServerError.networkNotReachable)
             return
         }
-        
-        api.registerPushNotificationToken(token) { [weak self] error in
-            self?.dispatchQueue.async {
-                completion(error)
+
+        serialQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            self.api.registerPushNotificationToken(token) { [weak self] error in
+                guard let self = self else { return }
+
+                self.dispatchQueue.async {
+                    completion(error)
+                }
             }
         }
     }

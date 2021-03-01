@@ -126,7 +126,7 @@ extension SyncServer {
         }
         
         for file in object.downloads {
-            try markAsDownloaded(file: file)
+            try markAsDownloadedHelper(file: file)
         }
         
         delegator { delegate in

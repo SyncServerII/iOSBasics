@@ -78,7 +78,9 @@ extension SyncServer {
     // This does *not* call SyncServer delegate methods. You may want to report errors thrown using SyncServer delegate methods if needed after calling this.
     // On success, returns the file group UUID's of deferred deletions detected as successfully completed.
     func checkOnDeferredDeletions() throws -> [UUID] {
-        let deletions = try UploadDeletionTracker.fetch(db: db, where: UploadDeletionTracker.statusField.description == .waitingForDeferredDeletion)
+        let deletions = try serialQueue.sync {
+            return try UploadDeletionTracker.fetch(db: db, where: UploadDeletionTracker.statusField.description == .waitingForDeferredDeletion)
+        }
         
         guard deletions.count > 0 else {
             return []

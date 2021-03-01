@@ -29,8 +29,10 @@ extension SyncServer {
     // This can take appreciable time to complete-- it *synchronously* makes requests to server endpoint(s). You probably want to use DispatchQueue to asynchronously let this do it's work.
     // This does *not* call SyncServer delegate methods. You may want to report errors thrown using SyncServer delegate methods if needed after calling this.
     // On success, returns the UUID's of the file groups of deferred uploads detected as successfully completed.
-    func checkOnDeferredUploads() throws -> [UUID] {        
-        let vNCompletedUploads = try deferredUploadsWaiting()
+    func checkOnDeferredUploads() throws -> [UUID] {
+        let vNCompletedUploads = try serialQueue.sync {
+            return try self.deferredUploadsWaiting()
+        }
         
         guard vNCompletedUploads.count > 0 else {
             // This just means that there are no vN uploads we are waiting for to have their final deferred upload completed. It's the typical expected case when calling the current method.
