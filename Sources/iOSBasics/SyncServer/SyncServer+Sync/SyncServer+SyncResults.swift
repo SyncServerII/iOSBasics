@@ -24,8 +24,12 @@ extension SyncServer {
                     guard let mostRecentDate = summary.mostRecentDate else {
                         throw SyncServerError.internalError("Could not get mostRecentDate")
                     }
-            
-                    return iOSBasics.SharingGroup.FileGroupSummary(fileGroupUUID: fileGroupUUID, mostRecentDate: mostRecentDate, deleted: summary.deleted ?? false)
+
+                    guard let fileVersion = summary.fileVersion else {
+                        throw SyncServerError.internalError("Could not get fileVersion")
+                    }
+                    
+                    return iOSBasics.SharingGroup.FileGroupSummary(fileGroupUUID: fileGroupUUID, mostRecentDate: mostRecentDate, deleted: summary.deleted ?? false, fileVersion: fileVersion)
                 }
                 
                 summaries = contentsSummary

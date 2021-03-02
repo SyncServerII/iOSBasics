@@ -188,6 +188,18 @@ public class SyncServer {
         case download
     }
     
+    public struct LocalFileInfo {
+        // Nil if an index was obtained from the server, but the file hasn't yet been downloaded.
+        public let fileVersion: FileVersionInt?
+    }
+    
+    // Returns information on the most recent file version uploaded, or the last version downloaded.
+    public func fileInfo(forFileUUID fileUUID: UUID) throws -> LocalFileInfo {
+        return try serialQueue.sync {
+            return try self.fileInfoHelper(fileUUID: fileUUID)
+        }
+    }
+    
     // Is a particular file group being uploaded, deleted, or downloaded?
     public func isQueued(_ queueType: QueueType, fileGroupUUID: UUID) throws -> Bool {
         // `sync` because the immediate effect of this call is short running.

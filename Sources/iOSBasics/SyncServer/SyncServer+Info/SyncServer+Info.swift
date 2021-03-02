@@ -37,4 +37,12 @@ extension SyncServer {
             return tracker.count
         }
     }
+    
+    func fileInfoHelper(fileUUID: UUID) throws -> LocalFileInfo {
+        guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) else {
+            throw DatabaseError.noObject
+        }
+        
+        return LocalFileInfo(fileVersion: fileEntry.fileVersion)
+    }
 }

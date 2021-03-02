@@ -7,6 +7,9 @@ public struct SharingGroup  {
         public let fileGroupUUID: UUID
         public let mostRecentDate: Date
         public let deleted: Bool
+        
+        // Max file version for all files in the file group.
+        public let fileVersion: FileVersionInt
     }
         
     public let sharingGroupUUID: UUID
