@@ -43,7 +43,7 @@ extension SyncServer {
             fileVersion = .vN(url: localURL)
         }
         
-        let serverAPIFile = ServerAPI.File(fileUUID: uuid.uuidString, sharingGroupUUID: objectEntry.sharingGroupUUID.uuidString, deviceUUID: configuration.deviceUUID.uuidString, uploadObjectTrackerId: objectTrackerId, version: fileVersion)
+        let serverAPIFile = ServerAPI.File(fileUUID: uuid.uuidString, sharingGroupUUID: objectEntry.sharingGroupUUID.uuidString, deviceUUID: configuration.deviceUUID.uuidString, uploadObjectTrackerId: objectTrackerId, batchUUID: objectTracker.batchUUID, batchExpiryInterval: objectTracker.batchExpiryInterval, version: fileVersion)
         
         if let error = api.uploadFile(file: serverAPIFile, uploadIndex: uploadIndex, uploadCount: uploadCount) {
             // Not going to throw an error here. Because this method is used in the context of a loop, and some of the uploads may have started correctly.

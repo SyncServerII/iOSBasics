@@ -30,10 +30,20 @@ class UploadObjectTracker: DatabaseModel {
     static let pushNotificationMessageField = Field("pushNotificationMessage", \M.pushNotificationMessage)
     var pushNotificationMessage: String?
     
+    // These two `batch` fields must be the same for all N of N files being uploaded for a file group, N <= N.
+    static let batchUUIDField = Field("batchUUID", \M.batchUUID)
+    var batchUUID: UUID
+    
+    static let expiryInterval: TimeInterval = 60 * 60 * 2 // 2 hours
+    static let batchExpiryIntervalField = Field("batchExpiryInterval", \M.batchExpiryInterval)
+    var batchExpiryInterval:TimeInterval
+    
     init(db: Connection,
         id: Int64! = nil,
         fileGroupUUID: UUID,
         v0Upload: Bool? = nil,
+        batchUUID: UUID,
+        batchExpiryInterval: TimeInterval,
         deferredUploadId: Int64? = nil,
         pushNotificationMessage: String? = nil) throws {
         
@@ -43,6 +53,8 @@ class UploadObjectTracker: DatabaseModel {
         self.v0Upload = v0Upload
         self.deferredUploadId = deferredUploadId
         self.pushNotificationMessage = pushNotificationMessage
+        self.batchUUID = batchUUID
+        self.batchExpiryInterval = batchExpiryInterval
     }
     
     // MARK: DatabaseModel
@@ -54,6 +66,8 @@ class UploadObjectTracker: DatabaseModel {
             t.column(v0UploadField.description)
             t.column(deferredUploadIdField.description)
             t.column(pushNotificationMessageField.description)
+            t.column(batchUUIDField.description)
+            t.column(batchExpiryIntervalField.description)
         }
     }
     
@@ -62,6 +76,8 @@ class UploadObjectTracker: DatabaseModel {
             id: row[Self.idField.description],
             fileGroupUUID: row[Self.fileGroupUUIDField.description],
             v0Upload: row[Self.v0UploadField.description],
+            batchUUID: row[Self.batchUUIDField.description],
+            batchExpiryInterval: row[Self.batchExpiryIntervalField.description],
             deferredUploadId: row[Self.deferredUploadIdField.description],
             pushNotificationMessage: row[Self.pushNotificationMessageField.description]
         )
@@ -72,7 +88,9 @@ class UploadObjectTracker: DatabaseModel {
             Self.fileGroupUUIDField.description <- fileGroupUUID,
             Self.v0UploadField.description <- v0Upload,
             Self.deferredUploadIdField.description <- deferredUploadId,
-            Self.pushNotificationMessageField.description <- pushNotificationMessage
+            Self.pushNotificationMessageField.description <- pushNotificationMessage,
+            Self.batchUUIDField.description <- batchUUID,
+            Self.batchExpiryIntervalField.description <- batchExpiryInterval
         )
     }
 }

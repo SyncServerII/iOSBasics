@@ -148,7 +148,9 @@ extension SyncServer {
     // Add a new tracker into UploadObjectTracker, and one for each new upload.
     private func createNewTrackers(fileGroupUUID: UUID, pushNotificationMessage:String?, objectModel: DeclaredObjectModel, cloudStorageType: CloudStorageType, uploads: [UploadableFile]) throws -> (newObjectTrackerId: Int64, UploadObjectTracker) {
     
-        let newObjectTracker = try UploadObjectTracker(db: db, fileGroupUUID: fileGroupUUID, pushNotificationMessage: pushNotificationMessage)
+        let batchUUID = UUID()
+    
+        let newObjectTracker = try UploadObjectTracker(db: db, fileGroupUUID: fileGroupUUID, batchUUID: batchUUID, batchExpiryInterval: UploadObjectTracker.expiryInterval, pushNotificationMessage: pushNotificationMessage)
         try newObjectTracker.insert()
         
         guard let newObjectTrackerId = newObjectTracker.id else {

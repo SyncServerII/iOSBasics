@@ -68,6 +68,11 @@ extension ServerAPI {
         let sharingGroupUUID: String
         let deviceUUID:String
         let uploadObjectTrackerId: Int64
+        
+        // These two must be the same for all N of N files being uploaded for file group, N <= N.
+        let batchUUID: UUID
+        let batchExpiryInterval:TimeInterval
+        
         let version: Version
     }
 
@@ -86,6 +91,9 @@ extension ServerAPI {
         uploadRequest.sharingGroupUUID = file.sharingGroupUUID
         uploadRequest.uploadIndex = uploadIndex
         uploadRequest.uploadCount = uploadCount
+        
+        uploadRequest.batchUUID = file.batchUUID.uuidString
+        uploadRequest.batchExpiryInterval = file.batchExpiryInterval
         
         let url:URL
         
