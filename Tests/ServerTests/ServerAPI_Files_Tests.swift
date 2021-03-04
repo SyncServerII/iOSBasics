@@ -154,6 +154,76 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         }
     }
     
+    // This is just a demonstration of what would happen in an error state. A first upload wouldn't complete. Then a later one, with a different batchUUID could still happen and complete.
+    func testSuccessiveUploadsFromDifferentFileGroupsWhereFirstIsIncomplete() throws {
+        // Get ready for test.
+        let fileUUID = UUID()
+        let fileURL = exampleTextFileURL
+
+        let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: UUID(), objectType: "FileType")
+        
+        let checkSum = try hashingManager.hashFor(cloudStorageType: handlers.user.cloudStorageType).hash(forURL: fileURL)
+        
+        guard let result = getIndex(sharingGroupUUID: nil),
+            result.sharingGroups.count > 0,
+            let sharingGroupUUID = result.sharingGroups[0].sharingGroupUUID else {
+            XCTFail()
+            throw UploadError.getIndex
+        }
+        
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString))
+        
+        guard let uploadResult = uploadFile(file: file, uploadIndex: 1, uploadCount: 2) else {
+            XCTFail()
+            throw UploadError.uploadFile
+        }
+
+        switch uploadResult {
+        case .success(let success):
+            switch success {
+            case .success(let upload):
+                XCTAssert(upload.uploadsFinished == .uploadsNotFinished)
+            case .gone:
+                XCTFail()
+            }
+        default:
+            XCTFail("\(uploadResult)")
+        }
+        
+        // Upload file that will work.
+
+        let fileUUID2 = UUID()
+        let fileURL2 = exampleTextFileURL
+        
+        let checkSum2 = try hashingManager.hashFor(cloudStorageType: handlers.user.cloudStorageType).hash(forURL: fileURL2)
+        
+        guard let result2 = getIndex(sharingGroupUUID: nil),
+            result.sharingGroups.count > 0,
+            let sharingGroupUUID2 = result2.sharingGroups[0].sharingGroupUUID else {
+            XCTFail()
+            throw UploadError.getIndex
+        }
+        
+        let file2 = ServerAPI.File(fileUUID: fileUUID2.uuidString, sharingGroupUUID: sharingGroupUUID2, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum2, changeResolverName: nil, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString))
+        
+        guard let uploadResult2 = uploadFile(file: file2, uploadIndex: 1, uploadCount: 1) else {
+            XCTFail()
+            throw UploadError.uploadFile
+        }
+        
+        switch uploadResult2 {
+        case .success(let success):
+            switch success {
+            case .success(let upload):
+                XCTAssert(upload.uploadsFinished == .v0UploadsFinished)
+            case .gone:
+                XCTFail()
+            }
+        default:
+            XCTFail("\(uploadResult2)")
+        }
+    }
+    
     @discardableResult
     func downloadFile(downloadFileVersion:FileVersionInt? = nil,
         expectedFailure: Bool = false, appMetaData: String? = nil) throws -> DownloadFileResult? {
