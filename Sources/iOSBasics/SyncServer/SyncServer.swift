@@ -194,7 +194,7 @@ public class SyncServer {
     }
     
     // Returns information on the most recent file version uploaded, or the last version downloaded.
-    public func fileInfo(forFileUUID fileUUID: UUID) throws -> LocalFileInfo {
+    public func localFileInfo(forFileUUID fileUUID: UUID) throws -> LocalFileInfo {
         return try serialQueue.sync {
             return try self.fileInfoHelper(fileUUID: fileUUID)
         }
