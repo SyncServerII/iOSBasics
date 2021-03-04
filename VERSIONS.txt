@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.12.1 (3/4/21)
+	* Rename a method.
+	
 Version 0.12.0 (3/4/21)
 	* Added method to return most recent local file version.
 	* Added support for new batch upload files on server.
