@@ -111,7 +111,7 @@ extension Networking {
         func errorResponse(error: Error) {
             switch cache.transfer {
             case .download:
-                transferDelegate.downloadEnded(self, file: file, event: .failure(error: error, statusCode: response?.statusCode, responseHeaders: response?.allHeaderFields), response: response)
+                transferDelegate.downloadCompleted(self, file: file, event: .failure(error: error, statusCode: response?.statusCode, responseHeaders: response?.allHeaderFields), response: response)
                 
             case .upload, .request, .none:
                 transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
@@ -138,10 +138,10 @@ extension Networking {
 
         case .download(let url):
             if validStatusCode(response?.statusCode), let url = url {
-                transferDelegate.downloadEnded(self, file: file, event: .success(url), response: response)
+                transferDelegate.downloadCompleted(self, file: file, event: .success(url), response: response)
             }
             else {
-                transferDelegate.downloadEnded(self, file: file, event: .failure(error: nil, statusCode: response?.statusCode, responseHeaders: response?.allHeaderFields), response: response)
+                transferDelegate.downloadCompleted(self, file: file, event: .failure(error: nil, statusCode: response?.statusCode, responseHeaders: response?.allHeaderFields), response: response)
             }
 
         case .request(let url):

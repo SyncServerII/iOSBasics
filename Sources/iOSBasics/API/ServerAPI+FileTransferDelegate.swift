@@ -7,7 +7,7 @@ extension ServerAPI: FileTransferDelegate {
         delegate.error(self, error: error)
     }
 
-    func downloadEnded(_ network: Any, file: Filenaming, event: FileTransferDownloadEvent, response: HTTPURLResponse?) {
+    func downloadCompleted(_ network: Any, file: Filenaming, event: FileTransferDownloadEvent, response: HTTPURLResponse?) {
     
         let url: URL
         

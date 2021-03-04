@@ -151,7 +151,7 @@ extension NetworkingTests: FileTransferDelegate {
         XCTFail()
     }
 
-    func downloadEnded(_ network: Any, file: Filenaming, event: FileTransferDownloadEvent, response: HTTPURLResponse?) {
+    func downloadCompleted(_ network: Any, file: Filenaming, event: FileTransferDownloadEvent, response: HTTPURLResponse?) {
         XCTFail()
     }
     

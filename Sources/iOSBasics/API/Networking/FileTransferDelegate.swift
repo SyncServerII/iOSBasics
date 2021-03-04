@@ -17,7 +17,7 @@ enum FileTransferDownloadEvent {
 protocol FileTransferDelegate: AnyObject {
     func error(_ network: Any, file: Filenaming?, statusCode:Int?, error:Error?)
 
-    func downloadEnded(_ network: Any, file: Filenaming, event: FileTransferDownloadEvent, response: HTTPURLResponse?)
+    func downloadCompleted(_ network: Any, file: Filenaming, event: FileTransferDownloadEvent, response: HTTPURLResponse?)
     
     func uploadCompleted(_ network: Any, file: Filenaming, response: HTTPURLResponse?, responseBody: [String: Any]?, statusCode:Int?)
     
