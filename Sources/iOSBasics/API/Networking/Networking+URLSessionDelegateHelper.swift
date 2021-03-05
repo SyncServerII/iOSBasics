@@ -7,6 +7,7 @@
 
 import Foundation
 import iOSShared
+import ServerShared
 
 extension Networking {
     func urlSessionHelper(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
@@ -112,8 +113,11 @@ extension Networking {
             switch cache.transfer {
             case .download:
                 transferDelegate.downloadCompleted(self, file: file, event: .failure(error: error, statusCode: response?.statusCode, responseHeaders: response?.allHeaderFields), response: response)
+            
+            case .upload:
+                transferDelegate.uploadCompleted(self, file: file, event: .failure(error: error, statusCode: response?.statusCode, responseHeaders: response?.allHeaderFields), response: response)
                 
-            case .upload, .request, .none:
+            case .request, .none:
                 transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
             }
         }
@@ -134,7 +138,15 @@ extension Networking {
                     
         switch cache.transfer {
         case .upload(let uploadBody):
-            transferDelegate.uploadCompleted(self, file: file, response: response, responseBody: uploadBody?.dictionary, statusCode: response?.statusCode)
+            if response?.statusCode == HTTPStatus.gone.rawValue {
+                transferDelegate.uploadCompleted(self, file: file, event: .gone(responseBody: uploadBody?.dictionary), response: response)
+            }
+            else if validStatusCode(response?.statusCode) {
+                transferDelegate.uploadCompleted(self, file: file, event: .success(responseBody: uploadBody?.dictionary), response: response)
+            }
+            else {
+                transferDelegate.uploadCompleted(self, file: file, event: .failure(error: nil, statusCode: response?.statusCode, responseHeaders: response?.allHeaderFields), response: response)
+            }
 
         case .download(let url):
             if validStatusCode(response?.statusCode), let url = url {

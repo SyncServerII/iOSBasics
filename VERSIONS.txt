@@ -1,5 +1,9 @@
 iOSBasics
 
+Version
+	* Rename a delegate method for consistency.
+	* Improve upload error handling.
+
 Version 0.12.1 (3/4/21)
 	* Rename a method.
 	

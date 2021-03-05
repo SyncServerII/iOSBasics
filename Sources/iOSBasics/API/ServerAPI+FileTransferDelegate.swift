@@ -94,12 +94,21 @@ extension ServerAPI: FileTransferDelegate {
             delegate.downloadCompleted(self, file: file, result: .failure(ServerAPIError.noExpectedResultKey))
         }
     }
-    
-    func uploadCompleted(_ network: Any, file: Filenaming, response: HTTPURLResponse?, responseBody: [String : Any]?, statusCode: Int?) {
-    
-        if statusCode == HTTPStatus.gone.rawValue,
-            let goneReasonRaw = responseBody?[GoneReason.goneReasonKey] as? String,
-            let goneReason = GoneReason(rawValue: goneReasonRaw) {
+
+    func uploadCompleted(_ network: Any, file: Filenaming, event: FileTransferUploadEvent, response: HTTPURLResponse?) {
+
+        switch event {
+        case .success:
+            break
+            
+        case .gone(let responseBody):
+            guard let goneReasonRaw = responseBody?[GoneReason.goneReasonKey] as? String,
+                let goneReason = GoneReason(rawValue: goneReasonRaw) else {
+                let message = "uploadCompleted: Gone but no or invalid gone reason: \(String(describing: responseBody?[GoneReason.goneReasonKey]))"
+                logger.error("\(message)")
+                delegate.uploadCompleted(self, file: file, result: .failure(ServerAPIError.generic(message)))
+                return
+            }
             
             guard let fileUUIDString = file.fileUUID,
                 let _ = UUID(uuidString: fileUUIDString) else {
@@ -109,11 +118,15 @@ extension ServerAPI: FileTransferDelegate {
             
             delegate.uploadCompleted(self, file: file, result: .success(UploadFileResult.gone(goneReason)))
             return
-        }
-
-        if let resultError = self.checkForError(statusCode: statusCode, error: nil, serverResponse: .dictionary(responseBody)) {
-            logger.error("ServerAPI+FileTransferDelegate.uploadCompleted: \(resultError)")
-            delegate.uploadCompleted(self, file: file, result: .failure(resultError))
+        
+        case .failure(error: let error, statusCode: let statusCode, let responseHeaders):
+            if let error = error {
+                delegate.uploadCompleted(self, file: file, result: .failure(error))
+            }
+            else {
+                let resultError = self.checkForError(statusCode: statusCode, error: error, serverResponse: .dictionary(responseHeaders)) ?? ServerAPIError.generic("Unknown: Upload: Failure, but nil error and resultError also nil.")
+                delegate.uploadCompleted(self, file: file, result: .failure(resultError))
+            }
             return
         }
 
