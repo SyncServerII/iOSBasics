@@ -50,7 +50,13 @@ class UploadFileTracker: DatabaseModel {
     
     static let appMetaDataField = Field("appMetaData", \M.appMetaData)
     var appMetaData: String?
+
+    static let uploadIndexField = Field("uploadIndex", \M.uploadIndex)
+    var uploadIndex: Int32?
     
+    static let uploadCountField = Field("uploadCount", \M.uploadCount)
+    var uploadCount: Int32?
+        
     init(db: Connection,
         id: Int64! = nil,
         uploadObjectTrackerId: Int64,
@@ -62,7 +68,9 @@ class UploadFileTracker: DatabaseModel {
         goneReason: GoneReason?,
         uploadCopy: Bool,
         checkSum: String?,
-        appMetaData: String?) throws {
+        appMetaData: String?,
+        uploadIndex: Int32? = nil,
+        uploadCount: Int32? = nil) throws {
 
         self.db = db
         self.id = id
@@ -76,6 +84,8 @@ class UploadFileTracker: DatabaseModel {
         self.uploadCopy = uploadCopy
         self.checkSum = checkSum
         self.appMetaData = appMetaData
+        self.uploadIndex = uploadIndex
+        self.uploadCount = uploadCount
     }
     
     // MARK: DatabaseModel
@@ -93,6 +103,8 @@ class UploadFileTracker: DatabaseModel {
             t.column(checkSumField.description)
             t.column(appMetaDataField.description)
             t.column(mimeTypeField.description)
+            t.column(uploadIndexField.description)
+            t.column(uploadCountField.description)
         }
     }
     
@@ -108,7 +120,9 @@ class UploadFileTracker: DatabaseModel {
             goneReason: row[Self.goneReasonField.description],
             uploadCopy: row[Self.uploadCopyField.description],
             checkSum: row[Self.checkSumField.description],
-            appMetaData: row[Self.appMetaDataField.description]
+            appMetaData: row[Self.appMetaDataField.description],
+            uploadIndex: row[Self.uploadIndexField.description],
+            uploadCount: row[Self.uploadCountField.description]
         )
     }
     
@@ -123,7 +137,9 @@ class UploadFileTracker: DatabaseModel {
             Self.uploadCopyField.description <- uploadCopy,
             Self.checkSumField.description <- checkSum,
             Self.appMetaDataField.description <- appMetaData,
-            Self.mimeTypeField.description <- mimeType
+            Self.mimeTypeField.description <- mimeType,
+            Self.uploadIndexField.description <- uploadIndex,
+            Self.uploadCountField.description <- uploadCount
         )
     }
 }

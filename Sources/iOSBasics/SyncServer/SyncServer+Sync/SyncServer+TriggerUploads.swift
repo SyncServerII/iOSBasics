@@ -1,10 +1,13 @@
 
 import Foundation
 import SQLite
+import iOSShared
 
 extension SyncServer {
     // Only re-check of uploads so far. This handles vN uploads only. v0 uploads are always handled in `queueObject`.
     func triggerUploads() throws {
+        try triggerRetryFileUploads()
+        
         let notStartedUploads = try UploadObjectTracker.allUploadsWith(status: .notStarted, db: db)
         guard notStartedUploads.count > 0 else {
             return
@@ -51,6 +54,7 @@ extension SyncServer {
             }
             
             let v0Upload = versions == .v0
+            uploadObject.object.v0Upload = v0Upload
             try uploadObject.object.update(setters:
                 UploadObjectTracker.v0UploadField.description <- v0Upload)
             
@@ -59,8 +63,42 @@ extension SyncServer {
                     throw SyncServerError.internalError("Could not get DirectoryFileEntry")
                 }
                 
-                try singleUpload(objectType: declaredObject, objectTracker: uploadObject.object, objectEntry: objectEntry, fileLabel: fileEntry.fileLabel, fileUUID: file.fileUUID, v0Upload: v0Upload, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount)
+                try singleUpload(objectType: declaredObject, objectTracker: uploadObject.object, objectEntry: objectEntry, fileLabel: fileEntry.fileLabel, fileUUID: file.fileUUID, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount)
             }
+        }
+    }
+
+    // See if individual files need re-triggering. These will be for uploads that failed and need retrying.
+    private func triggerRetryFileUploads() throws {
+        var filesToTrigger = [UploadFileTracker]()
+        
+        // We want to check objects that are currently in progress, uploading, and see if any of their files are .notStarted
+        let inProgressObjects = try UploadObjectTracker.allUploadsWith(status: .uploading, db: db)
+        for object in inProgressObjects {
+            let toTrigger = object.files.filter {$0.status == .notStarted}
+            filesToTrigger += toTrigger
+        }
+                
+        for fileTracker in filesToTrigger {
+            guard let objectTracker = try UploadObjectTracker.fetchSingleRow(db: db, where: UploadObjectTracker.idField.description == fileTracker.uploadObjectTrackerId) else {
+                throw SyncServerError.internalError("Could not get UploadObjectTracker")
+            }
+            
+            guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == objectTracker.fileGroupUUID) else {
+                throw SyncServerError.internalError("Could not get DirectoryObjectEntry")
+            }
+            
+            guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == fileTracker.fileUUID) else {
+                throw SyncServerError.internalError("Could not get DirectoryFileEntry")
+            }
+
+            guard let declaredObject = try DeclaredObjectModel.fetchSingleRow(db: db, where: DeclaredObjectModel.objectTypeField.description == objectEntry.objectType) else {
+                throw SyncServerError.internalError("Could not get DeclaredObjectModel")
+            }
+            
+            try uploadSingle(objectType: declaredObject, objectTracker: objectTracker, objectEntry: objectEntry, fileTracker: fileTracker, fileLabel: fileEntry.fileLabel)
+            
+            logger.debug("Retrying upload for file: \(fileTracker.fileUUID)")
         }
     }
 }

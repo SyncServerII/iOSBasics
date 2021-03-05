@@ -186,8 +186,8 @@ extension SyncServer {
         let (_, newObjectTracker) = try createNewTrackers(fileGroupUUID: upload.fileGroupUUID, pushNotificationMessage: upload.pushNotificationMessage, objectModel: objectModel, cloudStorageType: objectEntry.objectEntry.cloudStorageType, uploads: upload.uploads)
         
         // This is an upload for existing file instances.
-        try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- false)
-        
+        newObjectTracker.v0Upload = false
+        try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- newObjectTracker.v0Upload)
         
         if activeUploadsForThisFileGroup || !api.networking.reachability.isReachable {
             delegator { [weak self] delegate in
@@ -196,7 +196,7 @@ extension SyncServer {
             }
         } else {
             for (index, uploadFile) in upload.uploads.enumerated() {
-                try singleUpload(objectType: objectModel, objectTracker: newObjectTracker, objectEntry: objectEntry.objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid, v0Upload: false, uploadIndex: Int32(index + 1), uploadCount: Int32(upload.uploads.count))
+                try singleUpload(objectType: objectModel, objectTracker: newObjectTracker, objectEntry: objectEntry.objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid, uploadIndex: Int32(index + 1), uploadCount: Int32(upload.uploads.count))
             }
         }
     }
@@ -217,7 +217,8 @@ extension SyncServer {
         let (_, newObjectTracker) = try createNewTrackers(fileGroupUUID: upload.fileGroupUUID, pushNotificationMessage: upload.pushNotificationMessage, objectModel: objectType, cloudStorageType: cloudStorageType, uploads: upload.uploads)
         
         // Since this is the first upload for a new object instance or at least for the specific files of the object, all uploads are v0.
-        try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- true)
+        newObjectTracker.v0Upload = true
+        try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- newObjectTracker.v0Upload)
 
         if activeUploadsForThisFileGroup || !api.networking.reachability.isReachable {
             delegator { [weak self] delegate in
@@ -227,7 +228,7 @@ extension SyncServer {
         }
         else {
             for (index, uploadFile) in upload.uploads.enumerated() {
-                try singleUpload(objectType: objectType, objectTracker: newObjectTracker, objectEntry: objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid, v0Upload: true, uploadIndex: Int32(index + 1), uploadCount: Int32(upload.uploads.count))
+                try singleUpload(objectType: objectType, objectTracker: newObjectTracker, objectEntry: objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid, uploadIndex: Int32(index + 1), uploadCount: Int32(upload.uploads.count))
             }
         }
     }
