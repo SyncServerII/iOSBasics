@@ -10,7 +10,7 @@ extension SyncServer {
             return cloudStorageType
         }
         else {
-            let sharingGroups = try self.sharingGroups().filter
+            let sharingGroups = try self.getSharingGroupsHelper().filter
                 { $0.sharingGroupUUID == sharingGroupUUID}
             if sharingGroups.count == 0 {
                 throw SyncServerError.sharingGroupNotFound

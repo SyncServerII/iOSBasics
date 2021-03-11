@@ -33,7 +33,10 @@ extension SyncServer {
         
         for downloadGroup in downloadGroups {
             let first = downloadGroup[0]
-            
+
+            // To account for an issue I'm seeing on 3/10/21 where an object tracker exists but file trackers don't.
+            try DownloadObjectTracker.cleanupIfNeeded(fileGroupUUID: first.fileGroupUUID, db: db)
+        
             // Is this fileGroupUUID currently being downloaded or queued for download?
             let existingObjectTracker = try DownloadObjectTracker.fetch(db: db, where: DownloadObjectTracker.fileGroupUUIDField.description == first.fileGroupUUID)
             guard existingObjectTracker.count == 0 else {
@@ -74,6 +77,9 @@ extension SyncServer {
             // No files needing download for this file group.
             return nil
         }
+        
+        // To account for an issue I'm seeing on 3/10/21 where an object tracker exists but file trackers don't.
+        try DownloadObjectTracker.cleanupIfNeeded(fileGroupUUID: fileGroupUUID, db: db)
         
         let existingObjectTracker = try DownloadObjectTracker.fetch(db: db, where: DownloadObjectTracker.fileGroupUUIDField.description == fileGroupUUID)
         

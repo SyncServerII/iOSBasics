@@ -263,7 +263,7 @@ extension SyncServer {
 
 extension SyncServer {
     // fileTrackers.count may be 0.
-    func deleteDownloadTrackers(fileTrackers: [DownloadFileTracker], objectTracker: DownloadObjectTracker) throws {
+    private func deleteDownloadTrackers(fileTrackers: [DownloadFileTracker], objectTracker: DownloadObjectTracker) throws {
         for fileTracker in fileTrackers {
             try fileTracker.delete()
         }
@@ -378,7 +378,7 @@ extension SyncServer {
             }
             
             try deleteDownloadTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
-        }
+        } // Ends: remainingDownloads.count == 0
     }
     
     // For v0 uploads: Only mark the upload as done for the file tracker. Wait until *all* files have been uploaded until cleanup.

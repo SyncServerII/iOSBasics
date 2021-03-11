@@ -256,7 +256,7 @@ public class SyncServer {
         }
     }
     
-    // Do any of the files of the object need downloading? Analogous to `objectsNeedingDownload`, but for just a single object in a sharing group.
+    // Do any of the files of the object need downloading? Analogous to `objectsNeedingDownload`, but for just a single object in a sharing group. Nil is returned if the object doesn't need downloading.
     public func objectNeedsDownload(fileGroupUUID: UUID, includeGone: Bool = false) throws -> DownloadObject? {
         // `sync` because the immediate effect of this call is short running.
         return try serialQueue.sync { [weak self] in
@@ -282,7 +282,36 @@ public class SyncServer {
             try self.markAsDownloadedHelper(file: file)
         }
     }
+    
+    // MARK: Debugging
 
+    // Logs debugging information for the file.
+    public func debug(fileUUID: UUID) throws {
+        if let fileTracker = try DownloadFileTracker.fetchSingleRow(db: db, where: DownloadFileTracker.fileUUIDField.description == fileUUID) {
+            logger.debug("debug: fileTracker: fileTracker.status: \(fileTracker.status)")
+        }
+        else {
+            logger.debug("debug: fileTracker: No DownloadFileTracker with UUID: \(fileUUID)")
+        }
+
+        if let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) {
+            logger.debug("debug: fileEntry: fileEntry.fileVersion: \(String(describing: fileEntry.fileVersion)); fileEntry.serverFileVersion: \(String(describing: fileEntry.serverFileVersion))")
+        }
+        else {
+            logger.debug("debug: fileEntry: No DirectoryFileEntry with UUID: \(fileUUID)")
+        }
+    }
+
+    // Logs debugging information for the object.
+    public func debug(fileGroupUUID: UUID) throws {
+        if let _ = try DownloadObjectTracker.fetchSingleRow(db: db, where: DownloadObjectTracker.fileGroupUUIDField.description == fileGroupUUID) {
+            logger.debug("debug: objectTracker: exists.")
+        }
+        else {
+            logger.debug("debug: objectTracker: No DownloadObjectTracker with UUID: \(fileGroupUUID)")
+        }
+    }
+    
     // MARK: Sharing
     
     // The sharing groups in which the signed in user is a member.

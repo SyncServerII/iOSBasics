@@ -121,4 +121,19 @@ extension DownloadObjectTracker {
         
         return objectTracker
     }
+    
+    // To account for an issue I'm seeing on 3/10/21, I'm going to see if (a) a download object tracker exists for this group, (b) if it does, I'm going to make sure there are file trackers. If there are no file trackers, I'm going to remove the object tracker. My assumption is that the object tracker wasn't property removed due to a crash or similar problem.
+    static func cleanupIfNeeded(fileGroupUUID: UUID, db: Connection) throws {
+        guard let objectTracker = try DownloadObjectTracker.fetchSingleRow(db: db, where: DownloadObjectTracker.fileGroupUUIDField.description == fileGroupUUID) else {
+            return
+        }
+        
+        let fileTrackers = try objectTracker.dependentFileTrackers()
+        
+        if fileTrackers.count == 0 {
+            // No file trackers, but there is an object tracker. There really should be no object tracker in this case.
+            // This should have been done before, but looks like there was a problem before cleaning up.
+            try objectTracker.delete()
+        }
+    }
 }
