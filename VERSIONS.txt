@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.13.2 (3/14/21)
+	* Fix downloadable files issue. Files marked as deleted were being returned as still downloadable.
+
 Version 0.13.1 (3/10/21)
 	* Remove unused/commented out code. 
 	* Added debugging methods. 

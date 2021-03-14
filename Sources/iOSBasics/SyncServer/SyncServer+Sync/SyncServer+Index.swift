@@ -301,6 +301,7 @@ extension Array where Element == FileInfo {
                     throw FileInfoError.badLabel
                 }
                 
+                // Not overtly indicating in `DownloadFile` that the file is deleted or not deleted. That comes at the object level in the `IndexObject`-- see below.
                 downloadFiles += [DownloadFile(uuid: fileUUID, fileVersion: fileVersion, fileLabel: fileLabel)]
             }
             

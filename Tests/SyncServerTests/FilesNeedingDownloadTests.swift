@@ -537,4 +537,80 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         // Doesn't need downloading b/c it's already been downloaded.
         XCTAssert(object5 == nil)
     }
+    
+    func testObjectDoesNotNeedDownloadAfterLocalDeletion() throws {
+        let sharingGroupUUID = try syncToGetSharingGroupUUID()
+
+        let fileGroupUUID = UUID()
+        let objectType = "Foo"
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let fileUUID1 = UUID()
+
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
+        
+        try syncServer.queue(upload: upload)
+        
+        waitForUploadsToComplete(numberUploads: 1)
+
+        try syncServer.queue(objectDeletion: fileGroupUUID)
+
+        let exp = expectation(description: "exp")
+        handlers.deletionCompleted = { _, _ in
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+
+        let downloadable = try syncServer.objectNeedsDownload(fileGroupUUID: fileGroupUUID)
+        // Doesn't need downloading b/c it's been deleted "locally". I.e., we deleted it and didn't reset the database.
+        XCTAssert(downloadable == nil)
+    }
+    
+    func testObjectDoesNotNeedDownloadAfterRemoteDeletion() throws {
+        let sharingGroupUUID = try syncToGetSharingGroupUUID()
+
+        let fileGroupUUID = UUID()
+        let objectType = "Foo"
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let fileUUID1 = UUID()
+
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
+        
+        try syncServer.queue(upload: upload)
+        
+        waitForUploadsToComplete(numberUploads: 1)
+
+        try syncServer.queue(objectDeletion: fileGroupUUID)
+
+        let exp = expectation(description: "exp")
+        handlers.deletionCompleted = { _, _ in
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Reset the database to a state *as if* another client instance had done the deletion.
+        database = try Connection(.inMemory)
+        let fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
+        let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, reachability: FakeReachability(), configuration: config, signIns: fakeSignIns)
+        syncServer.delegate = self
+        syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
+        
+        try syncServer.register(object: example)
+        
+        try sync(withSharingGroupUUID:sharingGroupUUID)
+        
+        let objects = try syncServer.objectsNeedingDownload(sharingGroupUUID: sharingGroupUUID)
+        XCTAssert(objects.count == 0)
+    }
 }
