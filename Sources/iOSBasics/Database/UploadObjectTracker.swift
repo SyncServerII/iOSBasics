@@ -112,6 +112,23 @@ extension UploadObjectTracker {
         return try objectTracker.dependentFileTrackers()
     }
     
+    // Are there *any* dependent file trackers for a given file group that are currently having a specific status?
+    static func anyUploadsWith(status: UploadFileTracker.Status, db: Connection) throws -> [UploadWithStatus] {
+        var uploads = [UploadWithStatus]()
+        let objectTrackers = try UploadObjectTracker.fetch(db: db)
+        for objectTracker in objectTrackers {
+            let fileTrackers = try objectTracker.dependentFileTrackers()
+            let filtered = fileTrackers.filter {$0.status == status}
+            if filtered.count > 0 {
+                uploads += [
+                    UploadWithStatus(object: objectTracker, files: fileTrackers)
+                ]
+            }
+        }
+
+        return uploads
+    }
+    
     struct UploadWithStatus {
         let object: UploadObjectTracker
         let files: [UploadFileTracker]

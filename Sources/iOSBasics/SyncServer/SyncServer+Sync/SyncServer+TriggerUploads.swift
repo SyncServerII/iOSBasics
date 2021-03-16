@@ -13,8 +13,8 @@ extension SyncServer {
             return
         }
         
-        // What uploads are currently in-progress?
-        let inProgress = try UploadObjectTracker.allUploadsWith(status: .uploading, db: db)
+        // What uploads are currently in-progress? i.e., what objects have any file trackers with a status of .uploading?        
+        let inProgress = try UploadObjectTracker.anyUploadsWith(status: .uploading, db: db)
         let fileGroupsInProgress = Set<UUID>(inProgress.map { $0.object.fileGroupUUID })
         
         // These are the objects we want to `exclude` from uploading. Start off with the file groups actively uploading. Don't want parallel uploads for the same file group.

@@ -130,9 +130,11 @@ extension SyncServer {
         
             // All files must be either v0 or vN
             if v0Uploads.count == 0 {
+                // vN uploads
                 try uploadExisting(upload: upload, objectModel: declaredObject, objectEntry: objectInfo, activeUploadsForThisFileGroup: activeUploadsForThisFileGroup)
             }
             else if v0Uploads.count == upload.uploads.count {
+                // v0 uploads
                 try uploadNew(upload: upload, objectType: declaredObject, objectEntryType: .existing(objectInfo.objectEntry), activeUploadsForThisFileGroup: activeUploadsForThisFileGroup)
             }
             else {

@@ -416,4 +416,73 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         }
         XCTFail()
     }
+    
+    // This is a test for an issue that arose on 3/14/21. Got a server error:
+    //  [FileController+UploadFile.swift:52 finish(_:params:)] v0 contents for change resolver (CommentFile) were not valid:
+    // when I uploaded an image and quickly added a comment.
+    func testV0ContentsNotValid() throws {
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let changeResolver = CommentFile.changeResolverName
+        
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file2", mimeTypes: [.text], changeResolverName: changeResolver)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
+        try syncServer.register(object: example)
+        
+        let commentFile = CommentFile()
+        let commentFileData = try commentFile.getData()
+                
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID1)
+        let file2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, dataSource: .copy(exampleImageFileURL), uuid: fileUUID2)
+        let uploads = [file1, file2]
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: uploads)
+
+        try syncServer.queue(upload: upload)
+        //waitForUploadsToComplete(numberUploads: 2, v0Upload: true)
+
+        let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
+        
+        let file3 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(comment.updateContents), uuid: fileUUID1)
+        let uploads2 = [file3]
+        
+        let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: uploads2)
+        
+        try syncServer.queue(upload: upload2)
+        
+/*
+[2021-03-16T01:28:22.994Z] [INFO] [FileController+UploadFile.swift:180 uploadFile(params:)] Uploading first version of file.
+[2021-03-16T01:28:22.997Z] [ERROR] [FileController+UploadFile.swift:52 finish(_:params:)] No fileLabel given for a v0 file.
+[2021-03-16T01:28:23.000Z] [ERROR] [RequestHandler.swift:74 failWithError(failureResult:)] No fileLabel given for a v0 file.
+[2021-03-16T01:28:23.000Z] [INFO] [RequestHandler.swift:145 endWith(clientResponse:)] REQUEST /Index: ABOUT TO END ...
+[2021-03-16T01:28:23.002Z] [INFO] [RequestHandler.swift:145 endWith(clientResponse:)] REQUEST /UploadFile: ABOUT TO END ...
+[2021-03-16T01:28:23.004Z] [INFO] [RequestHandler.swift:149 endWith(clientResponse:)] REQUEST /Index: STATUS CODE: OK
+[2021-03-16T01:28:23.006Z] [INFO] [RequestHandler.swift:149 endWith(clientResponse:)] REQUEST /UploadFile: STATUS CODE: internalServerError
+         */
+        
+        // Simulate the sync that would happen after adding the comment.
+        try syncServer.sync()
+        
+        waitForUploadsToComplete(numberUploads: 2, v0Upload: true)
+
+        // Sync to upload v1 of comment.
+        try syncServer.sync()
+        
+        // Wait for some period of time for the deferred upload to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+        
+        let exp3 = expectation(description: "exp2")
+        handlers.deferredCompleted = { _, operation, count in
+            exp3.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+    }
 }
