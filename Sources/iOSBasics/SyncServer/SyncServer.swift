@@ -47,13 +47,15 @@ public class SyncServer {
     // Serializing *all* operations acting on iOSBasics held data structures with this queue so we don't mess up our database tables and and in-memory structures. E.g., with delegate calls from networking, timer callbacks, and client calls to the iOSBasics interface. (By default `DispatchQueue` gives a serial queue).
     let serialQueue = DispatchQueue(label: "iOSBasics")
 
+    let requestable:NetworkRequestable
+
     /// Create a SyncServer instance.
     ///
     /// - Parameters:
     ///     - hashingManager: Used to compute hashes of files for upload and
     ///         download.
     ///     - db: SQLite database connection
-    ///     - reachability: Determine network reachability. SyncServer will retain this object.
+    ///     - requestable: Can network requests be made? SyncServer will retain this object.
     ///     - configuration: The sync server configuration.
     ///     - signIns: Sign in helper for when iOSSignIn is used.
     ///         The caller must retain the instance and call the
@@ -65,7 +67,7 @@ public class SyncServer {
     ///         Also used for any callbacks defined on this interface.
     public init(hashingManager: HashingManager,
         db:Connection,
-        reachability: NetworkReachability,
+        requestable:NetworkRequestable,
         configuration: Configuration,
         signIns: SignIns,
         dispatchQueue: DispatchQueue = DispatchQueue.main) throws {
@@ -73,12 +75,13 @@ public class SyncServer {
         self.db = db
         self.hashingManager = hashingManager
         self.dispatchQueue = dispatchQueue
+        self.requestable = requestable
         
         try Database.setup(db: db)
 
         self.signIns = signIns
         
-        guard let api = ServerAPI(database: db, hashingManager: hashingManager, reachability:reachability, delegate: self, serialQueue: serialQueue, config: configuration) else {
+        guard let api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, serialQueue: serialQueue, config: configuration) else {
             throw SyncServerError.internalError("Could not create ServerAPI")
         }
         self.api = api
@@ -169,7 +172,7 @@ public class SyncServer {
     Throws SyncServerError.networkNotReachable if there is no network connection.
     */
     public func sync(sharingGroupUUID: UUID? = nil) throws {
-        guard api.networking.reachability.isReachable else {
+        guard requestable.canMakeNetworkRequests else {
             logger.info("Could not sync: Network not reachable")
             throw SyncServerError.networkNotReachable
         }
@@ -377,7 +380,7 @@ public class SyncServer {
     // The non-error result is the code for the sharing invitation, a UUID.  `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func createSharingInvitation(withPermission permission:Permission, sharingGroupUUID: UUID, numberAcceptors: UInt, allowSocialAcceptance: Bool, expiryDuration:TimeInterval = ServerConstants.sharingInvitationExpiryDuration, completion: @escaping (Swift.Result<UUID, Error>)->()) {
     
-        guard api.networking.reachability.isReachable else {
+        guard requestable.canMakeNetworkRequests else {
             logger.info("Could not sync: Network not reachable")
             completion(.failure(SyncServerError.networkNotReachable))
             return
@@ -399,7 +402,7 @@ public class SyncServer {
     /// On success, automatically syncs index before returning. `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func redeemSharingInvitation(sharingInvitationUUID:UUID, completion: @escaping (Swift.Result<RedeemResult, Error>)->()) {
 
-        guard api.networking.reachability.isReachable else {
+        guard requestable.canMakeNetworkRequests else {
             logger.info("Could not sync: Network not reachable")
             completion(.failure(SyncServerError.networkNotReachable))
             return
@@ -427,7 +430,7 @@ public class SyncServer {
     
     /// `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func getSharingInvitationInfo(sharingInvitationUUID: UUID, completion: @escaping (Swift.Result<SharingInvitationInfo, Error>)->()) {
-        guard api.networking.reachability.isReachable else {
+        guard requestable.canMakeNetworkRequests else {
             logger.info("Could not sync: Network not reachable")
             completion(.failure(SyncServerError.networkNotReachable))
             return
@@ -450,7 +453,7 @@ public class SyncServer {
     
     /// `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func registerPushNotificationToken(_ token: String, completion: @escaping (Error?)->()) {
-        guard api.networking.reachability.isReachable else {
+        guard requestable.canMakeNetworkRequests else {
             logger.info("Could not sync: Network not reachable")
             completion(SyncServerError.networkNotReachable)
             return

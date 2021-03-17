@@ -191,7 +191,7 @@ extension SyncServer {
         newObjectTracker.v0Upload = false
         try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- newObjectTracker.v0Upload)
         
-        if activeUploadsForThisFileGroup || !api.networking.reachability.isReachable {
+        if activeUploadsForThisFileGroup || !requestable.canMakeNetworkRequests {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
                 delegate.uploadQueue(self, event: .queued(fileGroupUUID: upload.fileGroupUUID))
@@ -222,7 +222,7 @@ extension SyncServer {
         newObjectTracker.v0Upload = true
         try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- newObjectTracker.v0Upload)
 
-        if activeUploadsForThisFileGroup || !api.networking.reachability.isReachable {
+        if activeUploadsForThisFileGroup || !requestable.canMakeNetworkRequests {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
                 delegate.uploadQueue(self, event: .queued(fileGroupUUID: upload.fileGroupUUID))

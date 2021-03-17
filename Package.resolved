@@ -78,8 +78,8 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSShared.git",
         "state": {
           "branch": null,
-          "revision": "ebf1ab60205b4844ce3cf50ed54a8b49cfc14ec3",
-          "version": "0.4.0"
+          "revision": "e652c18c1e4b26d0b69eea6ad445c8019fea92f0",
+          "version": "0.6.0"
         }
       },
       {
@@ -87,8 +87,8 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSSignIn.git",
         "state": {
           "branch": null,
-          "revision": "7a451212e110e21e4cc6f719eedb0931a9ff34f8",
-          "version": "0.3.0"
+          "revision": "8ea5270908a63fdfabd02ac2831fd50b0266a93d",
+          "version": "0.3.1"
         }
       },
       {
@@ -186,8 +186,8 @@
         "repositoryURL": "https://github.com/SyncServerII/ServerShared.git",
         "state": {
           "branch": null,
-          "revision": "04e6b2f063e5d4ab8dea6e6c71e342431893f7f6",
-          "version": "0.5.1"
+          "revision": "96642c2be2833e9062addaf259fc323a7cabdc9e",
+          "version": "0.6.0"
         }
       },
       {
@@ -204,8 +204,8 @@
         "repositoryURL": "https://github.com/apple/swift-log.git",
         "state": {
           "branch": null,
-          "revision": "12d3a8651d32295794a850307f77407f95b8c881",
-          "version": "1.4.1"
+          "revision": "5d66f7ba25daf4f94100e7022febf3c75e37a6c7",
+          "version": "1.4.2"
         }
       },
       {

@@ -28,7 +28,7 @@ class FileIndexUpsertTests: XCTestCase, Delegate, UserSetup {
         config = Configuration(appGroupIdentifier: nil, serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: "Fake", deviceUUID: deviceUUID, packageTests: true)
         fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
         let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
-        syncServer = try SyncServer(hashingManager: hashingManager, db: database, reachability: FakeReachability(), configuration: config, signIns: fakeSignIns)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, requestable: FakeRequestable(), configuration: config, signIns: fakeSignIns)
         syncServer.delegate = self
         syncServer.credentialsDelegate = self
         syncServer.helperDelegate = self

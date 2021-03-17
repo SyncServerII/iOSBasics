@@ -7,7 +7,7 @@ import iOSShared
 
 extension SyncServer {
     func createSharingGroupHelper(sharingGroupUUID: UUID, sharingGroupName: String? = nil, completion: @escaping (Error?)->()) {
-        guard api.networking.reachability.isReachable else {
+        guard requestable.canMakeNetworkRequests else {
             logger.info("Could not sync: Network not reachable")
             completion(SyncServerError.networkNotReachable)
             return
@@ -37,7 +37,7 @@ extension SyncServer {
     }
     
     func updateSharingGroupHelper(sharingGroupUUID: UUID, newSharingGroupName: String?, completion:@escaping (Error?)->()) {
-        guard api.networking.reachability.isReachable else {
+        guard requestable.canMakeNetworkRequests else {
             logger.info("Could not sync: Network not reachable")
             completion(SyncServerError.networkNotReachable)
             return
@@ -65,7 +65,7 @@ extension SyncServer {
     }
     
     func removeFromSharingGroupHelper(sharingGroupUUID: UUID, completion:@escaping (Error?)->()) {
-        guard api.networking.reachability.isReachable else {
+        guard requestable.canMakeNetworkRequests else {
             logger.info("Could not sync: Network not reachable")
             completion(SyncServerError.networkNotReachable)
             return

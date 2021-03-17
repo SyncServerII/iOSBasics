@@ -38,9 +38,9 @@ class ServerAPI {
     let hashingManager: HashingManager
     let serialQueue:DispatchQueue
     
-    init?(database: Connection, hashingManager: HashingManager, reachability:NetworkReachability, delegate: ServerAPIDelegate, serialQueue:DispatchQueue, config: Configuration) {
+    init?(database: Connection, hashingManager: HashingManager, delegate: ServerAPIDelegate, serialQueue:DispatchQueue, config: Configuration) {
     
-        guard let networking = Networking(database: database, serialQueue: serialQueue, delegate: delegate, reachability: reachability, config: config) else {
+        guard let networking = Networking(database: database, serialQueue: serialQueue, delegate: delegate, config: config) else {
             return nil
         }
         

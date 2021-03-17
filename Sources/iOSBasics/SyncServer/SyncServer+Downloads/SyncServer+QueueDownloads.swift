@@ -49,7 +49,7 @@ extension SyncServer {
         // Create a DownloadObjectTracker and DownloadFileTracker(s)
         let (newObjectTrackerId, _, fileTrackers) = try createNewTrackers(fileGroupUUID: download.fileGroupUUID, downloads: download.downloads)
 
-        guard !activeDownloadsForThisFileGroup && api.networking.reachability.isReachable else {
+        guard !activeDownloadsForThisFileGroup && requestable.canMakeNetworkRequests else {
             // There are active downloads for this file group.
             delegator { [weak self] delegate in
                 guard let self = self else { return }

@@ -33,7 +33,7 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
         hashingManager = HashingManager()
         try? hashingManager.add(hashing: DropboxHashing())
         let serialQueue = DispatchQueue(label: "iOSBasicsTests")
-        api = ServerAPI(database: database, hashingManager: hashingManager, reachability: FakeReachability(), delegate: self, serialQueue: serialQueue, config: config)
+        api = ServerAPI(database: database, hashingManager: hashingManager, delegate: self, serialQueue: serialQueue, config: config)
         _ = handlers.user.removeUser()
         XCTAssert(handlers.user.addUser())
     }

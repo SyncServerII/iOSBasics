@@ -36,7 +36,7 @@ extension SyncServer {
         let tracker = try UploadDeletionTracker(db: db, uuid: objectInfo.objectEntry.fileGroupUUID, deletionType: .fileGroupUUID, status: .notStarted, pushNotificationMessage: pushNotificationMessage)
         try tracker.insert()
         
-        guard api.networking.reachability.isReachable else {
+        guard requestable.canMakeNetworkRequests else {
             logger.warning("Could not queue deletion request: Network not reachable")
             return
         }
