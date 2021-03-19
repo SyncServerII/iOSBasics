@@ -49,13 +49,15 @@ class Networking: NSObject {
     let backgroundCache: BackgroundCache
     var handleEventsForBackgroundURLSessionCompletionHandler: (() -> Void)?
     let serialQueue:DispatchQueue
+    let backgroundAsssertable: BackgroundAsssertable
 
-    init?(database:Connection, serialQueue:DispatchQueue, delegate: NetworkingDelegate, transferDelegate:FileTransferDelegate? = nil, config: Configuration) {
+    init?(database:Connection, serialQueue:DispatchQueue, backgroundAsssertable: BackgroundAsssertable, delegate: NetworkingDelegate, transferDelegate:FileTransferDelegate? = nil, config: Configuration) {
         self.delegate = delegate
         self.transferDelegate = transferDelegate
         self.config = config
         self.backgroundCache = BackgroundCache(database: database)
         self.serialQueue = serialQueue
+        self.backgroundAsssertable = backgroundAsssertable
         
         super.init()
         

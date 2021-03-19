@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.16.0 (3/19/21)
+	* Added use of `BackgroundAsssertable` in networking delegate calls.
+
 Version 0.15.0 (3/18/21)
 	* Working on crash issues. Added use of `BackgroundAsssertable`.
 	

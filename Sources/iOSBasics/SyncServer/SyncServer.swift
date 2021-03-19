@@ -85,7 +85,7 @@ public class SyncServer {
 
         self.signIns = signIns
         
-        guard let api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, serialQueue: serialQueue, config: configuration) else {
+        guard let api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, serialQueue: serialQueue, backgroundAsssertable: backgroundAsssertable, config: configuration) else {
             throw SyncServerError.internalError("Could not create ServerAPI")
         }
         self.api = api
