@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.15.0 (3/18/21)
+	* Working on crash issues. Added use of `BackgroundAsssertable`.
+	
 Version 0.14.0 (3/16/21)
 	* Generalize network reachability to NetworkRequestable.
 	
