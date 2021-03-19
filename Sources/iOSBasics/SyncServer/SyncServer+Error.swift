@@ -54,9 +54,16 @@ public enum SyncServerError: Error, Equatable {
     case mimeTypeNotInDeclaration
     
     case networkNotReachable
+    case backgroundAssertionExpired
     
     public static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
+         case backgroundAssertionExpired:
+            guard case .backgroundAssertionExpired = rhs else {
+                return false
+            }
+            return true
+            
          case networkNotReachable:
             guard case .networkNotReachable = rhs else {
                 return false

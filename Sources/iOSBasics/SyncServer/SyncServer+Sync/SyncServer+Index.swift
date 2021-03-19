@@ -6,7 +6,7 @@ import iOSShared
 
 extension SyncServer {
     // Operates asynchronously.
-    func getIndex(sharingGroupUUID: UUID?) {
+    func getIndex(sharingGroupUUID: UUID?, completion: (()->())? = nil) {
         api.index(sharingGroupUUID: sharingGroupUUID) { [weak self] result in
             guard let self = self else { return }
 
@@ -19,6 +19,8 @@ extension SyncServer {
                         guard let self = self else { return }
                         delegate.userEvent(self, event: .error(error))
                     }
+                    
+                    completion?()
                     return
                 }
                 
@@ -35,6 +37,8 @@ extension SyncServer {
                             delegate.userEvent(self, event: .error(error))
                         }
                     }
+                    
+                    completion?()
                     return
                 }
 
@@ -43,6 +47,8 @@ extension SyncServer {
                         guard let self = self else { return }
                         delegate.userEvent(self, event: .error(SyncServerError.internalError("Nil fileIndex but a sharing group was given.")))                        
                     }
+                    
+                    completion?()
                     return
                 }
                 
@@ -56,6 +62,8 @@ extension SyncServer {
                         guard let self = self else { return }
                         delegate.userEvent(self, event: .error(error))
                     }
+                    
+                    completion?()
                     return
                 }
 
@@ -70,6 +78,8 @@ extension SyncServer {
                     delegate.userEvent(self, event: .error(error))
                 }
             }
+            
+            completion?()
         }
     }
     

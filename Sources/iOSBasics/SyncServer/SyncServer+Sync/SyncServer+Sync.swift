@@ -10,13 +10,18 @@ import SQLite
 import iOSShared
 
 extension SyncServer {
-    func syncHelper(sharingGroupUUID: UUID? = nil) throws {        
-        getIndex(sharingGroupUUID: sharingGroupUUID)
-        
+    func syncHelper(completion: @escaping ()->(), sharingGroupUUID: UUID? = nil) throws {
         try triggerUploads()
         try triggerDownloads()
         try triggerDeletions()
         
-        checkOnDeferred()
+        // Operates asynchronously
+        getIndex(sharingGroupUUID: sharingGroupUUID) { [weak self] in
+            guard let self = self else { return }
+            
+            self.checkOnDeferred() {
+                completion()
+            }
+        }
     }
 }

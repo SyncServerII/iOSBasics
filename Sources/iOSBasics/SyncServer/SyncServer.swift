@@ -48,7 +48,8 @@ public class SyncServer {
     let serialQueue = DispatchQueue(label: "iOSBasics")
 
     let requestable:NetworkRequestable
-
+    let backgroundAsssertable: BackgroundAsssertable
+    
     /// Create a SyncServer instance.
     ///
     /// - Parameters:
@@ -62,6 +63,7 @@ public class SyncServer {
     ///         `SignInManagerDelegate` methods on the SignIns object when the sign
     ///         in state changes. This connects the iOSSignIn package to the
     ///         iOSBasics package.
+    ///     - backgroundAsssertable: To ensure necessary tasks execute properly if app transitions to the background.
     ///     - dispatchQueue: used to call `SyncServerDelegate` methods.
     ///         (`SyncServerCredentials` and `SyncServerHelpers` methods may be called on any queue.)
     ///         Also used for any callbacks defined on this interface.
@@ -70,12 +72,14 @@ public class SyncServer {
         requestable:NetworkRequestable,
         configuration: Configuration,
         signIns: SignIns,
+        backgroundAsssertable: BackgroundAsssertable,
         dispatchQueue: DispatchQueue = DispatchQueue.main) throws {
         self.configuration = configuration
         self.db = db
         self.hashingManager = hashingManager
         self.dispatchQueue = dispatchQueue
         self.requestable = requestable
+        self.backgroundAsssertable = backgroundAsssertable
         
         try Database.setup(db: db)
 
@@ -133,9 +137,20 @@ public class SyncServer {
     // You must do at least one `sync` call prior to this call after installing the app. (Not per launch of the app-- these results are persisted).
     public func queue(upload: UploadableObject) throws {
         // `sync` because the immediate effect of this call is short running.
-        try serialQueue.sync { [weak self] in
+
+        try backgroundAsssertable.syncRun { [weak self] in
             guard let self = self else { return }
-            try self.queueHelper(upload: upload)
+
+            try self.serialQueue.sync { [weak self] in
+                guard let self = self else { return }
+                
+                try self.queueHelper(upload: upload)
+            }
+        } expiry: { [weak self] in
+            guard let self = self else { return }
+            self.delegator { delegate in
+                delegate.userEvent(self, event: .error(SyncServerError.backgroundAssertionExpired))
+            }
         }
     }
 
@@ -144,18 +159,38 @@ public class SyncServer {
     // If you queue an object that has a fileGroupUUID which is already queued or in progress of downloading, your request will be queued. i.e., the download will not be triggered right now. It will be triggered later.
     public func queue<DWL: DownloadableObject>(download: DWL) throws {
         // `sync` because the immediate effect of this call is short running.
-        try serialQueue.sync { [weak self] in
+
+        try backgroundAsssertable.syncRun { [weak self] in
             guard let self = self else { return }
-            try self.queueHelper(download: download)
+            
+            try self.serialQueue.sync { [weak self] in
+                guard let self = self else { return }
+                try self.queueHelper(download: download)
+            }
+        } expiry: { [weak self] in
+            guard let self = self else { return }
+            self.delegator { delegate in
+                delegate.userEvent(self, event: .error(SyncServerError.backgroundAssertionExpired))
+            }
         }
     }
     
     // The deletion of an entire existing object, referenced by its file group.
     public func queue(objectDeletion fileGroupUUID: UUID, pushNotificationMessage: String? = nil) throws {
         // `sync` because the immediate effect of this call is short running.
-        try serialQueue.sync { [weak self] in
+            
+        try backgroundAsssertable.syncRun { [weak self] in
             guard let self = self else { return }
-            try self.deleteHelper(object: fileGroupUUID, pushNotificationMessage: pushNotificationMessage)
+
+            try self.serialQueue.sync { [weak self] in
+                guard let self = self else { return }
+                try self.deleteHelper(object: fileGroupUUID, pushNotificationMessage: pushNotificationMessage)
+            }
+        } expiry: { [weak self] in
+            guard let self = self else { return }
+            self.delegator { delegate in
+                delegate.userEvent(self, event: .error(SyncServerError.backgroundAssertionExpired))
+            }
         }
     }
 
@@ -176,10 +211,26 @@ public class SyncServer {
             logger.info("Could not sync: Network not reachable")
             throw SyncServerError.networkNotReachable
         }
-        
-        try serialQueue.sync { [weak self] in
+
+        backgroundAsssertable.asyncRun { [weak self] completion in
             guard let self = self else { return }
-            try self.syncHelper(sharingGroupUUID: sharingGroupUUID)
+            
+            self.serialQueue.async { [weak self] in
+                guard let self = self else { return }
+                
+                do {
+                    try self.syncHelper(completion: completion, sharingGroupUUID: sharingGroupUUID)
+                } catch let error {
+                    self.delegator { delegate in
+                        delegate.userEvent(self, event: .error(error))
+                    }
+                }
+            }
+        } expiry: { [weak self] in
+            guard let self = self else { return }
+            self.delegator { delegate in
+                delegate.userEvent(self, event: .error(SyncServerError.backgroundAssertionExpired))
+            }
         }
     }
     

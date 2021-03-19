@@ -9,7 +9,7 @@ import Foundation
 import iOSShared
 
 extension SyncServer {
-    func checkOnDeferred() {
+    func checkOnDeferred(completion: (()->())? = nil) {
         DispatchQueue.global().async {
             do {
                 try self.checkOnDeferredHelper()
@@ -19,6 +19,8 @@ extension SyncServer {
                     delegate.userEvent(self, event: .error(error))
                 }
             }
+            
+            completion?()
         }
     }
     
