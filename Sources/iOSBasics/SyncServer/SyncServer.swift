@@ -320,6 +320,7 @@ public class SyncServer {
     }
 
     // Call this method so that, after you download an object, it doesn't appear again in `objectsNeedingDownload` (for those file versions).
+    // This does *not* call `BackgroundAsssertable` methods.
     public func markAsDownloaded<DWL: DownloadableObject>(object: DWL) throws {
         // `sync` because the immediate effect of this call is short running.
         try serialQueue.sync { [weak self] in
