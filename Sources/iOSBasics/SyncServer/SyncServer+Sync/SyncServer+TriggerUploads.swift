@@ -4,10 +4,14 @@ import SQLite
 import iOSShared
 
 extension SyncServer {
-    // Only re-check of uploads so far. This handles vN uploads only. v0 uploads are always handled in `queueObject`.
     func triggerUploads() throws {
         try triggerRetryFileUploads()
-        
+        try triggerQueuedUploads()
+    }
+    
+    // Trigger new uploads for file groups where those have been queued before but not started. This handles vN uploads only. v0 uploads are always handled in `queue(upload: UploadableObject)`.
+    private func triggerQueuedUploads() throws {
+        // These are the uploads that haven't been started yet, and that we may be starting with this call.
         let notStartedUploads = try UploadObjectTracker.allUploadsWith(status: .notStarted, db: db)
         guard notStartedUploads.count > 0 else {
             return
@@ -36,7 +40,7 @@ extension SyncServer {
             return
         }
         
-        // Now can actually trigger the uploads.
+        // Now can actually trigger the new uploads.
         
         for uploadObject in toTrigger {
             guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == uploadObject.object.fileGroupUUID) else {
