@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.17.1 (3/20/21)
+	* Refactored some code for clarity.
+	
 Version 0.17.0 (3/20/21)
 	* Added method to indicate foreground/background state to library.
 
