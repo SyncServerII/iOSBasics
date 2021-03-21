@@ -108,6 +108,21 @@ public class SyncServer {
         }
     }
     
+    // MARK: App state methods
+    
+    public enum AppState {
+        case foreground
+        case background
+    }
+    
+    public func appChangesState(to appState: AppState) throws {
+        if appState == .background {
+            stopTimedDeferredCheckIfNeeded()
+        }
+        
+        // Going to leave restarting the timer, if needed, to the next `sync`.
+    }
+    
     // MARK: Declaring object types.
     
     // You must register all objects every time the app starts.

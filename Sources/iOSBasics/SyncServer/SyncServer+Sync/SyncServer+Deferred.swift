@@ -90,7 +90,7 @@ extension SyncServer {
         }
     }
     
-    private func stopTimedDeferredCheckIfNeeded() {
+    func stopTimedDeferredCheckIfNeeded() {
         serialQueue.async { [weak self] in
             guard let self = self else { return }
 

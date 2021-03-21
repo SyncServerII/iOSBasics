@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.17.0 (3/20/21)
+	* Added method to indicate foreground/background state to library.
+
 Version 0.16.0 (3/19/21)
 	* Added use of `BackgroundAsssertable` in networking delegate calls.
 
