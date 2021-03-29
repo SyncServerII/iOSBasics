@@ -2,7 +2,7 @@
 import Foundation
 import iOSShared
 
-public enum SyncServerError: Error, Equatable {
+public enum SyncServerError: Error, Equatable, UserDisplayable {
     case declarationDifferentThanSyncedObject(String)
     case tooManyObjects
     case noObject
@@ -55,6 +55,13 @@ public enum SyncServerError: Error, Equatable {
     
     case networkNotReachable
     case backgroundAssertionExpired
+
+    public var userDisplayableMessage: (title: String, message: String)? {
+        if self == .networkNotReachable {
+            return (title: "Alert!", message: "Unable to make a network request.")
+        }
+        return nil
+    }
     
     public static func ==(lhs: Self, rhs: Self) -> Bool {
         switch lhs {
