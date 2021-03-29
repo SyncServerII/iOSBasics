@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.18.1 (3/28/21)
+	* Fix issue with uploadsMatching
+
 Version 0.18.0 (3/28/21)
 	* Deal with "v0 contents for change resolver (CommentFile) were not valid": https://github.com/SyncServerII/Neebla/issues/8. I rewrote and cleaned up code dealing with upload prioritization. In particular, when doing initial upload queuing or when retriggering, v0 uploads were not given consistent priority.
 	* When doing testing, not using check deferred Timer. That had been making tests flaky.

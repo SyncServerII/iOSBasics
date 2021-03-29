@@ -132,19 +132,19 @@ extension UploadObjectTracker {
         let objectTrackers = try UploadObjectTracker.fetch(db: db, where: whereObjects)
         for objectTracker in objectTrackers {
             let fileTrackers = try objectTracker.dependentFileTrackers()
-            let filtered = fileTrackers.filter { filePredicate($0) }
+            let filteredFileTrackers = fileTrackers.filter { filePredicate($0) }
             
             var scopeConstraint: Bool
             switch scope {
             case .any:
                 scopeConstraint = true
             case .all:
-                scopeConstraint = filtered.count == fileTrackers.count
+                scopeConstraint = filteredFileTrackers.count == fileTrackers.count
             }
             
-            if scopeConstraint && filtered.count > 0 {
+            if scopeConstraint && filteredFileTrackers.count > 0 {
                 uploads += [
-                    UploadWithStatus(object: objectTracker, files: fileTrackers)
+                    UploadWithStatus(object: objectTracker, files: filteredFileTrackers)
                 ]
             }
         }
@@ -195,12 +195,18 @@ extension UploadObjectTracker {
             }
             
             // Only start one new upload per file group (really, a set of files in a single `UploadObjectTracker`). And prioritize v0 uploads if there are any.
+            var toStart: UploadObjectTracker.UploadWithStatus?
+            
             let v0Uploads = fileGroup.filter { $0.object.v0Upload == true }
             if v0Uploads.count > 0 {
-                uploadsToStart += [v0Uploads[0]]
+                toStart = v0Uploads[0]
             }
             else if fileGroup.count > 0 {
-                uploadsToStart += [fileGroup[0]]
+                toStart = fileGroup[0]
+            }
+            
+            if let toStart = toStart {
+                uploadsToStart += [toStart]
             }
         }
         
