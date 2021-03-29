@@ -61,6 +61,11 @@ extension SyncServer {
         
     // Start timed check if there's not one running already.
     func startTimedDeferredCheckIfNeeded() {
+        guard let deferredCheckInterval = configuration.deferredCheckInterval else {
+            logger.debug("Not doing timer-based deferred check: configuration.deferredCheckInterval is nil.")
+            return
+        }
+        
         serialQueue.async { [weak self] in
             guard let self = self else { return }
             
@@ -71,7 +76,7 @@ extension SyncServer {
             logger.debug("deferredOperationTimer: Creating timer")
                         
             // `Timer.scheduledTimer` on the `serialQueue` doesn't work. Presumably that queue doesn't have a run loop.
-            let timer = Timer(timeInterval: self.configuration.deferredCheckInterval, repeats: false) { [weak self] _ in
+            let timer = Timer(timeInterval: deferredCheckInterval, repeats: false) { [weak self] _ in
                 guard let self = self else { return }
                 
                 logger.debug("deferredOperationTimer: Running")

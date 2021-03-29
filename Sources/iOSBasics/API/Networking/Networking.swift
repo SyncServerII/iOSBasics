@@ -193,6 +193,7 @@ class Networking: NSObject {
         
         // With an HTTP or HTTPS request, we get HTTPURLResponse back. See https://developer.apple.com/reference/foundation/urlsession/1407613-datatask
         guard let response = urlResponse as? HTTPURLResponse else {
+            logger.error("processResponse: couldNotGetHTTPURLResponse")
             return (nil, nil, NetworkingError.couldNotGetHTTPURLResponse)
         }
         

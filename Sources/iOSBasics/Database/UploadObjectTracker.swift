@@ -15,7 +15,7 @@ import iOSShared
 class UploadObjectTracker: DatabaseModel {
     let db: Connection
     var id: Int64!
-     
+    
     static let fileGroupUUIDField = Field("fileGroupUUID", \M.fileGroupUUID)
     var fileGroupUUID: UUID
     
@@ -46,7 +46,7 @@ class UploadObjectTracker: DatabaseModel {
         batchExpiryInterval: TimeInterval,
         deferredUploadId: Int64? = nil,
         pushNotificationMessage: String? = nil) throws {
-        
+                
         self.db = db
         self.id = id
         self.fileGroupUUID = fileGroupUUID
@@ -95,7 +95,7 @@ class UploadObjectTracker: DatabaseModel {
     }
 }
 
-extension UploadObjectTracker {
+extension UploadObjectTracker {    
     func dependentFileTrackers() throws -> [UploadFileTracker] {
         guard let id = id else {
             throw DatabaseModelError.noId
@@ -112,39 +112,37 @@ extension UploadObjectTracker {
         return try objectTracker.dependentFileTrackers()
     }
     
-    // Are there *any* dependent file trackers for a given file group that are currently having a specific status?
-    static func anyUploadsWith(status: UploadFileTracker.Status, db: Connection) throws -> [UploadWithStatus] {
-        var uploads = [UploadWithStatus]()
-        let objectTrackers = try UploadObjectTracker.fetch(db: db)
-        for objectTracker in objectTrackers {
-            let fileTrackers = try objectTracker.dependentFileTrackers()
-            let filtered = fileTrackers.filter {$0.status == status}
-            if filtered.count > 0 {
-                uploads += [
-                    UploadWithStatus(object: objectTracker, files: fileTrackers)
-                ]
-            }
-        }
-
-        return uploads
-    }
-    
     struct UploadWithStatus {
         let object: UploadObjectTracker
         let files: [UploadFileTracker]
     }
     
-    // Get all upload object trackers
-    //  Get their dependent file trackers
-    //    Check the status of *all* of these trackers: Do they match `status`?
+    enum Scope {
+        case any
+        case all
+    }
+    
+    // Get matching upload object trackers
+    // First, get their dependent file trackers
+    //  For scope == .all: Does the predicate match all of these trackers?
+    //  For scope == .any: Does the predicate match any of these trackers?
     // Each returned `UploadWithStatus` will have an `UploadObjectTracker` with at least one file tracker.
-    static func allUploadsWith(status: UploadFileTracker.Status, db: Connection) throws -> [UploadWithStatus] {
+    static func uploadsMatching(filePredicate: (UploadFileTracker)->(Bool), scope: Scope, whereObjects: SQLite.Expression<Bool>? = nil, db: Connection) throws -> [UploadWithStatus] {
         var uploads = [UploadWithStatus]()
-        let objectTrackers = try UploadObjectTracker.fetch(db: db)
+        let objectTrackers = try UploadObjectTracker.fetch(db: db, where: whereObjects)
         for objectTracker in objectTrackers {
             let fileTrackers = try objectTracker.dependentFileTrackers()
-            let filtered = fileTrackers.filter {$0.status == status}
-            if filtered.count == fileTrackers.count && filtered.count > 0 {
+            let filtered = fileTrackers.filter { filePredicate($0) }
+            
+            var scopeConstraint: Bool
+            switch scope {
+            case .any:
+                scopeConstraint = true
+            case .all:
+                scopeConstraint = filtered.count == fileTrackers.count
+            }
+            
+            if scopeConstraint && filtered.count > 0 {
                 uploads += [
                     UploadWithStatus(object: objectTracker, files: fileTrackers)
                 ]
@@ -152,20 +150,6 @@ extension UploadObjectTracker {
         }
         
         return uploads
-    }
-    
-    // Are there *any* dependent file trackers for a given file group that are currently having a specific status?
-    static func anyUploadsWith(status: UploadFileTracker.Status, fileGroupUUID: UUID, db: Connection) throws -> Bool {
-        let objectTrackers = try UploadObjectTracker.fetch(db: db, where: fileGroupUUID == UploadObjectTracker.fileGroupUUIDField.description)
-        for objectTracker in objectTrackers {
-            let fileTrackers = try objectTracker.dependentFileTrackers()
-            let filtered = fileTrackers.filter {$0.status == status}
-            if filtered.count > 0 {
-                return true
-            }
-        }
-        
-        return false
     }
 }
 
@@ -180,5 +164,46 @@ extension UploadObjectTracker {
         }
         
         return objectEntry.sharingGroupUUID
+    }
+}
+
+// MARK: Figure out what uploads need to be started next.
+extension UploadObjectTracker {
+    static func toBeStartedNext(db: Connection) throws -> [UploadObjectTracker.UploadWithStatus] {
+    
+        // Basic strategy:
+        // 1) Serialize uploads for specific file groups. I.e., we don't allow parallel uploads of different `UploadObjectTracker`'s for the same file group. This protects us from, for example, uploading vN files at the same time as v0 files for the same file group.
+        // 2) If we have multiple .notStarted `UploadObjectTracker`'s for the same file group, v0 uploads must be uploaded first. This takes into account v0 uploads that have failed and that have to be restarted.
+        
+        var uploadsToStart = [UploadObjectTracker.UploadWithStatus]()
+        
+        // These are the uploads that haven't been started yet, and that we may be starting with this call.
+        let notStartedUploads:[UploadObjectTracker.UploadWithStatus] = try UploadObjectTracker.uploadsMatching(filePredicate: {$0.status == .notStarted}, scope: .any, db: db)
+        
+        let fileGroups = Partition.array(notStartedUploads, using: \UploadObjectTracker.UploadWithStatus.object.fileGroupUUID)
+
+        for fileGroup in fileGroups {
+            guard fileGroup.count > 0 else {
+                logger.error("Empty file group array")
+                continue
+            }
+            
+            // Are there any uploads currently in progress for the current file group? (We are serializing uploads for `UploadObjectTracker`'s for each file group).
+            let inProgress = try UploadObjectTracker.uploadsMatching(filePredicate: {$0.status == .uploading}, scope: .any, whereObjects: UploadObjectTracker.fileGroupUUIDField.description == fileGroup[0].object.fileGroupUUID, db: db)
+            guard inProgress.count == 0 else {
+                continue
+            }
+            
+            // Only start one new upload per file group (really, a set of files in a single `UploadObjectTracker`). And prioritize v0 uploads if there are any.
+            let v0Uploads = fileGroup.filter { $0.object.v0Upload == true }
+            if v0Uploads.count > 0 {
+                uploadsToStart += [v0Uploads[0]]
+            }
+            else if fileGroup.count > 0 {
+                uploadsToStart += [fileGroup[0]]
+            }
+        }
+        
+        return uploadsToStart
     }
 }

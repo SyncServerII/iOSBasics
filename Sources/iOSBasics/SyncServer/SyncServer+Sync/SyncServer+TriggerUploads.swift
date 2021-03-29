@@ -9,38 +9,16 @@ extension SyncServer {
         try triggerQueuedUploads()
     }
     
-    // Trigger new uploads for file groups where those have been queued before but not started. This handles vN uploads only. v0 uploads are always handled in `queue(upload: UploadableObject)`.
+    // Trigger new uploads for file groups where those have been queued before, but not started (or started and failed). This handles v0 and vN uploads. v0 uploads will be triggered here if they failed in their initial upload from `queue(upload: UploadableObject)` (or if multiple v0 uploads occur for a given file group).
     private func triggerQueuedUploads() throws {
-        // These are the uploads that haven't been started yet, and that we may be starting with this call.
-        let notStartedUploads = try UploadObjectTracker.allUploadsWith(status: .notStarted, db: db)
-        guard notStartedUploads.count > 0 else {
-            return
-        }
-        
-        // What uploads are currently in-progress? i.e., what objects have any file trackers with a status of .uploading?        
-        let inProgress = try UploadObjectTracker.anyUploadsWith(status: .uploading, db: db)
-        let fileGroupsInProgress = Set<UUID>(inProgress.map { $0.object.fileGroupUUID })
-        
-        // These are the objects we want to `exclude` from uploading. Start off with the file groups actively uploading. Don't want parallel uploads for the same file group.
-        var currentObjects = fileGroupsInProgress
-        
-        var toTrigger = [UploadObjectTracker.UploadWithStatus]()
-        
-        for upload in notStartedUploads {
-            // Don't want parallel uploads for the same declared object.
-            guard !currentObjects.contains(upload.object.fileGroupUUID) else {
-                continue
-            }
-            
-            currentObjects.insert(upload.object.fileGroupUUID)
-            toTrigger += [upload]
-        }
-        
+        let toTrigger = try UploadObjectTracker.toBeStartedNext(db: db)
+
+        logger.info("triggerQueuedUploads: toTrigger.count: \(toTrigger.count)")
         guard toTrigger.count > 0 else {
             return
         }
         
-        // Now can actually trigger the new uploads.
+        // Trigger the new uploads.
         
         for uploadObject in toTrigger {
             guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == uploadObject.object.fileGroupUUID) else {
@@ -76,8 +54,9 @@ extension SyncServer {
     private func triggerRetryFileUploads() throws {
         var filesToTrigger = [UploadFileTracker]()
         
-        // We want to check objects that are currently in progress, uploading, and see if any of their files are .notStarted
-        let inProgressObjects = try UploadObjectTracker.allUploadsWith(status: .uploading, db: db)
+        // We want to check objects that are currently .uploading, and see if any of their files are .notStarted
+        let inProgressObjects = try UploadObjectTracker.uploadsMatching(filePredicate:{$0.status == .uploading}, scope: .any, db: db)
+        
         for object in inProgressObjects {
             let toTrigger = object.files.filter {$0.status == .notStarted}
             filesToTrigger += toTrigger

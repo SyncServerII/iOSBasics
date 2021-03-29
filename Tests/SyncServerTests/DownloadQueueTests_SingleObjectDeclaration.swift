@@ -25,7 +25,7 @@ class DownloadQueueTests_SingleObjectDeclaration: XCTestCase, UserSetup, ServerB
         hashingManager = HashingManager()
         try hashingManager.add(hashing: handlers.user.hashing)
         let serverURL = URL(string: Self.baseURL())!
-        config = Configuration(appGroupIdentifier: nil, serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
+        config = Configuration(appGroupIdentifier: nil, serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true, deferredCheckInterval: nil)
         fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
         let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, requestable: FakeRequestable(), configuration: config, signIns: fakeSignIns, backgroundAsssertable: MainAppBackgroundTask())

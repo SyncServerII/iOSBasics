@@ -13,6 +13,8 @@ import iOSShared
 import iOSSignIn
 import ChangeResolvers
 @testable import TestsCommon
+import FileLogging
+import Logging
 
 class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate, SyncServerTests {
     var deviceUUID: UUID!
@@ -26,6 +28,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
 
     override func setUpWithError() throws {
         try super.setUpWithError()
+        
         handlers = DelegateHandlers()
         handlers.user = try dropboxUser()
         deviceUUID = UUID()
@@ -33,7 +36,7 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         hashingManager = HashingManager()
         try hashingManager.add(hashing: handlers.user.hashing)
         let serverURL = URL(string: Self.baseURL())!
-        config = Configuration(appGroupIdentifier: nil, serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
+        config = Configuration(appGroupIdentifier: nil, serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true, deferredCheckInterval: nil)
         fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
         let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
         syncServer = try SyncServer(hashingManager: hashingManager, db: database, requestable: FakeRequestable(), configuration: config, signIns: fakeSignIns, backgroundAsssertable: MainAppBackgroundTask())
@@ -337,43 +340,46 @@ class UploadQueueTests_Sync: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         let fileCount = try DirectoryFileEntry.numberRows(db: database, where: fileUUID1 == DirectoryFileEntry.fileUUIDField.description)
         XCTAssert(fileCount == 1)
 
+        // Wait for the v0 upload
         waitForUploadsToComplete(numberUploads: 1)
         XCTAssert(count == 2)
-
-        // Trigger the second upload instance.
-        try syncServer.sync()
-        waitForUploadsToComplete(numberUploads: 1, v0Upload: false)
-
-        // Wait for some period of time for the deferred upload to complete.
-        Thread.sleep(forTimeInterval: 5)
-
-        // This `sync` is to trigger the check for the deferred upload completion.
-        try syncServer.sync()
-
-        let exp2 = expectation(description: "exp")
-        handlers.deferredCompleted = { _, operation, count in
-            exp2.fulfill()
-        }
-        waitForExpectations(timeout: 10, handler: nil)
         
-        // Trigger the third upload instance.
+        // Trigger the second upload. i.e., the 1st vN upload
         try syncServer.sync()
         waitForUploadsToComplete(numberUploads: 1, v0Upload: false)
 
         // Wait for some period of time for the deferred upload to complete.
         Thread.sleep(forTimeInterval: 5)
 
-        // This `sync` is to trigger the check for the deferred upload completion.
+        // This `sync` will trigger both the check for the 1st deferred upload completion and the third upload. (The 2nd vN upload)
         try syncServer.sync()
-
-        let exp3 = expectation(description: "exp2")
+        
+        let deferredExp1 = expectation(description: "deferredExp1")
         handlers.deferredCompleted = { _, operation, count in
-            exp3.fulfill()
+            deferredExp1.fulfill()
+        }
+        // Piggy backing on the expectation wait in the `waitForUploadsToComplete` for deferredExp1
+        
+        waitForUploadsToComplete(numberUploads: 1, v0Upload: false)
+        
+        // Wait for some period of time for the 2nd deferred upload to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        // Check on the 2nd deferred upload.
+        try syncServer.sync()
+        
+        let deferredExp2 = expectation(description: "deferredExp2")
+        handlers.deferredCompleted = { _, operation, count in
+            deferredExp2.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
 
-        XCTAssert(try UploadFileTracker.numberRows(db: database) == 0)
-        XCTAssert(try UploadObjectTracker.numberRows(db: database) == 0)
+        let fileTrackersCount = try UploadFileTracker.numberRows(db: database)
+        XCTAssert(fileTrackersCount == 0, "\(fileTrackersCount)")
+        
+        let objecTrackersCount = try UploadObjectTracker.numberRows(db: database)
+        XCTAssert(objecTrackersCount == 0, "\(objecTrackersCount)")
+        
         XCTAssert(try DirectoryFileEntry.numberRows(db: database) == 1)
         XCTAssert(try DirectoryObjectEntry.numberRows(db: database) == 1)
     }

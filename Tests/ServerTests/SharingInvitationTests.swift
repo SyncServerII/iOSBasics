@@ -31,7 +31,7 @@ class SharingInvitationTests: XCTestCase, UserSetup, APITests, ServerAPIDelegato
         deviceUUID = UUID()
         let database = try Connection(.inMemory)
         try NetworkCache.createTable(db: database)
-        let config = Configuration(appGroupIdentifier: nil, serverURL: URL(string: Self.baseURL())!, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
+        let config = Configuration(appGroupIdentifier: nil, serverURL: URL(string: Self.baseURL())!, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true, deferredCheckInterval: nil)
         hashingManager = HashingManager()
         try? hashingManager.add(hashing: DropboxHashing())
         let serialQueue = DispatchQueue(label: "iOSBasicsTests")

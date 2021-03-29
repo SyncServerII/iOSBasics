@@ -26,7 +26,7 @@ class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
         try super.setUpWithError()
         deviceUUID = UUID()
         let database = try Connection(.inMemory)
-        let config = Configuration(appGroupIdentifier: nil, serverURL: URL(string: Self.baseURL())!, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true)
+        let config = Configuration(appGroupIdentifier: nil, serverURL: URL(string: Self.baseURL())!, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true, deferredCheckInterval: nil)
         let serialQueue = DispatchQueue(label: "iOSBasicsTests")
         let backgroundAssertable = MainAppBackgroundTask()
         networking = Networking(database: database, serialQueue: serialQueue, backgroundAsssertable: backgroundAssertable, delegate: self, transferDelegate: self, config: config)

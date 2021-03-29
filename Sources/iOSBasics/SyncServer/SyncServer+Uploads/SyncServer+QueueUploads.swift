@@ -122,12 +122,28 @@ extension SyncServer {
             guard matches(upload: upload, objectInfo: objectInfo) else {
                 throw SyncServerError.internalError("Upload did not match objectInfo")
             }
-            
+                        
             let v0Uploads = try newUploads(upload: upload, objectInfo: objectInfo)
             
-            // If there is an active upload for this fileGroupUUID, then this upload will be locally queued for later processing. If there is not one, we'll trigger the upload now.
-            let activeUploadsForThisFileGroup = try UploadObjectTracker.anyUploadsWith(status: .uploading, fileGroupUUID: objectInfo.objectEntry.fileGroupUUID, db: db)
-        
+            // If there is an active upload for this fileGroupUUID, then this upload will be locally queued for later processing.
+            // Additionally, want to see if there are any .notStarted v0 uploads. That will take priority over this new upload because v0 uploads take priority. (This can happen if, for example, a v0 upload didn't happen because it failed.)
+            
+            let activeUploads =
+                try UploadObjectTracker.uploadsMatching(
+                    filePredicate: {$0.status == .uploading},
+                    scope: .any,
+                    whereObjects:
+                        UploadObjectTracker.fileGroupUUIDField.description == objectInfo.objectEntry.fileGroupUUID, db: db)
+             let pendingV0Uploads =
+                try UploadObjectTracker.uploadsMatching(
+                    filePredicate: {$0.status == .notStarted},
+                    scope: .any,
+                    whereObjects:
+                        UploadObjectTracker.fileGroupUUIDField.description == objectInfo.objectEntry.fileGroupUUID, db: db)
+                    .filter { $0.object.v0Upload == true }
+                        
+            let activeUploadsForThisFileGroup = activeUploads.count > 0 || pendingV0Uploads.count > 0
+            
             // All files must be either v0 or vN
             if v0Uploads.count == 0 {
                 // vN uploads
@@ -151,10 +167,10 @@ extension SyncServer {
     private func createNewTrackers(fileGroupUUID: UUID, pushNotificationMessage:String?, objectModel: DeclaredObjectModel, cloudStorageType: CloudStorageType, uploads: [UploadableFile]) throws -> (newObjectTrackerId: Int64, UploadObjectTracker) {
     
         let batchUUID = UUID()
-    
+            
         let newObjectTracker = try UploadObjectTracker(db: db, fileGroupUUID: fileGroupUUID, batchUUID: batchUUID, batchExpiryInterval: UploadObjectTracker.expiryInterval, pushNotificationMessage: pushNotificationMessage)
         try newObjectTracker.insert()
-        
+                
         guard let newObjectTrackerId = newObjectTracker.id else {
             throw SyncServerError.internalError("No object tracker id")
         }

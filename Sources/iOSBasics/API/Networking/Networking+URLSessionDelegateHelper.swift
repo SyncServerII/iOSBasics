@@ -33,6 +33,7 @@ extension Networking {
         let downloadFile = FileObject(fileUUID: cache.uuid.uuidString, fileVersion: cache.fileVersion, trackerId: cache.trackerId)
 
         guard let response = possiblyNilResponse else {
+            logger.error("urlSessionHelper: couldNotGetHTTPURLResponse")
             transferDelegate.error(self, file: downloadFile, statusCode: possiblyNilResponse?.statusCode, error: NetworkingError.couldNotGetHTTPURLResponse)
             return
         }
@@ -123,8 +124,9 @@ extension Networking {
         }
         
         if response == nil {
-            // The background download failed. I'm assuming that this is definitive and that the download will not be retried automatically by iOS. So, am removing the NetworkCache object.
+            // The background request failed. I'm assuming that this is definitive and that the request will not be retried automatically by iOS. So, am removing the NetworkCache object.
             try? cache.delete()
+            logger.error("urlSessionHelper: The background request failed: couldNotGetHTTPURLResponse")
             errorResponse(error: NetworkingError.couldNotGetHTTPURLResponse)
             return
         }
