@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.20.0 (3/29/21)
+	* Added debugPendingUploads public method.
+
 Version 0.19.0 (3/28/21)
 	* Added UserDisplayable conformance to SyncServerError.
 	
