@@ -382,6 +382,27 @@ public class SyncServer {
         }
     }
     
+    // Generate debugging information for pending uploads if any. Returns nil if none.
+    public func debugPendingUploads() throws -> String? {
+        let objectTrackers = try UploadObjectTracker.fetch(db:db)
+        guard objectTrackers.count > 0 else {
+            return nil
+        }
+        
+        var result = ""
+        
+        for objectTracker in objectTrackers {
+            result += "UploadObjectTracker: fileGroupUUID: \(objectTracker.fileGroupUUID); v0Upload: \(String(describing: objectTracker.v0Upload)); batchUUID: \(objectTracker.batchUUID):\n"
+            
+            let fileTrackers = try objectTracker.dependentFileTrackers()
+            for fileTracker in fileTrackers {
+                result += "\tUploadFileTracker: fileUUID: \(fileTracker.fileUUID); fileVersion: \(String(describing: fileTracker.fileVersion)); uploadIndex: \(String(describing: fileTracker.uploadIndex)); uploadCount: \(String(describing: fileTracker.uploadCount))\n"
+            }
+        }
+        
+        return result
+    }
+    
     // MARK: Sharing
     
     // The sharing groups in which the signed in user is a member.
