@@ -20,60 +20,15 @@ extension SyncServer {
         guard toTrigger.count > 0 else {
             return
         }
-        
-        // Trigger the uploads.
-        
+                
         for uploadObject in toTrigger {
-            let newUploads = uploadObject.files.filter {$0.uploadIndex == nil || $0.uploadCount == nil}
-            
-            // Should be all or none
-            
-            if newUploads.count == 0 {
-                logger.info("triggerQueuedUploads: newUploads.count: \(newUploads.count)")
-                try triggerExistingUploads(uploadObject: uploadObject)
-            }
-            else if newUploads.count == newUploads.count {
-                logger.info("triggerQueuedUploads: newUploads.count: \(newUploads.count)")
-                try triggerNewUploads(uploadObject: uploadObject)
-            }
-            else {
-                throw SyncServerError.internalError("newUploads.count == 0 || newUploads.files.count == newUploads.count failed")
-            }
+            try triggerUploads(uploadObject: uploadObject)
         }
     }
-    
-    private func triggerExistingUploads(uploadObject: UploadObjectTracker.UploadWithStatus) throws {
+
+    private func triggerUploads(uploadObject: UploadObjectTracker.UploadWithStatus) throws {
         for file in uploadObject.files {
             try retryFileUpload(fileTracker: file, objectTracker: uploadObject.object)
-        }
-    }
-    
-    private func triggerNewUploads(uploadObject: UploadObjectTracker.UploadWithStatus) throws {
-        guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == uploadObject.object.fileGroupUUID) else {
-            throw SyncServerError.internalError("Could not get DirectoryObjectEntry")
-        }
-        
-        let uploadCount = Int32(uploadObject.files.count)
-        guard let declaredObject = try DeclaredObjectModel.fetchSingleRow(db: db, where: DeclaredObjectModel.objectTypeField.description == objectEntry.objectType) else {
-            throw SyncServerError.internalError("Could not get DeclaredObjectModel")
-        }
-        
-        let fileUUIDs = uploadObject.files.map { $0.fileUUID }
-        guard let versions = try DirectoryFileEntry.versionOfAllFiles(fileUUIDs: fileUUIDs, db: db) else {
-            throw SyncServerError.attemptToQueueUploadOfVNAndV0Files
-        }
-        
-        let v0Upload = versions == .v0
-        uploadObject.object.v0Upload = v0Upload
-        try uploadObject.object.update(setters:
-            UploadObjectTracker.v0UploadField.description <- v0Upload)
-        
-        for (uploadIndex, file) in uploadObject.files.enumerated() {
-            guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == file.fileUUID) else {
-                throw SyncServerError.internalError("Could not get DirectoryFileEntry")
-            }
-            
-            try singleUpload(objectType: declaredObject, objectTracker: uploadObject.object, objectEntry: objectEntry, fileLabel: fileEntry.fileLabel, fileUUID: file.fileUUID, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount)
         }
     }
     
@@ -83,7 +38,7 @@ extension SyncServer {
         
         // We want to check objects that are currently .uploading, and see if any of their files are .notStarted
         let inProgressObjects = try UploadObjectTracker.uploadsMatching(filePredicate:{$0.status == .uploading}, scope: .any, db: db)
-        
+
         for object in inProgressObjects {
             let toTrigger = object.files.filter {$0.status == .notStarted}
             filesToTrigger += toTrigger

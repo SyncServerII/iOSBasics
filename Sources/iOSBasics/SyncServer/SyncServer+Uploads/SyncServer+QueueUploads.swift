@@ -143,7 +143,7 @@ extension SyncServer {
                     .filter { $0.object.v0Upload == true }
                         
             let activeUploadsForThisFileGroup = activeUploads.count > 0 || pendingV0Uploads.count > 0
-            
+
             // All files must be either v0 or vN
             if v0Uploads.count == 0 {
                 // vN uploads
@@ -164,6 +164,7 @@ extension SyncServer {
     }
     
     // Add a new tracker into UploadObjectTracker, and one for each new upload.
+    // Also assigns uploadCount and uploadIndex to each UploadObjectTracker.
     private func createNewTrackers(fileGroupUUID: UUID, pushNotificationMessage:String?, objectModel: DeclaredObjectModel, cloudStorageType: CloudStorageType, uploads: [UploadableFile]) throws -> (newObjectTrackerId: Int64, UploadObjectTracker) {
     
         let batchUUID = UUID()
@@ -177,9 +178,12 @@ extension SyncServer {
         
         logger.debug("newObjectTrackerId: \(newObjectTrackerId)")
         
+        let uploadCount:Int32 = Int32(uploads.count)
+        
         // Create a new `UploadFileTracker` for each file we're uploading.
-        for file in uploads {
-            let newFileTracker = try UploadFileTracker.create(file: file, objectModel: objectModel, cloudStorageType: cloudStorageType, objectTrackerId: newObjectTrackerId, config: configuration.temporaryFiles, hashingManager: hashingManager, db: db)
+        for (uploadIndex, file) in uploads.enumerated() {
+            // uploadIndex + 1 because the indices range from 1 to uploadCount
+            let newFileTracker = try UploadFileTracker.create(file: file, objectModel: objectModel, cloudStorageType: cloudStorageType, objectTrackerId: newObjectTrackerId, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount, config: configuration.temporaryFiles, hashingManager: hashingManager, db: db)
             logger.debug("newFileTracker: \(String(describing: newFileTracker.id))")
         }
         
@@ -206,22 +210,22 @@ extension SyncServer {
         // This is an upload for existing file instances.
         newObjectTracker.v0Upload = false
         try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- newObjectTracker.v0Upload)
-        
+                
         if activeUploadsForThisFileGroup || !requestable.canMakeNetworkRequests {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
                 delegate.uploadQueue(self, event: .queued(fileGroupUUID: upload.fileGroupUUID))
             }
         } else {
-            for (index, uploadFile) in upload.uploads.enumerated() {
-                try singleUpload(objectType: objectModel, objectTracker: newObjectTracker, objectEntry: objectEntry.objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid, uploadIndex: Int32(index + 1), uploadCount: Int32(upload.uploads.count))
+            for uploadFile in upload.uploads {
+                try singleUpload(objectType: objectModel, objectTracker: newObjectTracker, objectEntry: objectEntry.objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid)
             }
         }
     }
     
     // This is either the first upload for the file group. i.e., the first upload for this specific object. OR, it's the first upload for only some of the files in the file group.
     private func uploadNew(upload: UploadableObject, objectType: DeclaredObjectModel, objectEntryType: DirectoryObjectEntry.ObjectEntryType, activeUploadsForThisFileGroup: Bool) throws {
-    
+
         // Make sure all of the mime types in the upload match those needed.
         try newUploadsHaveValidMimeType(upload: upload, objectModel: objectType)
         
@@ -230,14 +234,14 @@ extension SyncServer {
         
         // Need directory entries for this new specific object instance.
         let objectEntry = try DirectoryObjectEntry.createNewInstance(upload: upload, objectType: objectType, objectEntryType: objectEntryType, cloudStorageType: cloudStorageType, db: db)
-        
+
         // Every new upload needs new upload trackers.
         let (_, newObjectTracker) = try createNewTrackers(fileGroupUUID: upload.fileGroupUUID, pushNotificationMessage: upload.pushNotificationMessage, objectModel: objectType, cloudStorageType: cloudStorageType, uploads: upload.uploads)
         
         // Since this is the first upload for a new object instance or at least for the specific files of the object, all uploads are v0.
         newObjectTracker.v0Upload = true
         try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- newObjectTracker.v0Upload)
-
+        
         if activeUploadsForThisFileGroup || !requestable.canMakeNetworkRequests {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
@@ -245,8 +249,8 @@ extension SyncServer {
             }
         }
         else {
-            for (index, uploadFile) in upload.uploads.enumerated() {
-                try singleUpload(objectType: objectType, objectTracker: newObjectTracker, objectEntry: objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid, uploadIndex: Int32(index + 1), uploadCount: Int32(upload.uploads.count))
+            for uploadFile in upload.uploads {
+                try singleUpload(objectType: objectType, objectTracker: newObjectTracker, objectEntry: objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid)
             }
         }
     }

@@ -11,8 +11,7 @@ import SQLite
 
 extension SyncServer {
     // Assumes that an UploadFileTracker has already been created for the file referenced by fileUUID.
-    // uploadIndex >= 1 and uploadIndex <= uploadCount
-    func singleUpload(objectType: DeclaredObjectModel, objectTracker: UploadObjectTracker, objectEntry: DirectoryObjectEntry, fileLabel: String, fileUUID: UUID, uploadIndex: Int32, uploadCount: Int32) throws {
+    func singleUpload(objectType: DeclaredObjectModel, objectTracker: UploadObjectTracker, objectEntry: DirectoryObjectEntry, fileLabel: String, fileUUID: UUID) throws {
 
         guard let objectTrackerId = objectTracker.id else {
             throw SyncServerError.internalError("Could not get object tracker id")
@@ -23,11 +22,6 @@ extension SyncServer {
             objectTrackerId == UploadFileTracker.uploadObjectTrackerIdField.description) else {
             throw SyncServerError.internalError("Could not get upload file tracker: \(fileUUID)")
         }
-        
-        fileTracker.uploadCount = uploadCount
-        fileTracker.uploadIndex = uploadIndex
-        try fileTracker.update(setters: UploadFileTracker.uploadCountField.description <- uploadCount,
-            UploadFileTracker.uploadIndexField.description <- uploadIndex)
 
         try uploadSingle(objectType: objectType, objectTracker: objectTracker, objectEntry: objectEntry, fileTracker: fileTracker, fileLabel: fileLabel)
     }
@@ -47,11 +41,6 @@ extension SyncServer {
             throw SyncServerError.internalError("Could not get object tracker id or v0Upload")
         }
         
-        guard let uploadCount = fileTracker.uploadCount,
-            let uploadIndex = fileTracker.uploadIndex else {
-            throw SyncServerError.internalError("nil uploadCount or uploadIndex field")
-        }
-        
         if v0Upload {
             var appMetaData: AppMetaData?
             if let appMetaDataContents = fileTracker.appMetaData {
@@ -67,7 +56,7 @@ extension SyncServer {
         
         let serverAPIFile = ServerAPI.File(fileUUID: fileTracker.fileUUID.uuidString, sharingGroupUUID: objectEntry.sharingGroupUUID.uuidString, deviceUUID: configuration.deviceUUID.uuidString, uploadObjectTrackerId: objectTrackerId, batchUUID: objectTracker.batchUUID, batchExpiryInterval: objectTracker.batchExpiryInterval, version: fileVersion)
         
-        if let error = api.uploadFile(file: serverAPIFile, uploadIndex: uploadIndex, uploadCount: uploadCount) {
+        if let error = api.uploadFile(file: serverAPIFile, uploadIndex: fileTracker.uploadIndex, uploadCount: fileTracker.uploadCount) {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
                 delegate.userEvent(self, event: .error(error))
