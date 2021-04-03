@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.21.0 (4/3/21)
+	* Moved AppState to iOSShared library.
+    
 Version 0.20.2 (3/31/21)
 	* Added tests.
 	

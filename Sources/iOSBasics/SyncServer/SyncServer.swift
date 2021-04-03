@@ -110,11 +110,6 @@ public class SyncServer {
     
     // MARK: App state methods
     
-    public enum AppState {
-        case foreground
-        case background
-    }
-    
     public func appChangesState(to appState: AppState) throws {
         if appState == .background {
             stopTimedDeferredCheckIfNeeded()
