@@ -294,7 +294,7 @@ class Networking: NSObject {
     }
     
     func versionsAreOK(headerFields: [AnyHashable: Any]) -> Bool {
-        return serverVersionIsOK(headerFields: headerFields) ||
+        return serverVersionIsOK(headerFields: headerFields) &&
             clientAppVersionIsOK(headerFields: headerFields)
     }
     

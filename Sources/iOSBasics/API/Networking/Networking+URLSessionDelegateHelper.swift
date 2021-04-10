@@ -95,16 +95,16 @@ extension Networking {
     func urlSessionHelper(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
     
         var cache: NetworkCache!
-        let response = task.response as? HTTPURLResponse
+        let taskResponse = task.response as? HTTPURLResponse
 
-        logger.info("didCompleteWithError: \(String(describing: error)); status: \(String(describing: response?.statusCode))")
+        logger.info("didCompleteWithError: \(String(describing: error)); status: \(String(describing: taskResponse?.statusCode))")
 
         do {
             cache = try backgroundCache.lookupCache(taskIdentifer: task.taskIdentifier)
         } catch let error {
             try? cache?.delete()
             // May not have the cache. Responding with generic error.
-            transferDelegate.error(self, file: nil, statusCode: response?.statusCode, error: error)
+            transferDelegate.error(self, file: nil, statusCode: taskResponse?.statusCode, error: error)
             return
         }
         
@@ -113,17 +113,17 @@ extension Networking {
         func errorResponse(error: Error) {
             switch cache.transfer {
             case .download:
-                transferDelegate.downloadCompleted(self, file: file, event: .failure(error: error, statusCode: response?.statusCode, responseHeaders: response?.allHeaderFields), response: response)
+                transferDelegate.downloadCompleted(self, file: file, event: .failure(error: error, statusCode: taskResponse?.statusCode, responseHeaders: taskResponse?.allHeaderFields), response: taskResponse)
             
             case .upload:
-                transferDelegate.uploadCompleted(self, file: file, event: .failure(error: error, statusCode: response?.statusCode, responseHeaders: response?.allHeaderFields), response: response)
+                transferDelegate.uploadCompleted(self, file: file, event: .failure(error: error, statusCode: taskResponse?.statusCode, responseHeaders: taskResponse?.allHeaderFields), response: taskResponse)
                 
             case .request, .none:
-                transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
+                transferDelegate.error(self, file: file, statusCode: taskResponse?.statusCode, error: error)
             }
         }
         
-        if response == nil {
+        guard let response = taskResponse else {
             // The background request failed. I'm assuming that this is definitive and that the request will not be retried automatically by iOS. So, am removing the NetworkCache object.
             try? cache.delete()
             logger.error("urlSessionHelper: The background request failed: couldNotGetHTTPURLResponse")
@@ -131,6 +131,10 @@ extension Networking {
             return
         }
 
+        guard versionsAreOK(headerFields: response.allHeaderFields) else {
+            return
+        }
+        
         if let error = error {
             // Same kind of assumption as above.
             try? cache.delete()
@@ -140,35 +144,35 @@ extension Networking {
                     
         switch cache.transfer {
         case .upload(let uploadBody):
-            if response?.statusCode == HTTPStatus.gone.rawValue {
+            if response.statusCode == HTTPStatus.gone.rawValue {
                 transferDelegate.uploadCompleted(self, file: file, event: .gone(responseBody: uploadBody?.dictionary), response: response)
             }
-            else if validStatusCode(response?.statusCode) {
+            else if validStatusCode(response.statusCode) {
                 transferDelegate.uploadCompleted(self, file: file, event: .success(responseBody: uploadBody?.dictionary), response: response)
             }
             else {
-                transferDelegate.uploadCompleted(self, file: file, event: .failure(error: nil, statusCode: response?.statusCode, responseHeaders: response?.allHeaderFields), response: response)
+                transferDelegate.uploadCompleted(self, file: file, event: .failure(error: nil, statusCode: response.statusCode, responseHeaders: response.allHeaderFields), response: response)
             }
 
         case .download(let url):
-            if validStatusCode(response?.statusCode), let url = url {
+            if validStatusCode(response.statusCode), let url = url {
                 transferDelegate.downloadCompleted(self, file: file, event: .success(url), response: response)
             }
             else {
-                transferDelegate.downloadCompleted(self, file: file, event: .failure(error: nil, statusCode: response?.statusCode, responseHeaders: response?.allHeaderFields), response: response)
+                transferDelegate.downloadCompleted(self, file: file, event: .failure(error: nil, statusCode: response.statusCode, responseHeaders: response.allHeaderFields), response: response)
             }
 
         case .request(let url):
-            transferDelegate.backgroundRequestCompleted(self, url: url, trackerId: file.trackerId, response: response, requestInfo: cache.requestInfo, statusCode: response?.statusCode)
+            transferDelegate.backgroundRequestCompleted(self, url: url, trackerId: file.trackerId, response: response, requestInfo: cache.requestInfo, statusCode: response.statusCode)
             
         case .none:
-            transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
+            transferDelegate.error(self, file: file, statusCode: response.statusCode, error: error)
         }
         
         do {
             try cache.delete()
         } catch let error {
-            transferDelegate.error(self, file: file, statusCode: response?.statusCode, error: error)
+            transferDelegate.error(self, file: file, statusCode: response.statusCode, error: error)
         }
     }
     
