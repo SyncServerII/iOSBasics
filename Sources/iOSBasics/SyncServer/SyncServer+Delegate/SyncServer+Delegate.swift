@@ -13,6 +13,13 @@ extension SyncServer: ServerAPIDelegate {
         }
     }
     
+    func networkingFailover(_ delegated: AnyObject, message: String) {
+        delegator { [weak self] delegate in
+            guard let self = self else { return }
+            delegate.userEvent(self, event: .showAlert(title: "Alert!", message: message))
+        }
+    }
+
     func error(_ delegated: AnyObject, error: Error?) {
         delegator { [weak self] delegate in
             guard let self = self else { return }

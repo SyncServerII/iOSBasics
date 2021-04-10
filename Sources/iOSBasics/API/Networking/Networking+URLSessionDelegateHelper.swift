@@ -141,6 +141,14 @@ extension Networking {
             errorResponse(error: error)
             return
         }
+        
+        if response.statusCode == HTTPStatus.serviceUnavailable.rawValue {
+            failover {
+                errorResponse(error: NetworkingError.failover)
+            }
+            
+            return
+        }
                     
         switch cache.transfer {
         case .upload(let uploadBody):

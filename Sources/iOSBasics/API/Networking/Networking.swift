@@ -28,10 +28,13 @@ enum NetworkingError: Error {
     case couldNotGetCache
     case versionError
     case invalidHTTPStatusCode
+    case failover
 }
 
 protocol NetworkingDelegate: AnyObject {
     func badVersion(_ delegated: AnyObject, version: BadVersion)
+    func networkingFailover(_ delegated: AnyObject, message: String)
+
     func credentialsForNetworkRequests(_ delegated: AnyObject) throws -> GenericCredentials
     func deviceUUID(_ delegated: AnyObject) -> UUID
     
@@ -201,8 +204,11 @@ class Networking: NSObject {
         if response.statusCode == HTTPStatus.unauthorized.rawValue {
             return (nil, response.statusCode, nil)
         }
-        
+
         if response.statusCode == HTTPStatus.serviceUnavailable.rawValue {
+            failover {
+                logger.error("Failover due to HTTPStatus.serviceUnavailable")
+            }
             return (nil, response.statusCode, nil)
         }
         

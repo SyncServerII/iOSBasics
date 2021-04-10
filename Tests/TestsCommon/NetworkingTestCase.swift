@@ -31,6 +31,10 @@ extension ServerAPIDelegator {
         }
     }
     
+    func networkingFailover(_ delegated: AnyObject, message: String) {
+        XCTFail()
+    }
+    
     func error(_ delegated: AnyObject, error: Error?) {
         XCTFail("\(String(describing: error))")
     }
