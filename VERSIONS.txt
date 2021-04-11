@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.22.1 (4/11/21)
+	* Fixed CheckCreds issue: Incorrect force unwrap caused a crash.
+
 Version 0.22.0 (4/11/21)
 	* Added call to versionsAreOK
 	* Added tests of version checking-- plus fixed one issue.

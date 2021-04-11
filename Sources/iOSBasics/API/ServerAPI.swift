@@ -194,17 +194,22 @@ class ServerAPI {
         networking.sendRequestTo(serverURL, method: endpoint.method) { response, httpStatus, error in
         
             var result:CheckCredsResult?
+            
+            guard let response = response else {
+                completion(.failure(ServerAPIError.nilResponse))
+                return
+            }
 
             if httpStatus == HTTPStatus.unauthorized.rawValue {
                 result = .noUser
             }
             else if httpStatus == HTTPStatus.ok.rawValue {
-                guard let checkCredsResponse = try? CheckCredsResponse.decode(response!) else {
+                guard let checkCredsResponse = try? CheckCredsResponse.decode(response) else {
                     completion(.failure(ServerAPIError.badCheckCreds))
                     return
                 }
                 
-                let accessToken = response?[ServerConstants.httpResponseOAuth2AccessTokenKey] as? String
+                let accessToken = response[ServerConstants.httpResponseOAuth2AccessTokenKey] as? String
                 
                 guard let userInfo = checkCredsResponse.userInfo else {
                     completion(.failure(ServerAPIError.noUserInfoInCheckCreds))

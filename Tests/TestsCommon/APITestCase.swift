@@ -134,6 +134,7 @@ extension UserSetup {
     // 4/10/21: I'm getting `tooManyRequests` errors from Dropbox: Could not uploadFile: error: badStatusCode(Optional(KituraNet.HTTPStatusCode.tooManyRequests))
     // And response headers have: [2021-04-11T03:33:37.031Z] [DEBUG] [DropboxCreds+CloudStorage.swift:48 logHeaders(responseHeaders:)] header: (key: "Retry-After", value: ["15"])
     // See also https://developers.dropbox.com/error-handling-guide
+    // https://stackoverflow.com/questions/67047856
     private func createDropboxCredentials(selectUser: SelectUser = .first) throws -> GenericCredentials {
         let dropboxCredentials:URL
         
