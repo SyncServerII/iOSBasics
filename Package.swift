@@ -40,6 +40,7 @@ let package = Package(
         // .package(path: "../iOSDropbox"),
         .package(url: "https://github.com/SyncServerII/iOSDropbox.git", from: "0.0.3"),
 
+        .package(url: "https://github.com/SyncServerII/iOSGoogle.git", from: "0.0.3"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -55,7 +56,8 @@ let package = Package(
         .target(
             name: "TestsCommon",
             dependencies: [
-                "iOSBasics", "iOSShared", "iOSSignIn", "Version", "iOSDropbox",
+                "iOSBasics", "iOSShared", "iOSSignIn", "Version",
+                "iOSDropbox", "iOSGoogle",
                 "ChangeResolvers",
                 .product(name: "SQLite", package: "SQLite.swift")],
             path: "Tests/TestsCommon",
@@ -69,7 +71,8 @@ let package = Package(
             name: "iOSBasicsTests",
             dependencies: [
                 "TestsCommon",
-                "iOSBasics", "iOSShared", "iOSSignIn", "Version", "iOSDropbox",
+                "iOSBasics", "iOSShared", "iOSSignIn", "Version",
+                "iOSDropbox", "iOSGoogle",
                 "ChangeResolvers",
                 .product(name: "SQLite", package: "SQLite.swift")
             ]),
@@ -77,7 +80,8 @@ let package = Package(
             name: "SyncServerTests",
             dependencies: [
                 "TestsCommon",
-                "iOSBasics", "iOSShared", "iOSSignIn", "Version", "iOSDropbox",
+                "iOSBasics", "iOSShared", "iOSSignIn", "Version",
+                "iOSDropbox", "iOSGoogle",
                 "ChangeResolvers",
                 .product(name: "SQLite", package: "SQLite.swift")
             ]),
@@ -85,7 +89,8 @@ let package = Package(
             name: "ServerTests",
             dependencies: [
                 "TestsCommon",
-                "iOSBasics", "iOSShared", "iOSSignIn", "Version", "iOSDropbox",
+                "iOSBasics", "iOSShared", "iOSSignIn", "Version",
+                "iOSDropbox", "iOSGoogle",
                 "ChangeResolvers",
                 .product(name: "SQLite", package: "SQLite.swift")
             ])

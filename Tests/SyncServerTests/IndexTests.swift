@@ -27,7 +27,11 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
     override func setUpWithError() throws {
         try super.setUpWithError()
         handlers = DelegateHandlers()
-        handlers.user = try dropboxUser()
+        
+        // Running into `tooManyRequests` HTTP response, so switched from Dropbox to Google for these tests.
+        handlers.user = try googleUser()
+        // handlers.user = try dropboxUser()
+        
         deviceUUID = UUID()
         database = try Connection(.inMemory)
         hashingManager = HashingManager()

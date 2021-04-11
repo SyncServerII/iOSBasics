@@ -9,11 +9,7 @@ import SQLite
 protocol ServerBasics {
 }
 
-extension ServerBasics {
-    var cloudFolderName: String {
-        return "CloudFolder"
-    }
-    
+extension ServerBasics {    
     // Don't put a trailing slash at end.
     static func baseURL() -> String {
         return "http://localhost:8080"

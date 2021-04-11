@@ -74,6 +74,15 @@
         }
       },
       {
+        "package": "iOSGoogle",
+        "repositoryURL": "https://github.com/SyncServerII/iOSGoogle.git",
+        "state": {
+          "branch": null,
+          "revision": "38dee7730ab27ae54e28437ebc48e688a842c111",
+          "version": "0.3.0"
+        }
+      },
+      {
         "package": "iOSShared",
         "repositoryURL": "https://github.com/SyncServerII/iOSShared.git",
         "state": {
