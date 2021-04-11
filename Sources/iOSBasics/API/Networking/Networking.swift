@@ -206,8 +206,8 @@ class Networking: NSObject {
         }
 
         if response.statusCode == HTTPStatus.serviceUnavailable.rawValue {
+            logger.error("Failover due to HTTPStatus.serviceUnavailable")
             failover {
-                logger.error("Failover due to HTTPStatus.serviceUnavailable")
             }
             return (nil, response.statusCode, nil)
         }
@@ -217,6 +217,7 @@ class Networking: NSObject {
         }
         
         guard versionsAreOK(headerFields: response.allHeaderFields) else {
+            logger.error("Versions not OK")
             return (nil, response.statusCode, NetworkingError.versionError)
         }
         

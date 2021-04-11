@@ -94,7 +94,7 @@ class ServerAPI {
             return error
         }
         else {
-            logger.error("\(String(describing: error)); serverResponse: \(String(describing: serverResponse?.contents))")
+            logger.error("checkForError: \(String(describing: error)); serverResponse: \(String(describing: serverResponse?.contents))")
             return ServerAPIError.non200StatusCode(statusCode!)
         }
     }

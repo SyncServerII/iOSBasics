@@ -39,6 +39,7 @@ extension Networking {
         }
         
         guard versionsAreOK(headerFields: response.allHeaderFields) else {
+            logger.error("Versions not OK")
             return
         }
 
@@ -132,6 +133,7 @@ extension Networking {
         }
 
         guard versionsAreOK(headerFields: response.allHeaderFields) else {
+            logger.error("Versions not OK")
             return
         }
         
@@ -143,6 +145,7 @@ extension Networking {
         }
         
         if response.statusCode == HTTPStatus.serviceUnavailable.rawValue {
+            logger.error("Failover due to HTTPStatus.serviceUnavailable")
             failover {
                 errorResponse(error: NetworkingError.failover)
             }
