@@ -78,8 +78,8 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSGoogle.git",
         "state": {
           "branch": null,
-          "revision": "38dee7730ab27ae54e28437ebc48e688a842c111",
-          "version": "0.3.0"
+          "revision": "e7be2a29097f8b80ceda559aada904616f6c65e9",
+          "version": "0.3.1"
         }
       },
       {
@@ -87,8 +87,8 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSShared.git",
         "state": {
           "branch": null,
-          "revision": "15c0bd24e4e5e8cfe753b7f380de0de5d47dff8a",
-          "version": "0.10.0"
+          "revision": "b465e86931fe0b8531601041534554d97355d2bb",
+          "version": "0.12.0"
         }
       },
       {
@@ -96,8 +96,8 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSSignIn.git",
         "state": {
           "branch": null,
-          "revision": "ddc081ca2f5dddf0fb65051f2d807e93aa238046",
-          "version": "0.3.2"
+          "revision": "466e1b09e1cdc1c176366f80466f86bc467a84f9",
+          "version": "0.4.1"
         }
       },
       {
@@ -195,8 +195,8 @@
         "repositoryURL": "https://github.com/SyncServerII/ServerShared.git",
         "state": {
           "branch": null,
-          "revision": "96642c2be2833e9062addaf259fc323a7cabdc9e",
-          "version": "0.6.0"
+          "revision": "41b4f0d09de1156d3e755970fc58c23b35d78552",
+          "version": "0.7.0"
         }
       },
       {

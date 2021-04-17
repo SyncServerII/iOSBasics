@@ -8,6 +8,14 @@ import iOSSignIn
 import ChangeResolvers
 
 class GatableFakeRequestable: NetworkRequestable {
+    func canMakeNetworkRequests(options: NetworkRequestableOptions) -> Bool {
+        if disable() {
+            return false
+        }
+        
+        return true
+    }
+    
     let disable:()->(Bool)
     
     init(disable:@escaping ()->(Bool)) {

@@ -9,6 +9,10 @@ import Foundation
 import iOSShared
 
 class FakeRequestable: NetworkRequestable {
+    func canMakeNetworkRequests(options: NetworkRequestableOptions) -> Bool {
+        true
+    }
+    
     var canMakeNetworkRequests: Bool {
         return true
     }

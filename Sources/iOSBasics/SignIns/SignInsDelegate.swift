@@ -11,7 +11,7 @@ public protocol SignInsDelegate: AnyObject {
     func newOwningUserCreated(_ signIns: SignIns)
     
     // Called after a successful `redeemSharingInvitation` server request.
-    func invitationAcceptedAndUserCreated(_ signIns: SignIns)
+    func invitationAccepted(_ signIns: SignIns, userCreated: Bool)
     
     // Called in various circumstances where the user must be signed out.
     func userIsSignedOut(_ signIns: SignIns)

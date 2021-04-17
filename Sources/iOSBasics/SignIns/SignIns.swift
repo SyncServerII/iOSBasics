@@ -108,7 +108,7 @@ public class SignIns {
                 }
             }
             
-        case .acceptInvitationAndCreateUser(invitation: let invitation):
+        case .acceptInvitation(invitation: let invitation):
             guard let codeUUID = UUID(uuidString: invitation.code) else {
                 self.signUserOut()
                 let message = "Invitation was invalid."
@@ -128,7 +128,7 @@ public class SignIns {
                     
                 case .success(let result):
                     logger.info("Access token: \(String(describing: result.accessToken))")
-                    self.delegate?.invitationAcceptedAndUserCreated(self)
+                    self.delegate?.invitationAccepted(self, userCreated: result.userCreated)
                 }
             }
         }

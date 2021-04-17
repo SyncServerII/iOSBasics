@@ -513,7 +513,9 @@ public class SyncServer {
     
     /// `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
     public func getSharingInvitationInfo(sharingInvitationUUID: UUID, completion: @escaping (Swift.Result<SharingInvitationInfo, Error>)->()) {
-        guard requestable.canMakeNetworkRequests else {
+    
+        // Only considering the .network here because when this is typically called, the app is coming from the background to the foreground and using .app causes this to fail.
+        guard requestable.canMakeNetworkRequests(options: [.network]) else {
             logger.info("Could not sync: Network not reachable")
             completion(.failure(SyncServerError.networkNotReachable))
             return

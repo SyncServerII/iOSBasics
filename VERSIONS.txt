@@ -1,5 +1,9 @@
 iOSBasics
 
+Version 0.23.0 (4/16/21)
+	* Added more flexible canMakeNetworkRequests method.
+	* Enabling invitation redeeming to report if an account was created or not.
+	
 Version 0.22.1 (4/11/21)
 	* Fixed CheckCreds issue: Incorrect force unwrap caused a crash.
 

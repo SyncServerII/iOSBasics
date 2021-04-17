@@ -187,7 +187,7 @@ class SharingInvitationTests: XCTestCase, UserSetup, APITests, ServerAPIDelegato
         waitForExpectations(timeout: 10, handler: nil)
     }
     
-    func testRedeemExistingSharingInvitationByNonCreatingUserWorks() {
+    func testRedeemExistingSharingInvitationByNewUserWorks() {
         guard let result = getIndex(sharingGroupUUID: nil),
             result.sharingGroups.count > 0,
             let sharingGroupUUIDString = result.sharingGroups[0].sharingGroupUUID else {
@@ -215,8 +215,52 @@ class SharingInvitationTests: XCTestCase, UserSetup, APITests, ServerAPIDelegato
             switch result {
             case .failure:
                 XCTFail()
-            case .success:
-                break
+            case .success(let result):
+                XCTAssert(result.userCreated)
+            }
+            
+            exp.fulfill()
+        }
+        
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        XCTAssert(handlers.user.removeUser())
+    }
+    
+    func testRedeemExistingSharingInvitationByExistingUserWorks() {
+        guard let result = getIndex(sharingGroupUUID: nil),
+            result.sharingGroups.count > 0,
+            let sharingGroupUUIDString = result.sharingGroups[0].sharingGroupUUID else {
+            XCTFail()
+            return
+        }
+        
+        guard let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString) else {
+            XCTFail()
+            return
+        }
+        
+        guard let code = createSharingInvitation(sharingGroupUUID: sharingGroupUUID) else {
+            XCTFail()
+            return
+        }
+
+        // Switch over to 2nd user to redeem the invitation.
+        handlers.user = user2
+
+        // Add that user first.
+        _ = handlers.user.removeUser()
+        XCTAssert(handlers.user.addUser())
+        
+        let exp = expectation(description: "exp")
+        
+        api.redeemSharingInvitation(sharingInvitationUUID: code, cloudFolderName: nil) { result in
+        
+            switch result {
+            case .failure:
+                XCTFail()
+            case .success(let result):
+                XCTAssert(!result.userCreated)
             }
             
             exp.fulfill()
