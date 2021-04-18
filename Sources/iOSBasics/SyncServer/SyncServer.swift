@@ -482,10 +482,10 @@ public class SyncServer {
         }
     }
     
-    /// On success, automatically syncs index before returning. `completion` returns SyncServerError.networkNotReachable if the network is not reachable.
+    /// On success, automatically syncs index before returning. `completion` returns SyncServerError.networkNotReachable if the network is not reachable. Only checks for network reachability (not app reachability) because this can be called when the app is just changing from background to foreground.
     public func redeemSharingInvitation(sharingInvitationUUID:UUID, completion: @escaping (Swift.Result<RedeemResult, Error>)->()) {
 
-        guard requestable.canMakeNetworkRequests else {
+        guard requestable.canMakeNetworkRequests(options: .network) else {
             logger.info("Could not sync: Network not reachable")
             completion(.failure(SyncServerError.networkNotReachable))
             return

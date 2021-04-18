@@ -1,5 +1,10 @@
 iOSBasics
 
+Version 0.24.0 (4/17/21)
+	* Removed unused parameter with `removeUser` method.
+	* Added `SignIns` public method-- removeUser
+	* Have redeemSharingInvitation method not check if app is in foreground.
+	
 Version 0.23.0 (4/16/21)
 	* Added more flexible canMakeNetworkRequests method.
 	* Enabling invitation redeeming to report if an account was created or not.

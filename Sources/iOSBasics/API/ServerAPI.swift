@@ -272,7 +272,7 @@ class ServerAPI {
         }
     }
     
-    func removeUser(retryIfError:Bool=true, completion:@escaping (Error?)->(Void)) {
+    func removeUser(completion:@escaping (Error?)->(Void)) {
         let endpoint = ServerEndpoints.removeUser
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL)
         

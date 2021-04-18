@@ -140,11 +140,31 @@ public class SignIns {
         delegate?.setCredentials(self, credentials: nil)
     }
     
+    /// Update the user's userName
     public func updateUser(userName: String, completion: @escaping (Error?) -> ()) {
         api.serialQueue.async { [weak self] in
             guard let self = self else { return }
             
             self.api.updateUser(userName: userName) { error in
+                DispatchQueue.main.async {
+                    completion(error)
+                }
+            }
+        }
+    }
+    
+    /// Remove the current signed in user from the system. If there was no error, then the current user is also signed out after this call.
+    public func removeUser(completion: @escaping (Error?) -> ()) {
+        api.serialQueue.async { [weak self] in
+            guard let self = self else { return }
+
+            self.api.removeUser { [weak self] error in
+                guard let self = self else { return }
+                
+                if error == nil {
+                    self.signUserOut()
+                }
+                
                 DispatchQueue.main.async {
                     completion(error)
                 }
