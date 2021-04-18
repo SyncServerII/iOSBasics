@@ -76,10 +76,11 @@ extension ServerAPI {
                 let invitationResponse = try? RedeemSharingInvitationResponse.decode(response),
                 let sharingGroupUUIDString = invitationResponse.sharingGroupUUID,
                 let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString),
-                let userCreated = invitationResponse.userCreated {
+                let userCreated = invitationResponse.userCreated,
+                let userId = invitationResponse.userId {
                 
                 let accessToken = response[ServerConstants.httpResponseOAuth2AccessTokenKey] as? String
-                let result = RedeemResult(accessToken: accessToken, sharingGroupUUID: sharingGroupUUID, userCreated: userCreated)
+                let result = RedeemResult(accessToken: accessToken, sharingGroupUUID: sharingGroupUUID, userId: userId, userCreated: userCreated)
                 completion(.success(result))
             }
             else {

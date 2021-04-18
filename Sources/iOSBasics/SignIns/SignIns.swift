@@ -128,7 +128,7 @@ public class SignIns {
                     
                 case .success(let result):
                     logger.info("Access token: \(String(describing: result.accessToken))")
-                    self.delegate?.invitationAccepted(self, userCreated: result.userCreated)
+                    self.delegate?.invitationAccepted(self, redeemResult: result)
                 }
             }
         }

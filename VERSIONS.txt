@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.25.0 (4/17/21)
+	* Changed invitationAccepted parameter to RedeemResult
+
 Version 0.24.0 (4/17/21)
 	* Removed unused parameter with `removeUser` method.
 	* Added `SignIns` public method-- removeUser
