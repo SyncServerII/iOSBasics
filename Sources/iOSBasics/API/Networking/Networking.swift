@@ -187,6 +187,15 @@ class Networking: NSObject {
         
         uploadTask.resume()
     }
+    
+    func validStatusCode(_ statusCode: Int?) -> Bool {
+        if let statusCode = statusCode, statusCode >= 200, statusCode <= 299 {
+            return true
+        }
+        else {
+            return false
+        }
+    }
 
     private func processResponse(data:Data?, urlResponse:URLResponse?, error: Error?) -> (serverResponse:[String:Any]?, statusCode:Int?, error:Error?) {
     
@@ -216,7 +225,7 @@ class Networking: NSObject {
             return (nil, response.statusCode, NetworkingError.couldNotGetData)
         }
         
-        guard versionsAreOK(headerFields: response.allHeaderFields) else {
+        guard versionsAreOK(statusCode: response.statusCode, headerFields: response.allHeaderFields) else {
             logger.error("Versions not OK")
             return (nil, response.statusCode, NetworkingError.versionError)
         }
@@ -253,7 +262,7 @@ class Networking: NSObject {
         return serverVersion < configMinimumServerVersion
     }
     
-    private func serverVersionIsOK(headerFields: [AnyHashable: Any]) -> Bool {
+    private func serverVersionIsOK(statusCode: Int?, headerFields: [AnyHashable: Any]) -> Bool {
         var serverVersion:Version?
         if let version = headerFields[ServerConstants.httpResponseCurrentServerVersion] as? String {
             serverVersion = try? Version(version)
@@ -263,7 +272,8 @@ class Networking: NSObject {
             // Client doesn't care which version of the server they are using.
             return true
         }
-        else if serverVersion == nil || serverVersionTooLow(serverVersion: serverVersion, configMinimumServerVersion:config.minimumServerVersion) {
+        // Only consider a serverVersion of nil to be valid if the statusCode was valid -- because I don't want the server being down to result in a bad server version response.
+        else if (serverVersion == nil && validStatusCode(statusCode)) || serverVersionTooLow(serverVersion: serverVersion, configMinimumServerVersion:config.minimumServerVersion) {
         
             // Either: a) Client *does* care, but server isn't versioned, or
             // b) the actual server version is less than what the client needs.
@@ -300,8 +310,8 @@ class Networking: NSObject {
         return true
     }
     
-    func versionsAreOK(headerFields: [AnyHashable: Any]) -> Bool {
-        return serverVersionIsOK(headerFields: headerFields) &&
+    func versionsAreOK(statusCode: Int?, headerFields: [AnyHashable: Any]) -> Bool {
+        return serverVersionIsOK(statusCode: statusCode, headerFields: headerFields) &&
             clientAppVersionIsOK(headerFields: headerFields)
     }
     

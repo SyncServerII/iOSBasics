@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.25.1 (5/8/21)
+	* Improve operation of server version check-- it had been reporting bad server version when the server was down.
+	
 Version 0.25.0 (4/17/21)
 	* Changed invitationAccepted parameter to RedeemResult
 

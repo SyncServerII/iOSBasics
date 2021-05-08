@@ -38,7 +38,7 @@ extension Networking {
             return
         }
         
-        guard versionsAreOK(headerFields: response.allHeaderFields) else {
+        guard versionsAreOK(statusCode: possiblyNilResponse?.statusCode, headerFields: response.allHeaderFields) else {
             logger.error("Versions not OK")
             return
         }
@@ -83,15 +83,6 @@ extension Networking {
             transferDelegate.error(self, file: downloadFile, statusCode: response.statusCode, error: NetworkingError.unexpectedTransferType)
         }
     }
-
-    private func validStatusCode(_ statusCode: Int?) -> Bool {
-        if let statusCode = statusCode, statusCode >= 200, statusCode <= 299 {
-            return true
-        }
-        else {
-            return false
-        }
-    }
     
     func urlSessionHelper(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
     
@@ -132,7 +123,7 @@ extension Networking {
             return
         }
 
-        guard versionsAreOK(headerFields: response.allHeaderFields) else {
+        guard versionsAreOK(statusCode: taskResponse?.statusCode, headerFields: response.allHeaderFields) else {
             logger.error("Versions not OK")
             return
         }
