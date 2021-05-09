@@ -83,6 +83,9 @@ public class SyncServer {
         
         try Database.setup(db: db)
 
+        let migrationController = try Migration(db: db)
+        try migrationController.run(migrations: Migration.all(db: db))
+        
         self.signIns = signIns
         
         guard let api = ServerAPI(database: db, hashingManager: hashingManager, delegate: self, serialQueue: serialQueue, backgroundAsssertable: backgroundAsssertable, config: configuration) else {

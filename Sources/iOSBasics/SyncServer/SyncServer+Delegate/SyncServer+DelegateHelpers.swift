@@ -108,7 +108,7 @@ extension SyncServer {
                 logger.error("\(goneReason)")
                 
                 do {
-                    try cleanupAfterDownloadCompleted(fileUUID: fileUUID, contents: .gone(goneReason), objectTrackerId: objectTrackerId)
+                    try cleanupAfterDownloadCompleted(fileUUID: fileUUID, contents: .gone(goneReason), appMetaData: nil, objectTrackerId: objectTrackerId)
                 } catch let error {
                     logger.error("\(error)")
                     delegator { [weak self] delegate in
@@ -121,13 +121,13 @@ extension SyncServer {
                 
                 delegator { [weak self] delegate in
                     guard let self = self else { return }
-                    let result = DownloadResult(fileUUID: fileUUID, downloadType: .gone)
+                    let result = DownloadResult(fileUUID: fileUUID, downloadType: .gone, appMetaData: nil)
                     delegate.downloadQueue(self, event: .completed(result))
                 }
                 
             case .success(let objectTrackerId, let result):
                 do {
-                    try cleanupAfterDownloadCompleted(fileUUID: result.fileUUID, contents: .download(result.url), objectTrackerId: objectTrackerId)
+                    try cleanupAfterDownloadCompleted(fileUUID: result.fileUUID, contents: .download(result.url), appMetaData: result.appMetaData, objectTrackerId: objectTrackerId)
                 } catch let error {
                     logger.error("\(error)")
                     delegator { [weak self] delegate in
@@ -138,7 +138,7 @@ extension SyncServer {
                 
                 delegator { [weak self] delegate in
                     guard let self = self else { return }
-                    let result = DownloadResult(fileUUID: result.fileUUID, downloadType: .success(localFile: result.url))
+                    let result = DownloadResult(fileUUID: result.fileUUID, downloadType: .success(localFile: result.url), appMetaData: result.appMetaData)
                     delegate.downloadQueue(self, event: .completed(result))
                 }
             }
@@ -276,7 +276,7 @@ extension SyncServer {
         case gone
     }
     
-    func cleanupAfterDownloadCompleted(fileUUID:UUID, contents: DownloadedFile.Contents, objectTrackerId: Int64) throws {
+    func cleanupAfterDownloadCompleted(fileUUID:UUID, contents: DownloadedFile.Contents, appMetaData: String?, objectTrackerId: Int64) throws {
         // There can be more than one row in DownloadFileTracker with the same fileUUID here because we can queue the same download multiple times. Therefore, need to also search by objectTrackerId.
         guard let fileTracker = try DownloadFileTracker.fetchSingleRow(db: db, where: fileUUID == DownloadFileTracker.fileUUIDField.description &&
             objectTrackerId == DownloadFileTracker.downloadObjectTrackerIdField.description) else {
@@ -290,7 +290,8 @@ extension SyncServer {
         switch contents {
         case .download(let url):
             try fileTracker.update(setters:
-                DownloadFileTracker.localURLField.description <- url)
+                DownloadFileTracker.localURLField.description <- url,
+                DownloadFileTracker.appMetaDataField.description <- appMetaData)
             try fileEntry.update(setters: DirectoryFileEntry.goneReasonField.description <- nil)
         case .gone(goneReason: let goneReason):
             try fileEntry.update(setters: DirectoryFileEntry.goneReasonField.description <- goneReason.rawValue)
@@ -354,7 +355,7 @@ extension SyncServer {
                     contents = .gone(goneReason)
                 }
                 
-                let downloadFile = DownloadedFile(uuid: file.fileUUID, fileVersion: file.fileVersion, fileLabel: fileEntry.fileLabel, mimeType: fileEntry.mimeType, updateDate: fileEntry.updateDate, contents: contents)
+                let downloadFile = DownloadedFile(uuid: file.fileUUID, fileVersion: file.fileVersion, fileLabel: fileEntry.fileLabel, mimeType: fileEntry.mimeType, updateDate: fileEntry.updateDate, appMetaData: file.appMetaData, contents: contents)
                 downloadedFiles += [downloadFile]
             }
             

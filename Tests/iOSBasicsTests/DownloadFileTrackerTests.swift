@@ -8,10 +8,11 @@ class DownloadFileTrackerTests: XCTestCase {
     var database: Connection!
     let fileUUID = UUID()
     var entry:DownloadFileTracker!
+    let exampleAppMetaData = "Example app meta data"
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try DownloadFileTracker(db: database, downloadObjectTrackerId: 0, status: .downloaded, fileUUID: fileUUID, fileVersion: 0, localURL: nil)
+        entry = try DownloadFileTracker(db: database, downloadObjectTrackerId: 0, status: .downloaded, fileUUID: fileUUID, fileVersion: 0, localURL: nil, appMetaData: exampleAppMetaData)
     }
 
     override func tearDownWithError() throws {

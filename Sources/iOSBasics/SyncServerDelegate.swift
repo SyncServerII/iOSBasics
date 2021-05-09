@@ -69,10 +69,12 @@ public struct DownloadResult {
     
     let fileUUID: UUID
     let downloadType: DownloadType
+    let appMetaData: String?
     
-    public init(fileUUID: UUID, downloadType: DownloadType) {
+    public init(fileUUID: UUID, downloadType: DownloadType, appMetaData: String?) {
         self.fileUUID = fileUUID
         self.downloadType = downloadType
+        self.appMetaData = appMetaData
     }
 }
 

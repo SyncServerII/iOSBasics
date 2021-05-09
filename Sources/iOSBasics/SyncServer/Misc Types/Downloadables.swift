@@ -34,6 +34,8 @@ public protocol FileWasDownloaded: DownloadableFile {
     
     // Will be nil if this is v0 of file-- only has a creation date.
     var updateDate: Date? { get }
+    
+    var appMetaData: String? { get }
 }
 
 public protocol ObjectWasDownloaded {

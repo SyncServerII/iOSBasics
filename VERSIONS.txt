@@ -1,5 +1,11 @@
 iOSBasics
 
+Version 0.26.0 (5/8/21)
+	* Added support for appMetaData in downloading
+	* Added SQLite migration support
+	* Added migration for:
+		DownloadFileTracker: appMetaData field.
+		
 Version 0.25.1 (5/8/21)
 	* Improve operation of server version check-- it had been reporting bad server version when the server was down.
 	

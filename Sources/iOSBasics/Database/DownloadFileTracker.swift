@@ -37,6 +37,10 @@ class DownloadFileTracker: DatabaseModel {
     static let localURLField = Field("localURL", \M.localURL)
     var localURL:URL!
     
+    // New as of 5/8/21; Migration needed.
+    static let appMetaDataField = Field("appMetaData", \M.appMetaData)
+    var appMetaData: String?
+    
     init(db: Connection,
         id: Int64! = nil,
         downloadObjectTrackerId: Int64,
@@ -44,7 +48,8 @@ class DownloadFileTracker: DatabaseModel {
         numberRetries: Int = 0,
         fileUUID: UUID,
         fileVersion: FileVersionInt,
-        localURL:URL?) throws {
+        localURL:URL?,
+        appMetaData: String? = nil) throws {
 
         self.db = db
         self.id = id
@@ -54,6 +59,7 @@ class DownloadFileTracker: DatabaseModel {
         self.fileUUID = fileUUID
         self.fileVersion = fileVersion
         self.localURL = localURL
+        self.appMetaData = appMetaData
     }
     
     // MARK: DatabaseModel
@@ -70,7 +76,14 @@ class DownloadFileTracker: DatabaseModel {
             
             t.column(fileVersionField.description)
             t.column(localURLField.description)
+            
+            // Added in migration_2021_5_8
+            // t.column(appMetaDataField.description)
         }
+    }
+    
+    static func migration_2021_5_8(db: Connection) throws {
+        try addColumn(db: db, column: appMetaDataField.description)
     }
     
     static func rowToModel(db: Connection, row: Row) throws -> DownloadFileTracker {
@@ -81,7 +94,8 @@ class DownloadFileTracker: DatabaseModel {
             numberRetries: row[Self.numberRetriesField.description],
             fileUUID: row[Self.fileUUIDField.description],
             fileVersion: row[Self.fileVersionField.description],
-            localURL: row[Self.localURLField.description]
+            localURL: row[Self.localURLField.description],
+            appMetaData: row[Self.appMetaDataField.description]
         )
     }
     
@@ -92,7 +106,8 @@ class DownloadFileTracker: DatabaseModel {
             Self.numberRetriesField.description <- numberRetries,
             Self.fileUUIDField.description <- fileUUID,
             Self.fileVersionField.description <- fileVersion,
-            Self.localURLField.description <- localURL
+            Self.localURLField.description <- localURL,
+            Self.appMetaDataField.description <- appMetaData
         )
     }
 }
