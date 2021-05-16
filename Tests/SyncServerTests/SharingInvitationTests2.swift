@@ -33,7 +33,7 @@ class SharingInvitationTests2: XCTestCase, UserSetup, ServerBasics, TestFiles, A
         config = Configuration(appGroupIdentifier: nil, serverURL: serverURL, minimumServerVersion: nil, failoverMessageURL: nil, cloudFolderName: cloudFolderName, deviceUUID: deviceUUID, packageTests: true, deferredCheckInterval: nil)
         fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
         let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
-        syncServer = try SyncServer(hashingManager: hashingManager, db: database, requestable: FakeRequestable(), configuration: config, signIns: fakeSignIns, backgroundAsssertable: MainAppBackgroundTask())
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, requestable: FakeRequestable(), configuration: config, signIns: fakeSignIns, backgroundAsssertable: MainAppBackgroundTask(), migrationRunner: MigrationRunnerFake())
         api = syncServer.api
         syncServer.delegate = self
         syncServer.credentialsDelegate = self

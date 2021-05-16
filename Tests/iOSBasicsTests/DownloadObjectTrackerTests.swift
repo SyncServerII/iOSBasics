@@ -112,6 +112,7 @@ class DownloadObjectTrackerTests: XCTestCase {
         try DownloadObjectTracker.createTable(db: database)
         try entry.insert()
         try DownloadFileTracker.createTable(db: database)
+        try DownloadFileTracker.allMigrations(db: database)
 
         // 1) No downloads-- because db is empty
         let downloads1 = try DownloadObjectTracker.downloadsWith(status: .downloaded, scope: .all, db: database)
@@ -137,6 +138,7 @@ class DownloadObjectTrackerTests: XCTestCase {
         try DownloadObjectTracker.createTable(db: database)
         try entry.insert()
         try DownloadFileTracker.createTable(db: database)
+        try DownloadFileTracker.allMigrations(db: database)
 
         // 1) No downloads-- because db is empty
         let downloads1 = try DownloadObjectTracker.downloadsWith(status: .downloaded, scope: .some, db: database)

@@ -1,5 +1,15 @@
 iOSBasics
 
+Version 0.27.0 (5/15/21)
+    * Updates based on the v1.9.0 server changes
+    	Removed users are now marked as deleted in sharing groups.
+    	Removed filtering for deleted sharing groups from sharingGroups method.
+    	No longer trying to infer deleted sharing groups from missing sharing groups.
+    * Update related tests.
+    * Updates for v0.14.0 `iOSShared`-- database migration protocol improvements.
+    	Enable test cases to work with database migration.
+	* Fix checkCreds issue when unauthorized.
+	
 Version 0.26.0 (5/8/21)
 	* Added support for appMetaData in downloading
 	* Added SQLite migration support

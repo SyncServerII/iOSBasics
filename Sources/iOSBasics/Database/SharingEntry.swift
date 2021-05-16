@@ -18,6 +18,7 @@ class SharingEntry: DatabaseModel {
     static let permissionField = Field("permission", \M.permission)
     var permission: Permission
 
+    // If true, indicates that either the (current) user has been removed from the sharing group *or* the sharing group has been removed.
     static let deletedField = Field("deleted", \M.deleted)
     var deleted:  Bool
     
@@ -100,18 +101,19 @@ class SharingEntry: DatabaseModel {
 extension SharingEntry {
     // Update or insert the SharingEntry corresponding to the passed sharingGroup.
     static func upsert(sharingGroup: ServerShared.SharingGroup, db: Connection) throws {
-        guard let sharingGroupUUIDString = sharingGroup.sharingGroupUUID,
-              let sharingGroupUUID = UUID(uuidString: sharingGroupUUIDString) else {
+        guard let sharingGroupUUID = try UUID.from(sharingGroup.sharingGroupUUID) else {
             throw DatabaseError.invalidUUID
         }
 
         if let sharingEntry = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == sharingGroupUUID) {
+
             if sharingGroup.sharingGroupName != sharingEntry.sharingGroupName {
                 try sharingEntry.update(setters: SharingEntry.sharingGroupNameField.description
                         <- sharingGroup.sharingGroupName
                 )
             }
             
+            // Handling both delete and undelete case because if a user is removed and then re-added to a sharing group, we'll have an "undelete".
             if sharingGroup.deleted != sharingEntry.deleted {
                 try sharingEntry.update(setters:
                     SharingEntry.deletedField.description
@@ -119,10 +121,7 @@ extension SharingEntry {
                 )
             }
         }
-        else {
-            // `removedFromGroup` set to false because we shouldn't be getting this call unless the current user is part of the sharing group.
-            #warning("Should eventually detect when a user is removed from a sharing group and update this.")
-            
+        else {            
             guard let permission = sharingGroup.permission else {
                 throw SyncServerError.internalError("Could not get permission")
             }

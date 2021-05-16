@@ -84,29 +84,7 @@ extension SyncServer {
     }
     
     // `sharingGroups` is the full set of sharing groups returned from the server.
-    private func upsert(sharingGroups: [ServerShared.SharingGroup]) throws {
-        // Have any sharing groups been removed?
-        let localSharingGroups = Set<UUID>(try SharingEntry.fetch(db: db).map { $0.sharingGroupUUID })
-        
-        let remoteSharingGroups = Set<UUID>(try sharingGroups.map { group throws -> UUID in
-            guard let uuidString = group.sharingGroupUUID,
-                let uuid = UUID(uuidString: uuidString) else {
-                throw SyncServerError.internalError("Bad UUID")
-            }
-            return uuid
-        })
-        
-        // I want to know which groups are in the local, but not in the remote. These are the groups that need to be marked as deleted.
-        let toDelete = localSharingGroups.subtracting(remoteSharingGroups)
-        
-        for uuid in toDelete {
-            guard let entry = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == uuid) else {
-                throw SyncServerError.internalError("Could not get sharing group")
-            }
-            
-            try entry.update(setters: SharingEntry.deletedField.description <- true)
-        }
-        
+    private func upsert(sharingGroups: [ServerShared.SharingGroup]) throws {        
         for sharingGroup in sharingGroups {
             try SharingEntry.upsert(sharingGroup: sharingGroup, db: db)
         }

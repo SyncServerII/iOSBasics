@@ -58,7 +58,8 @@ extension APITests where Self: XCTestCase {
             switch result {
             case .success(let result):
                 returnResult = result
-            case .failure:
+            case .failure(let failure):
+                print("Failure: \(failure)")
                 break
             }
             exp.fulfill()
@@ -242,7 +243,7 @@ extension APITests where Self: XCTestCase {
             exp.fulfill()
         }
         
-        waitForExpectations(timeout: 10, handler: nil)
+        waitForExpectations(timeout: 15, handler: nil)
         
         handlers.extras.uploadCompleted = nil
         handlers.userEvent = nil
@@ -340,5 +341,29 @@ extension APITests where Self: XCTestCase {
         waitForExpectations(timeout: 10, handler: nil)
         
         return deferredUploadId
+    }
+    
+    // Sharing groups
+    func createSharingInvitation(permission:Permission = .admin, sharingGroupUUID: UUID) -> UUID? {
+    
+        var sharingInvitationUUID: UUID?
+        
+        let exp = expectation(description: "exp")
+        
+        api.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 1, allowSocialAcceptance: true) { result in
+            
+            switch result {
+            case .failure:
+                break
+            case .success(let code):
+                sharingInvitationUUID = code
+            }
+            
+            exp.fulfill()
+        }
+        
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        return sharingInvitationUUID
     }
 }

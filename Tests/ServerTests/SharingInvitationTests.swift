@@ -42,29 +42,6 @@ class SharingInvitationTests: XCTestCase, UserSetup, APITests, ServerAPIDelegato
 
     override func tearDownWithError() throws {
     }
-
-    func createSharingInvitation(permission:Permission = .admin, sharingGroupUUID: UUID) -> UUID? {
-    
-        var sharingInvitationUUID: UUID?
-        
-        let exp = expectation(description: "exp")
-        
-        api.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 1, allowSocialAcceptance: true) { result in
-            
-            switch result {
-            case .failure:
-                break
-            case .success(let code):
-                sharingInvitationUUID = code
-            }
-            
-            exp.fulfill()
-        }
-        
-        waitForExpectations(timeout: 10, handler: nil)
-        
-        return sharingInvitationUUID
-    }
     
     func testCreateSharingInvitation() throws {
         guard let result = getIndex(sharingGroupUUID: nil),

@@ -192,44 +192,40 @@ class ServerAPI {
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL)
         
         networking.sendRequestTo(serverURL, method: endpoint.method) { response, httpStatus, error in
-        
-            var result:CheckCredsResult?
-            
+
+            if httpStatus == HTTPStatus.unauthorized.rawValue {
+                completion(.success(.noUser))
+                return
+            }
+
             guard let response = response else {
                 completion(.failure(ServerAPIError.nilResponse))
                 return
             }
-
-            if httpStatus == HTTPStatus.unauthorized.rawValue {
-                result = .noUser
-            }
-            else if httpStatus == HTTPStatus.ok.rawValue {
-                guard let checkCredsResponse = try? CheckCredsResponse.decode(response) else {
-                    completion(.failure(ServerAPIError.badCheckCreds))
-                    return
-                }
-                
-                let accessToken = response[ServerConstants.httpResponseOAuth2AccessTokenKey] as? String
-                
-                guard let userInfo = checkCredsResponse.userInfo else {
-                    completion(.failure(ServerAPIError.noUserInfoInCheckCreds))
-                    return
-                }
-                
-                result = .user(userInfo: userInfo, accessToken: accessToken)
-            }
             
-            if let result = result {
-                completion(.success(result))
-            }
-            else {
+            guard httpStatus == HTTPStatus.ok.rawValue else {
                 if let errorResult = self.checkForError(statusCode: httpStatus, error: error, serverResponse: .dictionary(response)) {
                     completion(.failure(errorResult))
                 }
                 else {
                     completion(.failure(ServerAPIError.unknownServerError))
                 }
+                return
             }
+            
+            guard let checkCredsResponse = try? CheckCredsResponse.decode(response) else {
+                completion(.failure(ServerAPIError.badCheckCreds))
+                return
+            }
+            
+            let accessToken = response[ServerConstants.httpResponseOAuth2AccessTokenKey] as? String
+            
+            guard let userInfo = checkCredsResponse.userInfo else {
+                completion(.failure(ServerAPIError.noUserInfoInCheckCreds))
+                return
+            }
+            
+            completion(.success(.user(userInfo: userInfo, accessToken: accessToken)))
         }
     }
     

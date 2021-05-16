@@ -86,6 +86,12 @@ class DownloadFileTracker: DatabaseModel {
         try addColumn(db: db, column: appMetaDataField.description)
     }
     
+#if DEBUG
+    static func allMigrations(db: Connection) throws {
+        try migration_2021_5_8(db: db)
+    }
+#endif
+
     static func rowToModel(db: Connection, row: Row) throws -> DownloadFileTracker {
         return try DownloadFileTracker(db: db,
             id: row[Self.idField.description],

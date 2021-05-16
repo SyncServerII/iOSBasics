@@ -58,7 +58,7 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         networkRequestable = GatableFakeRequestable() {
             return self.disableNetwork
         }
-        syncServer = try SyncServer(hashingManager: hashingManager, db: database, requestable: networkRequestable, configuration: config, signIns: fakeSignIns, backgroundAsssertable: MainAppBackgroundTask())
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, requestable: networkRequestable, configuration: config, signIns: fakeSignIns, backgroundAsssertable: MainAppBackgroundTask(), migrationRunner: MigrationRunnerFake())
         api = syncServer.api
         syncServer.delegate = self
         syncServer.credentialsDelegate = self

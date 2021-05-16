@@ -118,7 +118,7 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
         case .some(.noUser):
             break
         default:
-            XCTFail()
+            XCTFail("\(String(describing: result))")
         }
     }
     

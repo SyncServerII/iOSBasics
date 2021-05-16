@@ -64,6 +64,9 @@ public class SyncServer {
     ///         in state changes. This connects the iOSSignIn package to the
     ///         iOSBasics package.
     ///     - backgroundAsssertable: To ensure necessary tasks execute properly if app transitions to the background.
+    ///     - migrationRunner: Provide a means to run database migrations.
+    ///         Except for testing this should be nil. When nil, this class provides
+    ///         its own `MigrationRunner`.
     ///     - dispatchQueue: used to call `SyncServerDelegate` methods.
     ///         (`SyncServerCredentials` and `SyncServerHelpers` methods may be called on any queue.)
     ///         Also used for any callbacks defined on this interface.
@@ -73,6 +76,7 @@ public class SyncServer {
         configuration: Configuration,
         signIns: SignIns,
         backgroundAsssertable: BackgroundAsssertable,
+        migrationRunner: MigrationRunner? = nil,
         dispatchQueue: DispatchQueue = DispatchQueue.main) throws {
         self.configuration = configuration
         self.db = db
@@ -82,9 +86,15 @@ public class SyncServer {
         self.backgroundAsssertable = backgroundAsssertable
         
         try Database.setup(db: db)
-
-        let migrationController = try Migration(db: db)
-        try migrationController.run(migrations: Migration.all(db: db))
+        
+        let runner: MigrationRunner
+        if let migrationRunner = migrationRunner {
+            runner = migrationRunner
+        }
+        else {
+            runner = try Migration(db: db)
+        }
+        try runner.run(migrations: Migration.all(db: db))
         
         self.signIns = signIns
         
@@ -403,7 +413,7 @@ public class SyncServer {
     
     // MARK: Sharing
     
-    // The sharing groups in which the signed in user is a member.
+    // The sharing groups in which the signed in user is a member, or was a member. If the user is no longer a member, the `deleted` property of the `iOSBasics.SharingGroup` is true. Note that for a specific sharing group, if a user is re-added to that sharing group, the `deleted` property can later (e.g., on another call to `sharingGroups()`) become true again.
     public func sharingGroups() throws -> [iOSBasics.SharingGroup]  {
         // `sync` because the immediate effect of this call is short running.
         return try serialQueue.sync { [weak self] in

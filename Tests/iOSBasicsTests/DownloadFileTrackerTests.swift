@@ -19,6 +19,11 @@ class DownloadFileTrackerTests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
     
+    func createTable() throws {
+        try DownloadFileTracker.createTable(db: database)
+        try DownloadFileTracker.allMigrations(db: database)
+    }
+    
     func assertContentsCorrect(entry1: DownloadFileTracker, entry2: DownloadFileTracker) {
         XCTAssert(entry1.status == entry2.status)
         XCTAssert(entry1.fileUUID == entry2.fileUUID)
@@ -28,7 +33,7 @@ class DownloadFileTrackerTests: XCTestCase {
     }
 
     func testCreateTable() throws {
-        try DownloadFileTracker.createTable(db: database)
+        try createTable()
     }
     
     func testDoubleCreateTable() throws {
@@ -37,12 +42,12 @@ class DownloadFileTrackerTests: XCTestCase {
     }
     
     func testInsertIntoTable() throws {
-        try DownloadFileTracker.createTable(db: database)
+        try createTable()
         try entry.insert()
     }
     
     func testFilterWhenRowNotFound() throws {
-        try DownloadFileTracker.createTable(db: database)
+        try createTable()
         
         var count = 0
         try DownloadFileTracker.fetch(db: database,
@@ -54,7 +59,8 @@ class DownloadFileTrackerTests: XCTestCase {
     }
     
     func testFilterWhenRowFound() throws {
-        try DownloadFileTracker.createTable(db: database)
+        try createTable()
+        
         try entry.insert()
         
         var count = 0
@@ -68,7 +74,8 @@ class DownloadFileTrackerTests: XCTestCase {
     }
     
     func testFilterWhenTwoRowsFound() throws {
-        try DownloadFileTracker.createTable(db: database)
+        try createTable()
+        
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
@@ -85,7 +92,8 @@ class DownloadFileTrackerTests: XCTestCase {
     }
     
     func testUpdate() throws {
-        try DownloadFileTracker.createTable(db: database)
+        try createTable()
+        
         try entry.insert()
                 
         let replacement = UUID()
@@ -107,14 +115,15 @@ class DownloadFileTrackerTests: XCTestCase {
     }
     
     func testDelete() throws {
-        try DownloadFileTracker.createTable(db: database)
+        try createTable()
+        
         try entry.insert()
         
         try entry.delete()
     }
     
     func testChangeStatusOfExactlyOneRecord() throws {
-        try DownloadFileTracker.createTable(db: database)
+        try createTable()
         
         let originalStatus: DownloadFileTracker.Status = .notStarted
         
