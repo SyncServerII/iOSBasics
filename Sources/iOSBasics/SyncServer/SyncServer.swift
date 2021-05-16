@@ -341,7 +341,7 @@ public class SyncServer {
             return try self.objectNeedsDownloadHelper(object:fileGroupUUID, includeGone: includeGone)
         }
     }
-
+    
     // Call this method so that, after you download an object, it doesn't appear again in `objectsNeedingDownload` (for those file versions).
     // This does *not* call `BackgroundAsssertable` methods.
     public func markAsDownloaded<DWL: DownloadableObject>(object: DWL) throws {
@@ -352,12 +352,30 @@ public class SyncServer {
         }
     }
     
+    // Call this method to mark an object as needing to be downloaded.
+    public func markAsNotDownloaded<DWL: ObjectNotDownloaded>(object: DWL) throws {
+        // `sync` because the immediate effect of this call is short running.
+        try serialQueue.sync { [weak self] in
+            guard let self = self else { return }
+            try self.markAsNotDownloadedHelper(object: object)
+        }
+    }
+    
     // Call this method so that, after you download an file, it doesn't appear again in `objectsNeedingDownload` (for that file version).
     public func markAsDownloaded<DWL: DownloadableFile>(file: DWL) throws {
         // `sync` because the immediate effect of this call is short running.
         try serialQueue.sync { [weak self] in
             guard let self = self else { return }
             try self.markAsDownloadedHelper(file: file)
+        }
+    }
+    
+    // Call this method to mark a file as needing to be downloaded.
+    public func markAsNotDownloaded(file: FileNotDownloaded) throws {
+        // `sync` because the immediate effect of this call is short running.
+        try serialQueue.sync { [weak self] in
+            guard let self = self else { return }
+            try self.markAsNotDownloadedHelper(file: file)
         }
     }
     

@@ -1,10 +1,15 @@
 iOSBasics
 
+Version 0.27.1 (5/16/21)
+	* Fix mark download state -- to allow files/objects to be redownloaded.
+		In the last release if you removed an album and then readded it, you couldn't download the items in the album.
+	
 Version 0.27.0 (5/15/21)
     * Updates based on the v1.9.0 server changes
     	Removed users are now marked as deleted in sharing groups.
     	Removed filtering for deleted sharing groups from sharingGroups method.
     	No longer trying to infer deleted sharing groups from missing sharing groups.
+    	See https://github.com/SyncServerII/Neebla/issues/12
     * Update related tests.
     * Updates for v0.14.0 `iOSShared`-- database migration protocol improvements.
     	Enable test cases to work with database migration.

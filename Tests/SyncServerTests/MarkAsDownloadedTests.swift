@@ -129,6 +129,22 @@ class MarkAsDownloadedTests: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         
         let downloadables2 = try syncServer.objectsNeedingDownload(sharingGroupUUID: sharingGroupUUID)
         XCTAssert(downloadables2.count == 0)
+        
+        let notDownloaded = NotDownloadFile(uuid: download.uuid)
+        try syncServer.markAsNotDownloaded(file: notDownloaded)
+        
+        let downloadables3 = try syncServer.objectsNeedingDownload(sharingGroupUUID: sharingGroupUUID)
+        guard downloadables3.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        guard downloadables3[0].downloads.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(downloadables3[0].downloads[0].uuid == download.uuid)
     }
     
     func testMarkAsDownloadedObjectWithOneFileWorks() throws {
@@ -191,6 +207,29 @@ class MarkAsDownloadedTests: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         
         let downloadables2 = try syncServer.objectsNeedingDownload(sharingGroupUUID: sharingGroupUUID)
         XCTAssert(downloadables2.count == 0)
+        
+        let notDownloadedFiles = downloadObject.downloads.map {
+            NotDownloadFile(uuid: $0.uuid)
+        }
+        
+        let notDownloadedObject = NotDownloadedObject(sharingGroupUUID: sharingGroupUUID, fileGroupUUID: downloadObject.fileGroupUUID, downloads: notDownloadedFiles)
+        
+        try syncServer.markAsNotDownloaded(object:notDownloadedObject)
+        
+        let downloadables3 = try syncServer.objectsNeedingDownload(sharingGroupUUID: sharingGroupUUID)
+        guard downloadables3.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(downloadables3[0].sharingGroupUUID == sharingGroupUUID)
+        
+        guard downloadables3[0].downloads.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(downloadables3[0].downloads[0].uuid == fileUUID1)
     }
     
     func testMarkAsDownloadedObjectWithTwoFilesWorks() throws {
@@ -245,5 +284,26 @@ class MarkAsDownloadedTests: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         
         let downloadables2 = try syncServer.objectsNeedingDownload(sharingGroupUUID: sharingGroupUUID)
         XCTAssert(downloadables2.count == 0)
+        
+        let notDownloadedFiles = downloadObject.downloads.map {
+            NotDownloadFile(uuid: $0.uuid)
+        }
+        
+        let notDownloadedObject = NotDownloadedObject(sharingGroupUUID: sharingGroupUUID, fileGroupUUID: downloadObject.fileGroupUUID, downloads: notDownloadedFiles)
+        
+        try syncServer.markAsNotDownloaded(object:notDownloadedObject)
+        
+        let downloadables3 = try syncServer.objectsNeedingDownload(sharingGroupUUID: sharingGroupUUID)
+        guard downloadables3.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(downloadables3[0].sharingGroupUUID == sharingGroupUUID)
+        
+        guard downloadables3[0].downloads.count == 2 else {
+            XCTFail()
+            return
+        }
     }
 }

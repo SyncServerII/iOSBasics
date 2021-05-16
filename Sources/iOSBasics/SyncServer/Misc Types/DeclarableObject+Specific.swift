@@ -79,6 +79,14 @@ public struct DownloadFile: FileNeedingDownload {
     }
 }
 
+public struct NotDownloadedFile: FileNotDownloaded {
+    public let uuid: UUID
+    
+    public init(uuid: UUID) {
+        self.uuid = uuid
+    }
+}
+
 public struct DownloadObject: ObjectNeedingDownload {
     public let sharingGroupUUID: UUID
     public let fileGroupUUID: UUID
@@ -90,6 +98,19 @@ public struct DownloadObject: ObjectNeedingDownload {
         self.sharingGroupUUID = sharingGroupUUID
         self.fileGroupUUID = fileGroupUUID
         self.creationDate = creationDate
+        self.downloads = downloads
+    }
+}
+
+public struct NotDownloadedObject: ObjectNotDownloaded {
+    public let sharingGroupUUID: UUID
+    public let fileGroupUUID: UUID
+    
+    public let downloads: [NotDownloadedFile]
+    
+    public init(sharingGroupUUID: UUID, fileGroupUUID: UUID, downloads: [NotDownloadedFile]) {
+        self.sharingGroupUUID = sharingGroupUUID
+        self.fileGroupUUID = fileGroupUUID
         self.downloads = downloads
     }
 }

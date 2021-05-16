@@ -130,6 +130,15 @@ extension SyncServer {
             DirectoryFileEntry.fileVersionField.description <- file.fileVersion)
     }
     
+    func markAsNotDownloadedHelper(file: FileNotDownloaded) throws {
+        guard let entry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == file.uuid) else {
+            throw SyncServerError.noObject
+        }
+        
+        try entry.update(setters:
+            DirectoryFileEntry.fileVersionField.description <- nil)
+    }
+    
     func markAsDownloadedHelper<DWL: DownloadableObject>(object: DWL) throws {
         guard let _ = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == object.fileGroupUUID) else {
             throw SyncServerError.noObject
@@ -140,7 +149,21 @@ extension SyncServer {
         }
         
         delegator { delegate in
-            delegate.objectMarkedAsDownloaded(self, fileGroupUUID: object.fileGroupUUID)
+            delegate.objectMarked(self, withDownloadState: .downloaded, fileGroupUUID: object.fileGroupUUID)
+        }
+    }
+    
+    func markAsNotDownloadedHelper<DWL: ObjectNotDownloaded>(object: DWL) throws {
+        guard let _ = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == object.fileGroupUUID) else {
+            throw SyncServerError.noObject
+        }
+        
+        for file in object.downloads {
+            try markAsNotDownloadedHelper(file: file)
+        }
+        
+        delegator { delegate in
+            delegate.objectMarked(self, withDownloadState: .notDownloaded, fileGroupUUID: object.fileGroupUUID)
         }
     }
 }

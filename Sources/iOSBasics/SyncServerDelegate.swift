@@ -115,6 +115,11 @@ public enum BadVersion {
     case badServerVersion(Version?)
     case badClientAppVersion(minimumNeeded: Version)
 }
+    
+public enum DownloadState {
+    case downloaded
+    case notDownloaded
+}
 
 // These methods are all called on the `delegateDispatchQueue` passed to the SyncServer constructor.
 public protocol SyncServerDelegate: AnyObject {
@@ -135,7 +140,7 @@ public protocol SyncServerDelegate: AnyObject {
     func uploadQueue(_ syncServer: SyncServer, event: UploadEvent)
     func downloadQueue(_ syncServer: SyncServer, event: DownloadEvent)
     
-    func objectMarkedAsDownloaded(_ syncServer: SyncServer, fileGroupUUID: UUID)
+    func objectMarked(_ syncServer: SyncServer, withDownloadState state: DownloadState, fileGroupUUID: UUID)
 
     // Request to server for upload deletion completed successfully.
     func deletionCompleted(_ syncServer: SyncServer, forObjectWith fileGroupUUID: UUID)

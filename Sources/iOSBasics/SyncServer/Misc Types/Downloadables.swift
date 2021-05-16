@@ -2,6 +2,17 @@
 import Foundation
 import ServerShared
 
+// Indicates that the file hasn't been downloaded
+public protocol FileNotDownloaded: File {
+}
+
+public protocol ObjectNotDownloaded {
+    associatedtype FileDownload: FileNotDownloaded
+    var sharingGroupUUID: UUID {get}
+    var fileGroupUUID: UUID {get}
+    var downloads: [FileDownload] {get}
+}
+
 // A specification of a file that should be downloaded
 public protocol DownloadableFile: File {
     var fileVersion: FileVersionInt { get }
