@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.27.2 (5/16/21)
+	* Fix user defaults issue with storing current schema version.
+
 Version 0.27.1 (5/16/21)
 	* Fix mark download state -- to allow files/objects to be redownloaded.
 		In the last release if you removed an album and then readded it, you couldn't download the items in the album.
