@@ -273,8 +273,8 @@ public class SyncServer {
         public let serverVersion: FileVersionInt?
     }
     
-    // Returns attributes tracked by iOSBasics about a file.
-    public func fileAttributes(forFileUUID fileUUID: UUID) throws -> FileAttributes {
+    // Returns attributes tracked by iOSBasics about a file. Returns nil if fileUUID isn't yet known to iOSBasics. A file won't yet be known if a sync for a specific sharing group, in which the file is contained, hasn't yet been done.
+    public func fileAttributes(forFileUUID fileUUID: UUID) throws -> FileAttributes? {
         return try serialQueue.sync {
             return try self.fileInfoHelper(fileUUID: fileUUID)
         }

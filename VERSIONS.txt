@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.28.1 (5/31/21)
+	* fileAttributes now returns nil if the fileUUID isn't found.
+	
 Version 0.28.0 (5/30/21)
     * Added support for informAllButSelf.
         Modified iOSBasics.SharingGroup for this.

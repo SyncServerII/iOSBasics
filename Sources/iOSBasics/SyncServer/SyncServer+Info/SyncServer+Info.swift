@@ -38,9 +38,9 @@ extension SyncServer {
         }
     }
     
-    func fileInfoHelper(fileUUID: UUID) throws -> FileAttributes {
+    func fileInfoHelper(fileUUID: UUID) throws -> FileAttributes? {
         guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) else {
-            throw DatabaseError.noObject
+            return nil
         }
                 
         return FileAttributes(fileVersion: fileEntry.fileVersion, serverVersion: fileEntry.serverFileVersion)
