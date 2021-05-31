@@ -38,11 +38,11 @@ extension SyncServer {
         }
     }
     
-    func fileInfoHelper(fileUUID: UUID) throws -> LocalFileInfo {
+    func fileInfoHelper(fileUUID: UUID) throws -> FileAttributes {
         guard let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) else {
             throw DatabaseError.noObject
         }
-        
-        return LocalFileInfo(fileVersion: fileEntry.fileVersion)
+                
+        return FileAttributes(fileVersion: fileEntry.fileVersion, serverVersion: fileEntry.serverFileVersion)
     }
 }

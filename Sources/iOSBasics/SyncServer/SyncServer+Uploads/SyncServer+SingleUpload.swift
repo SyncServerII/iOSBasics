@@ -54,7 +54,7 @@ extension SyncServer {
             fileVersion = .vN(url: localURL)
         }
         
-        let serverAPIFile = ServerAPI.File(fileUUID: fileTracker.fileUUID.uuidString, sharingGroupUUID: objectEntry.sharingGroupUUID.uuidString, deviceUUID: configuration.deviceUUID.uuidString, uploadObjectTrackerId: objectTrackerId, batchUUID: objectTracker.batchUUID, batchExpiryInterval: objectTracker.batchExpiryInterval, version: fileVersion)
+        let serverAPIFile = ServerAPI.File(fileUUID: fileTracker.fileUUID.uuidString, sharingGroupUUID: objectEntry.sharingGroupUUID.uuidString, deviceUUID: configuration.deviceUUID.uuidString, uploadObjectTrackerId: objectTrackerId, batchUUID: objectTracker.batchUUID, batchExpiryInterval: objectTracker.batchExpiryInterval, version: fileVersion, informAllButSelf: fileTracker.informAllButSelf)
         
         if let error = api.uploadFile(file: serverAPIFile, uploadIndex: fileTracker.uploadIndex, uploadCount: fileTracker.uploadCount) {
             delegator { [weak self] delegate in

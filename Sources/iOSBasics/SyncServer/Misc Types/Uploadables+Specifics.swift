@@ -8,13 +8,15 @@ public struct FileUpload: UploadableFile {
     public let dataSource: UploadDataSource
     public let uuid: UUID
     public let appMetaData: String?
+    public let informAllButSelf: Bool?
     
-    public init(fileLabel: String, mimeType: MimeType? = nil, dataSource: UploadDataSource, uuid: UUID, appMetaData: String? = nil) {
+    public init(fileLabel: String, mimeType: MimeType? = nil, dataSource: UploadDataSource, uuid: UUID, appMetaData: String? = nil, informAllButSelf: Bool? = nil) {
         self.fileLabel = fileLabel
         self.mimeType = mimeType
         self.dataSource = dataSource
         self.uuid = uuid
         self.appMetaData = appMetaData
+        self.informAllButSelf = informAllButSelf
     }
 }
 

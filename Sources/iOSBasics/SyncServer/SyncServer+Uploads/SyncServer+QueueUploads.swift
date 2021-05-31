@@ -183,7 +183,7 @@ extension SyncServer {
         // Create a new `UploadFileTracker` for each file we're uploading.
         for (uploadIndex, file) in uploads.enumerated() {
             // uploadIndex + 1 because the indices range from 1 to uploadCount
-            let newFileTracker = try UploadFileTracker.create(file: file, objectModel: objectModel, cloudStorageType: cloudStorageType, objectTrackerId: newObjectTrackerId, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount, config: configuration.temporaryFiles, hashingManager: hashingManager, db: db)
+            let newFileTracker = try UploadFileTracker.create(file: file, objectModel: objectModel, cloudStorageType: cloudStorageType, objectTrackerId: newObjectTrackerId, uploadIndex: Int32(uploadIndex + 1), uploadCount: uploadCount, informAllButSelf: file.informAllButSelf, config: configuration.temporaryFiles, hashingManager: hashingManager, db: db)
             logger.debug("newFileTracker: \(String(describing: newFileTracker.id))")
         }
         

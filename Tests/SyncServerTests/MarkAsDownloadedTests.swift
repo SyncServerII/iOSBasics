@@ -130,7 +130,7 @@ class MarkAsDownloadedTests: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         let downloadables2 = try syncServer.objectsNeedingDownload(sharingGroupUUID: sharingGroupUUID)
         XCTAssert(downloadables2.count == 0)
         
-        let notDownloaded = NotDownloadFile(uuid: download.uuid)
+        let notDownloaded = NotDownloadedFile(uuid: download.uuid)
         try syncServer.markAsNotDownloaded(file: notDownloaded)
         
         let downloadables3 = try syncServer.objectsNeedingDownload(sharingGroupUUID: sharingGroupUUID)
@@ -209,7 +209,7 @@ class MarkAsDownloadedTests: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         XCTAssert(downloadables2.count == 0)
         
         let notDownloadedFiles = downloadObject.downloads.map {
-            NotDownloadFile(uuid: $0.uuid)
+            NotDownloadedFile(uuid: $0.uuid)
         }
         
         let notDownloadedObject = NotDownloadedObject(sharingGroupUUID: sharingGroupUUID, fileGroupUUID: downloadObject.fileGroupUUID, downloads: notDownloadedFiles)
@@ -286,7 +286,7 @@ class MarkAsDownloadedTests: XCTestCase, UserSetup, ServerBasics, TestFiles, API
         XCTAssert(downloadables2.count == 0)
         
         let notDownloadedFiles = downloadObject.downloads.map {
-            NotDownloadFile(uuid: $0.uuid)
+            NotDownloadedFile(uuid: $0.uuid)
         }
         
         let notDownloadedObject = NotDownloadedObject(sharingGroupUUID: sharingGroupUUID, fileGroupUUID: downloadObject.fileGroupUUID, downloads: notDownloadedFiles)

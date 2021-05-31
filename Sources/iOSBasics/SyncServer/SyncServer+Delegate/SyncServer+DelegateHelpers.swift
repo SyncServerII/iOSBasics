@@ -509,6 +509,7 @@ extension SyncServer {
                 guard let self = self else { return }
                 // Calling `downloadDeletion` here because an upload or a download has detected a file is gone. Actually, now that I think of it, whether or not the file is really `deleted` depends on the GoneReason. For example, for a GoneReason of `authTokenExpiredOrRevoked`, this should not be reported as a `downloadDeletion`.
                 #warning("Need to get that reason and change this.")
+                logger.debug("Calling `downloadDeletion` because an upload or a download has detected a file is gone")
                 delegate.downloadDeletion(self, details: .file(fileUUID))
             }
             

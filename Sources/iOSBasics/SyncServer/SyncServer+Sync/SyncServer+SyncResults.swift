@@ -7,8 +7,11 @@
 
 import Foundation
 import ServerShared
+import iOSShared
 
 extension SyncServer {
+    typealias iOSBasicsInform = iOSBasics.SharingGroup.FileGroupSummary.Inform
+    
     // When no sharing group was passed to the server.
     func getNoIndexResult(indexResult: ServerAPI.IndexResult) throws -> [iOSBasics.SharingGroup] {
         return try indexResult.sharingGroups.map { sharingGroup -> iOSBasics.SharingGroup in
@@ -21,15 +24,25 @@ extension SyncServer {
                         throw SyncServerError.internalError("Could not get fileGroupUUID")
                     }
                     
-                    guard let mostRecentDate = summary.mostRecentDate else {
-                        throw SyncServerError.internalError("Could not get mostRecentDate")
-                    }
+                    var result:[iOSBasicsInform]! = [iOSBasicsInform]()
+                    
+                    if let inform = summary.inform, inform.count > 0 {
+                        result = try inform.compactMap { (item) -> (iOSBasicsInform?) in
+                            guard let fileUUID = try UUID.from(item.fileUUID) else {
+                                logger.error("Failed converting item.fileUUID: \(item.fileUUID)")
+                                return nil
+                            }
 
-                    guard let fileVersion = summary.fileVersion else {
-                        throw SyncServerError.internalError("Could not get fileVersion")
+                            let who:iOSBasicsInform.WhoToInform = item.inform == .self ? .self : .others
+                            return iOSBasicsInform(fileVersion: item.fileVersion, fileUUID: fileUUID, inform: who)
+                        }
                     }
                     
-                    return iOSBasics.SharingGroup.FileGroupSummary(fileGroupUUID: fileGroupUUID, mostRecentDate: mostRecentDate, deleted: summary.deleted ?? false, fileVersion: fileVersion)
+                    if result == nil || result?.count == 0 {
+                        result = nil
+                    }
+                    
+                    return iOSBasics.SharingGroup.FileGroupSummary(fileGroupUUID: fileGroupUUID, deleted: summary.deleted ?? false, inform: result, mostRecentDate: nil, fileVersion: nil)
                 }
                 
                 summaries = contentsSummary
@@ -55,7 +68,7 @@ extension SyncServer {
                 cloudStorageType = CloudStorageType(rawValue: type)
             }
             
-            return iOSBasics.SharingGroup(sharingGroupUUID: sharingGroupUUID, sharingGroupName: sharingGroup.sharingGroupName, deleted: deleted, permission: permission, sharingGroupUsers: sharingGroupUsers, cloudStorageType: cloudStorageType, contentsSummary: summaries)
+            return iOSBasics.SharingGroup(sharingGroupUUID: sharingGroupUUID, sharingGroupName: sharingGroup.sharingGroupName, deleted: deleted, permission: permission, sharingGroupUsers: sharingGroupUsers, cloudStorageType: cloudStorageType, contentsSummary: summaries.count == 0 ? nil : summaries)
         }
     }
 }

@@ -614,13 +614,11 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
                 return
             }
             
-            guard let contentsSummary = sharingGroups[0].contentsSummary else {
+            guard sharingGroups[0].contentsSummary == nil else {
                 XCTFail()
                 return
             }
-            
-            XCTAssert(contentsSummary.count == 0)
-            
+                        
             exp.fulfill()
         }
         
@@ -671,18 +669,10 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
                 return
             }
             
-            guard let contentsSummary = sharingGroups[0].contentsSummary else {
+            guard sharingGroups[0].contentsSummary == nil else {
                 XCTFail()
                 return
             }
-            
-            guard contentsSummary.count == 1 else {
-                XCTFail()
-                return
-            }
-            
-            XCTAssert(!contentsSummary[0].deleted)
-            XCTAssert(contentsSummary[0].fileGroupUUID == fileGroupUUID1)
 
             exp.fulfill()
         }
@@ -718,7 +708,7 @@ class IndexTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Dele
                 return
             }
             
-            guard sharingGroups[0].contentsSummary?.count == 2 else {
+            guard sharingGroups[0].contentsSummary == nil else {
                 XCTFail()
                 return
             }

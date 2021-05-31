@@ -74,6 +74,19 @@ extension ServerAPI {
         let batchExpiryInterval:TimeInterval
         
         let version: Version
+        
+        let informAllButSelf: Bool?
+        
+        init(fileUUID:String, sharingGroupUUID: String, deviceUUID:String, uploadObjectTrackerId: Int64, batchUUID: UUID, batchExpiryInterval:TimeInterval, version: Version, informAllButSelf: Bool? = nil) {
+            self.fileUUID = fileUUID
+            self.sharingGroupUUID = sharingGroupUUID
+            self.deviceUUID = deviceUUID
+            self.uploadObjectTrackerId = uploadObjectTrackerId
+            self.batchUUID = batchUUID
+            self.batchExpiryInterval = batchExpiryInterval
+            self.version = version
+            self.informAllButSelf = informAllButSelf
+        }
     }
 
     // Upload results, if nil is returned, are reported via the ServerAPIDelegate.
@@ -91,6 +104,7 @@ extension ServerAPI {
         uploadRequest.sharingGroupUUID = file.sharingGroupUUID
         uploadRequest.uploadIndex = uploadIndex
         uploadRequest.uploadCount = uploadCount
+        uploadRequest.informAllButSelf = file.informAllButSelf
         
         uploadRequest.batchUUID = file.batchUUID.uuidString
         uploadRequest.batchExpiryInterval = file.batchExpiryInterval

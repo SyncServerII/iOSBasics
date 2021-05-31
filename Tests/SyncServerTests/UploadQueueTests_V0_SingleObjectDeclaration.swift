@@ -632,4 +632,72 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         
         XCTFail()
     }
+    
+    func queueSingleImageFile(informAllButSelf: Bool?) throws {
+        let fileUUID1 = UUID()
+        
+        guard informAllButSelf == nil || informAllButSelf == true else {
+            XCTFail()
+            return
+        }
+        
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleImageFileURL), uuid: fileUUID1, informAllButSelf: informAllButSelf)
+        let fileGroupUUID = UUID()
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        try syncServer.queue(upload: upload)
+        
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        guard let index = getIndex(sharingGroupUUID: nil) else {
+            XCTFail()
+            return
+        }
+
+        guard index.sharingGroups.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        let sharingGroup = index.sharingGroups[0]
+        
+        if informAllButSelf == nil {
+            XCTAssert(sharingGroup.contentsSummary == nil)
+            return
+        }
+        
+        guard let contentsSummary = sharingGroup.contentsSummary,
+            contentsSummary.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(contentsSummary[0].deleted == false)
+        XCTAssert(contentsSummary[0].fileGroupUUID == fileGroupUUID.uuidString)
+        
+        guard let inform = contentsSummary[0].inform,
+            inform.count == 1 else {
+            XCTFail()
+            return
+        }
+
+        XCTAssert(inform[0].fileVersion == 0)
+        XCTAssert(inform[0].fileUUID == fileUUID1.uuidString)
+        XCTAssert(inform[0].inform == .others)
+    }
+    
+    func testQueueSingleImageFile_informAllButSelf() throws {
+        try queueSingleImageFile(informAllButSelf: true)
+    }
+    
+    func testQueueSingleImageFile_NonInformAllButSelf() throws {
+        try queueSingleImageFile(informAllButSelf: nil)
+    }
 }

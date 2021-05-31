@@ -41,6 +41,9 @@ public protocol UploadableFile: File {
     
     var appMetaData: String? {get}
     
+    // If you set this to `true`, then other users will be overtly informed about this update. Never set to `false`. Leave it nil and this indicates that no users should be informed.
+    var informAllButSelf: Bool? {get}
+    
     var dataSource: UploadDataSource {get}
 }
 

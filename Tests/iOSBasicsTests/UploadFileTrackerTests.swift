@@ -11,7 +11,7 @@ class UploadFileTrackerTests: XCTestCase {
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: .notStarted, fileUUID: fileUUID, mimeType: .text, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: "Foo", uploadIndex: 0, uploadCount: 1)
+        entry = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: .notStarted, fileUUID: fileUUID, mimeType: .text, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: "Foo", uploadIndex: 0, uploadCount: 1, informAllButSelf: nil)
     }
 
     override func tearDownWithError() throws {
@@ -27,23 +27,28 @@ class UploadFileTrackerTests: XCTestCase {
         XCTAssert(entry1.uploadCopy == entry2.uploadCopy)
         XCTAssert(entry1.checkSum == entry2.checkSum)
     }
+    
+    func createTable() throws {
+        try UploadFileTracker.createTable(db: database)
+        try UploadFileTracker.allMigrations(db: database)
+    }
 
     func testCreateTable() throws {
-        try UploadFileTracker.createTable(db: database)
+        try createTable()
     }
     
     func testDoubleCreateTable() throws {
-        try UploadFileTracker.createTable(db: database)
+        try createTable()
         try UploadFileTracker.createTable(db: database)
     }
     
     func testInsertIntoTable() throws {
-        try UploadFileTracker.createTable(db: database)
+        try createTable()
         try entry.insert()
     }
     
     func testFilterWhenRowNotFound() throws {
-        try UploadFileTracker.createTable(db: database)
+        try createTable()
         
         var count = 0
         try UploadFileTracker.fetch(db: database,
@@ -55,7 +60,7 @@ class UploadFileTrackerTests: XCTestCase {
     }
     
     func testFilterWhenRowFound() throws {
-        try UploadFileTracker.createTable(db: database)
+        try createTable()
         try entry.insert()
         
         var count = 0
@@ -69,11 +74,11 @@ class UploadFileTrackerTests: XCTestCase {
     }
     
     func testFilterWhenTwoRowsFound() throws {
-        try UploadFileTracker.createTable(db: database)
+        try createTable()
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
-        let entry2 = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: .notStarted, fileUUID: UUID(), mimeType: .text, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: nil, uploadIndex: 1, uploadCount: 1)
+        let entry2 = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: .notStarted, fileUUID: UUID(), mimeType: .text, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: nil, uploadIndex: 1, uploadCount: 1, informAllButSelf: nil)
 
         try entry2.insert()
 
@@ -86,7 +91,7 @@ class UploadFileTrackerTests: XCTestCase {
     }
     
     func testUpdate() throws {
-        try UploadFileTracker.createTable(db: database)
+        try createTable()
         try entry.insert()
                 
         let replacement = UUID()
@@ -108,21 +113,21 @@ class UploadFileTrackerTests: XCTestCase {
     }
     
     func testDelete() throws {
-        try UploadFileTracker.createTable(db: database)
+        try createTable()
         try entry.insert()
         
         try entry.delete()
     }
     
     func testChangeStatusOfExactlyOneRecord() throws {
-        try UploadFileTracker.createTable(db: database)
+        try createTable()
         
         let originalStatus: UploadFileTracker.Status = .notStarted
         
-        let e1 = try UploadFileTracker(db: database, uploadObjectTrackerId: 1, status: originalStatus, fileUUID: fileUUID, mimeType: .text, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: "moo", uploadIndex: 1, uploadCount: 1)
+        let e1 = try UploadFileTracker(db: database, uploadObjectTrackerId: 1, status: originalStatus, fileUUID: fileUUID, mimeType: .text, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: "moo", uploadIndex: 1, uploadCount: 1, informAllButSelf: nil)
         try e1.insert()
         
-        let e2 = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: originalStatus, fileUUID: fileUUID, mimeType: .text, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: "bloo", uploadIndex: 1, uploadCount: 1)
+        let e2 = try UploadFileTracker(db: database, uploadObjectTrackerId: 2, status: originalStatus, fileUUID: fileUUID, mimeType: .text, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: "bloo", uploadIndex: 1, uploadCount: 1, informAllButSelf: nil)
         try e2.insert()
         
         try e1.update(setters:
@@ -137,10 +142,10 @@ class UploadFileTrackerTests: XCTestCase {
     }
     
     func testRetrievedMimeTypeIsSame() throws {
-        try UploadFileTracker.createTable(db: database)
+        try createTable()
                 
         let mimeType:MimeType = .text
-        let e1 = try UploadFileTracker(db: database, uploadObjectTrackerId: 1, status: .notStarted, fileUUID: fileUUID, mimeType: mimeType, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: "moo", uploadIndex: 1, uploadCount: 1)
+        let e1 = try UploadFileTracker(db: database, uploadObjectTrackerId: 1, status: .notStarted, fileUUID: fileUUID, mimeType: mimeType, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: "moo", uploadIndex: 1, uploadCount: 1, informAllButSelf: true)
         try e1.insert()
         
         let result = try UploadFileTracker.fetch(db: database,

@@ -56,6 +56,10 @@ class UploadFileTracker: DatabaseModel {
     
     static let uploadCountField = Field("uploadCount", \M.uploadCount)
     var uploadCount: Int32
+    
+    // MIGRATION: 5/30/21
+    static let informAllButSelfField = Field("informAllButSelf", \M.informAllButSelf)
+    var informAllButSelf: Bool?
         
     init(db: Connection,
         id: Int64! = nil,
@@ -70,7 +74,8 @@ class UploadFileTracker: DatabaseModel {
         checkSum: String?,
         appMetaData: String?,
         uploadIndex: Int32,
-        uploadCount: Int32) throws {
+        uploadCount: Int32,
+        informAllButSelf: Bool?) throws {
 
         self.db = db
         self.id = id
@@ -86,6 +91,7 @@ class UploadFileTracker: DatabaseModel {
         self.appMetaData = appMetaData
         self.uploadIndex = uploadIndex
         self.uploadCount = uploadCount
+        self.informAllButSelf = informAllButSelf
     }
     
     // MARK: DatabaseModel
@@ -105,8 +111,21 @@ class UploadFileTracker: DatabaseModel {
             t.column(mimeTypeField.description)
             t.column(uploadIndexField.description)
             t.column(uploadCountField.description)
+            
+            // MIGRATION, 5/30/21
+            // t.column(informAllButSelfField.description)
         }
     }
+    
+    static func migration_2021_5_30(db: Connection) throws {
+        try addColumn(db: db, column: informAllButSelfField.description)
+    }
+    
+#if DEBUG
+    static func allMigrations(db: Connection) throws {
+        try migration_2021_5_30(db: db)
+    }
+#endif
     
     static func rowToModel(db: Connection, row: Row) throws -> UploadFileTracker {
         return try UploadFileTracker(db: db,
@@ -122,7 +141,8 @@ class UploadFileTracker: DatabaseModel {
             checkSum: row[Self.checkSumField.description],
             appMetaData: row[Self.appMetaDataField.description],
             uploadIndex: row[Self.uploadIndexField.description],
-            uploadCount: row[Self.uploadCountField.description]
+            uploadCount: row[Self.uploadCountField.description],
+            informAllButSelf: row[Self.informAllButSelfField.description]
         )
     }
     
@@ -139,7 +159,8 @@ class UploadFileTracker: DatabaseModel {
             Self.appMetaDataField.description <- appMetaData,
             Self.mimeTypeField.description <- mimeType,
             Self.uploadIndexField.description <- uploadIndex,
-            Self.uploadCountField.description <- uploadCount
+            Self.uploadCountField.description <- uploadCount,
+            Self.informAllButSelfField.description <- informAllButSelf
         )
     }
 }
@@ -148,7 +169,7 @@ extension UploadFileTracker {
     // Creates an `UploadFileTracker` and copies data from the file's UploadableDataSource to a temporary file location if needed.
     // The returned `UploadFileTracker` has been inserted into the database.
     // The objectTrackerId is the id of the UploadObjectTracker for this file.
-    static func create(file: UploadableFile, objectModel: DeclaredObjectModel, cloudStorageType: CloudStorageType, objectTrackerId: Int64, uploadIndex: Int32, uploadCount: Int32, config: Configuration.TemporaryFiles, hashingManager: HashingManager, db: Connection) throws -> UploadFileTracker {
+    static func create(file: UploadableFile, objectModel: DeclaredObjectModel, cloudStorageType: CloudStorageType, objectTrackerId: Int64, uploadIndex: Int32, uploadCount: Int32, informAllButSelf: Bool?, config: Configuration.TemporaryFiles, hashingManager: HashingManager, db: Connection) throws -> UploadFileTracker {
         let url: URL
         switch file.dataSource {
         case .data(let data):
@@ -175,7 +196,7 @@ extension UploadFileTracker {
             uploadMimeType = mimeType
         }
         
-        let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: objectTrackerId, status: .notStarted, fileUUID: file.uuid, mimeType: uploadMimeType, fileVersion: nil, localURL: url, goneReason: nil, uploadCopy: file.dataSource.isCopy, checkSum: checkSum, appMetaData: file.appMetaData, uploadIndex: uploadIndex, uploadCount: uploadCount)
+        let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: objectTrackerId, status: .notStarted, fileUUID: file.uuid, mimeType: uploadMimeType, fileVersion: nil, localURL: url, goneReason: nil, uploadCopy: file.dataSource.isCopy, checkSum: checkSum, appMetaData: file.appMetaData, uploadIndex: uploadIndex, uploadCount: uploadCount, informAllButSelf: informAllButSelf)
         try fileTracker.insert()
         
         return fileTracker

@@ -503,4 +503,101 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         }
         waitForExpectations(timeout: 10, handler: nil)
     }
+    
+    func vNUpload(informAllButSelf: Bool?) throws {
+        guard informAllButSelf == nil || informAllButSelf == true else {
+            XCTFail()
+            return
+        }
+        let fileUUID = UUID()
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let changeResolver = CommentFile.changeResolverName
+        
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: changeResolver)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let commentFile = CommentFile()
+        let commentFileData = try commentFile.getData()
+                
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(commentFileData), uuid: fileUUID, informAllButSelf: informAllButSelf)
+        let uploads = [file1]
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: uploads)
+
+        try syncServer.queue(upload: upload)
+        waitForUploadsToComplete(numberUploads: 1)
+
+        let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
+        
+        let file2 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(comment.updateContents), uuid: fileUUID, informAllButSelf: informAllButSelf)
+        let uploads2 = [file2]
+        
+        let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: uploads2)
+
+        try syncServer.queue(upload: upload2)
+        
+        waitForUploadsToComplete(numberUploads: 1, v0Upload: false)
+        
+        // Wait for some period of time for the deferred upload to complete.
+        Thread.sleep(forTimeInterval: 5)
+        
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+
+        let exp3 = expectation(description: "exp2")
+        handlers.deferredCompleted = { _, operation, count in
+            exp3.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        guard let index = getIndex(sharingGroupUUID: nil) else {
+            XCTFail()
+            return
+        }
+
+        guard index.sharingGroups.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        let sharingGroup = index.sharingGroups[0]
+        
+        if informAllButSelf == nil {
+            XCTAssert(sharingGroup.contentsSummary == nil)
+            return
+        }
+        
+        guard let contentsSummary = sharingGroup.contentsSummary else {
+            XCTFail()
+            return
+        }
+        
+        guard contentsSummary.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(contentsSummary[0].deleted == false)
+        XCTAssert(contentsSummary[0].fileGroupUUID == upload.fileGroupUUID.uuidString)
+
+        guard let inform = contentsSummary[0].inform,
+            inform.count == 2 else {
+            XCTFail()
+            return
+        }
+        
+        let filter = inform.filter {$0.inform == .others}
+        XCTAssert(filter.count == 2)
+    }
+    
+    func testVNUpload_informAllButSelf() throws {
+        try vNUpload(informAllButSelf: true)
+    }
+    
+    func testVNUpload_NotInformAllButSelf() throws {
+        try vNUpload(informAllButSelf: nil)
+    }
 }
