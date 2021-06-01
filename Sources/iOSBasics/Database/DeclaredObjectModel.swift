@@ -22,6 +22,7 @@ class DeclaredObjectModel: DatabaseModel, DeclarableObjectBasics, Equatable {
         return try Self.decode(from: _filesData)
     }
     
+    // Fails if the fileLabel isn't one that has been declared.
     func getFile(with fileLabel: String) throws -> FileDeclaration {
         let file = try getFiles().filter {$0.fileLabel == fileLabel}
         guard file.count == 1 else {

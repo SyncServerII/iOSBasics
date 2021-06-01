@@ -12,6 +12,7 @@ public protocol ObjectDownloadHandler {
 }
 
 extension FileInfo {
+    // Just returns a fileLabel as long as it exists; no specific validity checking on the file label is done.
     func getFileLabel(objectType: String, objectDeclarations:[String: ObjectDownloadHandler]) throws -> String {
         if let fileLabel = fileLabel {
             return fileLabel

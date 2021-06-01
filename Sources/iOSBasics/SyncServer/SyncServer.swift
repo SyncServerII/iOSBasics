@@ -181,11 +181,10 @@ public class SyncServer {
     // The files must have been uploaded by this client before, or be available because it was seen in `filesNeedingDownload`.
     // If you queue an object that has a fileGroupUUID which is already queued or in progress of downloading, your request will be queued. i.e., the download will not be triggered right now. It will be triggered later.
     public func queue<DWL: DownloadableObject>(download: DWL) throws {
-        // `sync` because the immediate effect of this call is short running.
-
         try backgroundAsssertable.syncRun { [weak self] in
             guard let self = self else { return }
             
+            // `sync` because the immediate effect of this call is short running.
             try self.serialQueue.sync { [weak self] in
                 guard let self = self else { return }
                 try self.queueHelper(download: download)

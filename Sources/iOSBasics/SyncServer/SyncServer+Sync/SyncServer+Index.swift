@@ -191,8 +191,10 @@ extension SyncServer {
                 throw SyncServerError.internalError("No declared object!")
             }
             
+            // This doesn't do specific validity checking on the file label.
             let fileLabel = try file.getFileLabel(objectType: objectType, objectDeclarations: objectDeclarations)
 
+            // This *does* check for a specifically declared file label-- and throws an error if it's not declared.
             let fileDeclaration:FileDeclaration = try declaredObject.getFile(with: fileLabel)
             
             guard fileDeclaration == file else {
