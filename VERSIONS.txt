@@ -1,5 +1,9 @@
 iOSBasics
 
+Version 0.28.4 (6/3/21)
+    * Fix issue with updating mostRecentDate in SharingEntry's.
+    	Only update the mostRecentDate if the new one is non-nil.
+    
 Version 0.28.3 (6/3/21)
     * Added mostRecentDate to SharingEntry table.
     

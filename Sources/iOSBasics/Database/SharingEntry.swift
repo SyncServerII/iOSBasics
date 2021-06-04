@@ -141,8 +141,11 @@ extension SharingEntry {
                 )
             }
             
-            try sharingEntry.update(setters:
-                SharingEntry.mostRecentDateField.description <- sharingGroup.mostRecentDate)
+            // This `upsert` method is used with both specific and generic index requests (with and without a sharing group given). A mostRecentDate is only returned with a generic request.
+            if let mostRecentDate = sharingGroup.mostRecentDate {
+                try sharingEntry.update(setters:
+                    SharingEntry.mostRecentDateField.description <- mostRecentDate)
+            }
         }
         else {            
             guard let permission = sharingGroup.permission else {

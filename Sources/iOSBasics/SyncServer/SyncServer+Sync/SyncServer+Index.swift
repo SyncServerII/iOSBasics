@@ -84,7 +84,7 @@ extension SyncServer {
     }
     
     // `sharingGroups` is the full set of sharing groups returned from the server.
-    private func upsert(sharingGroups: [ServerShared.SharingGroup]) throws {        
+    private func upsert(sharingGroups: [ServerShared.SharingGroup]) throws {
         for sharingGroup in sharingGroups {
             try SharingEntry.upsert(sharingGroup: sharingGroup, db: db)
         }

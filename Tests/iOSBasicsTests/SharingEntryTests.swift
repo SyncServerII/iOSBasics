@@ -191,4 +191,50 @@ class SharingEntryTests: XCTestCase {
         
         XCTAssert(row2.deleted == true)
     }
+    
+    func testUpsert_updateMostRecentDate() throws {
+        try createTable()
+        
+        let uuid = UUID().uuidString
+        let mostRecentDate = Date()
+        
+        let sharingGroup = ServerShared.SharingGroup()
+        sharingGroup.sharingGroupUUID = uuid
+        sharingGroup.deleted = false
+        sharingGroup.permission = Permission.admin
+        sharingGroup.sharingGroupUsers = []
+        sharingGroup.mostRecentDate = mostRecentDate
+        
+        try SharingEntry.upsert(sharingGroup: sharingGroup, db: database)
+        
+        let rows1 = try SharingEntry.fetch(db: database)
+        guard rows1.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        let row1 = rows1[0]
+        
+        XCTAssert(row1.mostRecentDate != nil)
+        
+        sharingGroup.mostRecentDate = nil
+        
+        try SharingEntry.upsert(sharingGroup: sharingGroup, db: database)
+
+        let rows2 = try SharingEntry.fetch(db: database)
+        guard rows2.count == 1 else {
+            XCTFail()
+            return
+        }
+        
+        let row2 = rows2[0]
+        
+        // The mostRecentDate should not have been overwritten.
+        guard let row2MostRecentDate = row2.mostRecentDate else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(DateExtras.equals(row2MostRecentDate, mostRecentDate))
+    }
 }
