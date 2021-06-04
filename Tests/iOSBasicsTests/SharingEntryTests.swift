@@ -36,23 +36,28 @@ class SharingEntryTests: XCTestCase {
         XCTAssert(entry1.sharingGroupName == entry2.sharingGroupName)
         XCTAssert(entry1.cloudStorageType == entry2.cloudStorageType)
     }
+    
+    func createTable() throws {
+        try SharingEntry.createTable(db: database)
+        try SharingEntry.allMigrations(db: database)
+    }
 
     func testCreateTable() throws {
-        try SharingEntry.createTable(db: database)
+        try createTable()
     }
     
     func testDoubleCreateTable() throws {
-        try SharingEntry.createTable(db: database)
+        try createTable()
         try SharingEntry.createTable(db: database)
     }
     
     func testInsertIntoTable() throws {
-        try SharingEntry.createTable(db: database)
+        try createTable()
         try entry.insert()
     }
     
     func testFilterWhenRowNotFound() throws {
-        try SharingEntry.createTable(db: database)
+        try createTable()
 
         var count = 0
         try SharingEntry.fetch(db: database,
@@ -64,7 +69,7 @@ class SharingEntryTests: XCTestCase {
     }
     
     func testFilterWhenRowFound() throws {
-        try SharingEntry.createTable(db: database)
+        try createTable()
         try entry.insert()
         
         var count = 0
@@ -78,7 +83,7 @@ class SharingEntryTests: XCTestCase {
     }
     
     func testFilterWhenTwoRowsFound() throws {
-        try SharingEntry.createTable(db: database)
+        try createTable()
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
@@ -94,7 +99,7 @@ class SharingEntryTests: XCTestCase {
     }
     
     func testUpdate() throws {
-        try SharingEntry.createTable(db: database)
+        try createTable()
         try entry.insert()
                 
         let replacement = UUID()
@@ -116,20 +121,20 @@ class SharingEntryTests: XCTestCase {
     }
     
     func testDelete() throws {
-        try SharingEntry.createTable(db: database)
+        try createTable()
         try entry.insert()
         
         try entry.delete()
     }
     
     func testGetGroupsWithNoGroupsWorks() throws {
-        try SharingEntry.createTable(db: database)
+        try createTable()
         let groups = try SharingEntry.getGroups(db: database)
         XCTAssert(groups.count == 0)
     }
     
     func testGetGroupsWithOneGroupWorks() throws {
-        try SharingEntry.createTable(db: database)
+        try createTable()
         try entry.insert()
         
         let groups = try SharingEntry.getGroups(db: database)
@@ -150,7 +155,7 @@ class SharingEntryTests: XCTestCase {
     }
     
     func testUpsertWithDeletionChange() throws {
-        try SharingEntry.createTable(db: database)
+        try createTable()
         
         let uuid = UUID().uuidString
 

@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.28.3 (6/3/21)
+    * Added mostRecentDate to SharingEntry table.
+    
 Version 0.28.2 (6/3/21)
     * Added comments.
     * Added mostRecentDate to SharingGroup type.

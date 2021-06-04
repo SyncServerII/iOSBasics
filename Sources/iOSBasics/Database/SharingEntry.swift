@@ -30,6 +30,9 @@ class SharingEntry: DatabaseModel {
 
     static let cloudStorageTypeField = Field("cloudStorageType", \M.cloudStorageType)
     var cloudStorageType: CloudStorageType?
+    
+    static let mostRecentDateField = Field("mostRecentDate", \M.mostRecentDate)
+    var mostRecentDate: Date?
 
     static let sharingGroupUsersDataField = Field("sharingGroupUsersData", \M.sharingGroupUsersData)
     var sharingGroupUsersData: Data
@@ -45,7 +48,8 @@ class SharingEntry: DatabaseModel {
         sharingGroupName: String?,
         sharingGroupUUID: UUID,
         sharingGroupUsers: [SharingGroupUser],
-        cloudStorageType:CloudStorageType?) throws {
+        cloudStorageType:CloudStorageType?,
+        mostRecentDate: Date? = nil) throws {
         
         self.db = db
         self.id = id
@@ -55,6 +59,7 @@ class SharingEntry: DatabaseModel {
         self.sharingGroupName = sharingGroupName
         self.sharingGroupUsersData = try JSONEncoder().encode(sharingGroupUsers)
         self.cloudStorageType = cloudStorageType
+        self.mostRecentDate = mostRecentDate
     }
     
     // MARK: DatabaseModel
@@ -68,8 +73,21 @@ class SharingEntry: DatabaseModel {
             t.column(sharingGroupNameField.description)
             t.column(cloudStorageTypeField.description)
             t.column(sharingGroupUsersDataField.description)
+            
+            // MIGRATION; 6/3/21
+            // t.column(mostRecentDateField.description)
         }
     }
+    
+    static func migration_2021_6_3(db: Connection) throws {
+        try addColumn(db: db, column: mostRecentDateField.description)
+    }
+    
+#if DEBUG
+    static func allMigrations(db: Connection) throws {
+        try migration_2021_6_3(db: db)
+    }
+#endif
     
     static func rowToModel(db: Connection, row: Row) throws -> SharingEntry {
         let data = row[Self.sharingGroupUsersDataField.description]
@@ -82,7 +100,8 @@ class SharingEntry: DatabaseModel {
             sharingGroupName: row[Self.sharingGroupNameField.description],
             sharingGroupUUID: row[Self.sharingGroupUUIDField.description],
             sharingGroupUsers: users,
-            cloudStorageType: row[Self.cloudStorageTypeField.description]
+            cloudStorageType: row[Self.cloudStorageTypeField.description],
+            mostRecentDate: row[Self.mostRecentDateField.description]
         )
     }
     
@@ -93,7 +112,8 @@ class SharingEntry: DatabaseModel {
             Self.sharingGroupNameField.description <- sharingGroupName,
             Self.sharingGroupUUIDField.description <- sharingGroupUUID,
             Self.sharingGroupUsersDataField.description <- sharingGroupUsersData,
-            Self.cloudStorageTypeField.description <- cloudStorageType
+            Self.cloudStorageTypeField.description <- cloudStorageType,
+            Self.mostRecentDateField.description <- mostRecentDate
         )
     }
 }
@@ -120,6 +140,9 @@ extension SharingEntry {
                         <- sharingGroup.deleted ?? false
                 )
             }
+            
+            try sharingEntry.update(setters:
+                SharingEntry.mostRecentDateField.description <- sharingGroup.mostRecentDate)
         }
         else {            
             guard let permission = sharingGroup.permission else {
@@ -152,7 +175,7 @@ extension SharingEntry {
             
             logger.info("Creating new SharingEntry: \(sharingGroupUUID); name: \(String(describing: sharingGroup.sharingGroupName))")
             
-            let newSharingEntry = try SharingEntry(db: db, permission: permission, deleted: deleted, sharingGroupName: sharingGroup.sharingGroupName, sharingGroupUUID: sharingGroupUUID, sharingGroupUsers: users, cloudStorageType: cloudStorageType)
+            let newSharingEntry = try SharingEntry(db: db, permission: permission, deleted: deleted, sharingGroupName: sharingGroup.sharingGroupName, sharingGroupUUID: sharingGroupUUID, sharingGroupUsers: users, cloudStorageType: cloudStorageType, mostRecentDate: sharingGroup.mostRecentDate)
             try newSharingEntry.insert()
         }
     }
@@ -161,7 +184,7 @@ extension SharingEntry {
         let entries = try SharingEntry.fetch(db: db)
 
         return try entries.map { entry -> iOSBasics.SharingGroup in
-            let sharingGroup = iOSBasics.SharingGroup(sharingGroupUUID: entry.sharingGroupUUID, sharingGroupName: entry.sharingGroupName, deleted: entry.deleted, permission: entry.permission, sharingGroupUsers: try entry.sharingGroupUsers(), cloudStorageType: entry.cloudStorageType, mostRecentDate: nil, contentsSummary: nil)
+            let sharingGroup = iOSBasics.SharingGroup(sharingGroupUUID: entry.sharingGroupUUID, sharingGroupName: entry.sharingGroupName, deleted: entry.deleted, permission: entry.permission, sharingGroupUsers: try entry.sharingGroupUsers(), cloudStorageType: entry.cloudStorageType, mostRecentDate: entry.mostRecentDate, contentsSummary: nil)
              return sharingGroup
         }
     }
