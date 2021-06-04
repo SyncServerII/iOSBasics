@@ -103,7 +103,7 @@ extension SyncServer {
             throw SyncServerError.internalError("fileUUID's were not distinct.")
         }
         
-        try checkInvariants(fileIndex: fileIndex, sharingGroupUUID: sharingGroupUUID)
+        let fileIndex = try checkInvariants(fileIndex: fileIndex, sharingGroupUUID: sharingGroupUUID)
         let fileGroups = Partition.array(fileIndex, using: \.fileGroupUUID)
         
         for fileGroup in fileGroups {
@@ -161,7 +161,8 @@ extension SyncServer {
         }
     }
     
-    private func checkInvariants(fileIndex: [FileInfo], sharingGroupUUID: UUID) throws {
+    // Returns possibly filtered [FileInfo] -- elements removed if the file label isn't known.
+    private func checkInvariants(fileIndex: [FileInfo], sharingGroupUUID: UUID) throws -> [FileInfo] {
         // All files must have the sharingGroupUUID
         let sharingGroups = Set<String>(fileIndex.compactMap {$0.sharingGroupUUID})
         guard sharingGroups.count == 1 else {
@@ -171,6 +172,8 @@ extension SyncServer {
         guard sharingGroupUUID.uuidString == fileIndex[0].sharingGroupUUID else {
             throw SyncServerError.internalError("sharingGroupUUID didn't match")
         }
+        
+        var result = [FileInfo]()
         
         for file in fileIndex {
             guard let fileUUID = try UUID.from(file.fileUUID) else {
@@ -194,8 +197,16 @@ extension SyncServer {
             // This doesn't do specific validity checking on the file label.
             let fileLabel = try file.getFileLabel(objectType: objectType, objectDeclarations: objectDeclarations)
 
-            // This *does* check for a specifically declared file label-- and throws an error if it's not declared.
-            let fileDeclaration:FileDeclaration = try declaredObject.getFile(with: fileLabel)
+            let fileDeclaration:FileDeclaration
+            
+            do {
+                // This *does* check for a specifically declared file label-- and throws an error if it's not declared.
+                fileDeclaration = try declaredObject.getFile(with: fileLabel)
+            } catch let error {
+                logger.warning("No locally declared label for object: \(error): \(fileLabel)")
+                // Skip adding this `FileInfo`.
+                continue
+            }
             
             guard fileDeclaration == file else {
                 throw SyncServerError.internalError("FileDeclaration not the same as FileInfo")
@@ -229,7 +240,11 @@ extension SyncServer {
                     throw SyncServerError.internalError("No object entry but have a file entry!")
                 }
             }
+            
+            result += [file]
         }
+        
+        return result
     }
 }
 

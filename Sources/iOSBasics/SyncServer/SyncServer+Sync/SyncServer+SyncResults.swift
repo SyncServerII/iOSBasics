@@ -68,7 +68,7 @@ extension SyncServer {
                 cloudStorageType = CloudStorageType(rawValue: type)
             }
             
-            return iOSBasics.SharingGroup(sharingGroupUUID: sharingGroupUUID, sharingGroupName: sharingGroup.sharingGroupName, deleted: deleted, permission: permission, sharingGroupUsers: sharingGroupUsers, cloudStorageType: cloudStorageType, contentsSummary: summaries.count == 0 ? nil : summaries)
+            return iOSBasics.SharingGroup(sharingGroupUUID: sharingGroupUUID, sharingGroupName: sharingGroup.sharingGroupName, deleted: deleted, permission: permission, sharingGroupUsers: sharingGroupUsers, cloudStorageType: cloudStorageType, mostRecentDate: sharingGroup.mostRecentDate, contentsSummary: summaries.count == 0 ? nil : summaries)
         }
     }
 }

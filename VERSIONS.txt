@@ -1,5 +1,13 @@
 iOSBasics
 
+Version 0.28.2 (6/3/21)
+    * Added comments.
+    * Added mostRecentDate to SharingGroup type.
+    * Checking for unknown fileLabel's in a fileIndex -- so that there is no failure.
+    	Just ignores that file index record. This is in preparation for the addition of
+    	fileLabel's to existing object types and ensuring that apps that haven't yet been
+    	updated don't fail.
+    
 Version 0.28.1 (5/31/21)
 	* fileAttributes now returns nil if the fileUUID isn't found.
 	

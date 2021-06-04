@@ -668,6 +668,8 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         
         let sharingGroup = index.sharingGroups[0]
         
+        XCTAssert(sharingGroup.mostRecentDate != nil)
+        
         if informAllButSelf == nil {
             XCTAssert(sharingGroup.contentsSummary == nil)
             return
