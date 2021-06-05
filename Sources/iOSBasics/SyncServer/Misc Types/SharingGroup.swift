@@ -47,6 +47,7 @@ public struct SharingGroup  {
     public let cloudStorageType: CloudStorageType?
     public let mostRecentDate: Date?
     
+    // If there are no Inform records for any file groups in the sharing group, this is nil.
     public let contentsSummary:[FileGroupSummary]?
 }
 
