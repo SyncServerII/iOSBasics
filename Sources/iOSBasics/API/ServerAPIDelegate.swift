@@ -16,6 +16,7 @@ enum UploadFileResult {
     case success(Upload)
     
     case gone(GoneReason)
+    case conflict(ConflictReason)
 }
 
 enum DownloadFileResult {

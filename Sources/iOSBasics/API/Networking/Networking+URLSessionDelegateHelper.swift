@@ -149,6 +149,9 @@ extension Networking {
             if response.statusCode == HTTPStatus.gone.rawValue {
                 transferDelegate.uploadCompleted(self, file: file, event: .gone(responseBody: uploadBody?.dictionary), response: response)
             }
+            else if response.statusCode == HTTPStatus.conflict.rawValue {
+                transferDelegate.uploadCompleted(self, file: file, event: .conflict(responseBody: uploadBody?.dictionary), response: response)
+            }
             else if validStatusCode(response.statusCode) {
                 transferDelegate.uploadCompleted(self, file: file, event: .success(responseBody: uploadBody?.dictionary), response: response)
             }

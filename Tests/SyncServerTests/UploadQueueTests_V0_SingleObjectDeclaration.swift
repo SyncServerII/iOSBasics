@@ -21,8 +21,8 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         handlers = DelegateHandlers()
 
         // Running into `tooManyRequests` HTTP response, so switched from Dropbox to Google for these tests.
-        handlers.user = try googleUser()
-        // handlers.user = try dropboxUser()
+        // handlers.user = try googleUser()
+        handlers.user = try dropboxUser()
         
         deviceUUID = UUID()
         database = try Connection(.inMemory)
@@ -670,29 +670,10 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         
         XCTAssert(sharingGroup.mostRecentDate != nil)
         
-        if informAllButSelf == nil {
-            XCTAssert(sharingGroup.contentsSummary == nil)
-            return
-        }
-        
-        guard let contentsSummary = sharingGroup.contentsSummary,
-            contentsSummary.count == 1 else {
+        guard sharingGroup.contentsSummary == nil else {
             XCTFail()
             return
         }
-        
-        XCTAssert(contentsSummary[0].deleted == false)
-        XCTAssert(contentsSummary[0].fileGroupUUID == fileGroupUUID.uuidString)
-        
-        guard let inform = contentsSummary[0].inform,
-            inform.count == 1 else {
-            XCTFail()
-            return
-        }
-
-        XCTAssert(inform[0].fileVersion == 0)
-        XCTAssert(inform[0].fileUUID == fileUUID1.uuidString)
-        XCTAssert(inform[0].inform == .others)
     }
     
     func testQueueSingleImageFile_informAllButSelf() throws {
@@ -701,5 +682,202 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
     
     func testQueueSingleImageFile_NonInformAllButSelf() throws {
         try queueSingleImageFile(informAllButSelf: nil)
+    }
+    
+    // https://github.com/SyncServerII/Neebla/issues/15#issuecomment-855324838
+    func testSecondUserUploads_otherFileLabelForObject() throws {
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+       
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        let objectType = "Foo"
+        let fileLabel1 = "file1"
+        let fileLabel2 = "file2"
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: fileLabel1, mimeTypes: [.jpeg], changeResolverName: nil)
+        let example1 = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example1)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleImageFileURL), uuid: fileUUID1)
+        let fileGroupUUID = UUID()
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        try syncServer.queue(upload: upload)
+        
+        waitForUploadsToComplete(numberUploads: 1)
+
+        let permission:Permission = .write
+
+        var invitationCode: UUID!
+        
+        let exp = expectation(description: "exp")
+        syncServer.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 1, allowSocialAcceptance: false) { result in
+            switch result {
+            case .success(let invitation):
+                logger.info("new invitation code: \(invitation)")
+                invitationCode = invitation
+                
+            case .failure:
+                XCTFail()
+            }
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        guard invitationCode != nil else {
+            XCTFail()
+            return
+        }
+        
+       // Reset the database show a state *as if* another client instance had done the upload/deleteion.
+        handlers.user = try dropboxUser(selectUser: .second)
+
+        database = try Connection(.inMemory)
+        let fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
+        let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, requestable: FakeRequestable(), configuration: config, signIns: fakeSignIns, backgroundAsssertable: MainAppBackgroundTask(), migrationRunner: MigrationRunnerFake())
+        syncServer.delegate = self
+        syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
+        
+        let exp3 = expectation(description: "exp")
+        syncServer.redeemSharingInvitation(sharingInvitationUUID: invitationCode) { result in
+            switch result {
+            case .success:
+                break
+            case .failure:
+                XCTFail()
+            }
+            exp3.fulfill()
+        }
+        
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Simulate someone else adding a new file label to the same file group.
+        
+        let fileDeclaration2 = FileDeclaration(fileLabel: fileLabel2, mimeTypes: [.text], changeResolverName: nil)
+        let example2 = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
+        try syncServer.register(object: example2)
+        
+        let exp2 = expectation(description: "exp2")
+        handlers.syncCompleted = { _,_ in
+            exp2.fulfill()
+        }
+        
+        // Fetch the database state again.
+        try syncServer.sync()
+        waitForExpectations(timeout: 10, handler: nil)
+        handlers.syncCompleted = nil
+        
+        let fileUpload2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID2)
+        let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload2])
+        try syncServer.queue(upload: upload2)
+        
+        waitForUploadsToComplete(numberUploads: 1)
+    }
+    
+    func testSecondUserUploads_sameFileLabelForObject() throws {
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+       
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        let objectType = "Foo"
+        let fileLabel1 = "file1"
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: fileLabel1, mimeTypes: [.jpeg], changeResolverName: nil)
+        let example1 = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example1)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleImageFileURL), uuid: fileUUID1)
+        let fileGroupUUID = UUID()
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        try syncServer.queue(upload: upload)
+        
+        waitForUploadsToComplete(numberUploads: 1)
+
+        let permission:Permission = .write
+
+        var invitationCode: UUID!
+        
+        let exp = expectation(description: "exp")
+        syncServer.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 1, allowSocialAcceptance: false) { result in
+            switch result {
+            case .success(let invitation):
+                logger.info("new invitation code: \(invitation)")
+                invitationCode = invitation
+                
+            case .failure:
+                XCTFail()
+            }
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        guard invitationCode != nil else {
+            XCTFail()
+            return
+        }
+        
+       // Reset the database show a state *as if* another client instance had done the upload/deleteion.
+        database = try Connection(.inMemory)
+        handlers.user = try dropboxUser(selectUser: .second)
+        let fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
+        let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, requestable: FakeRequestable(), configuration: config, signIns: fakeSignIns, backgroundAsssertable: MainAppBackgroundTask(), migrationRunner: MigrationRunnerFake())
+        syncServer.delegate = self
+        syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
+        
+        let exp3 = expectation(description: "exp")
+        syncServer.redeemSharingInvitation(sharingInvitationUUID: invitationCode) { result in
+            switch result {
+            case .success:
+                break
+            case .failure:
+                XCTFail()
+            }
+            exp3.fulfill()
+        }
+        
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Redeeming the sharing invitation above did a sync on the specific sharing group. Need to reset again to do the following part.
+        database = try Connection(.inMemory)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, requestable: FakeRequestable(), configuration: config, signIns: fakeSignIns, backgroundAsssertable: MainAppBackgroundTask(), migrationRunner: MigrationRunnerFake())
+        syncServer.delegate = self
+        syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
+        
+        // Simulate someone else trying to add a the *same* file label to the same file group, but with a different file uuid.
+        
+        try syncServer.register(object: example1)
+        
+        let exp2 = expectation(description: "exp2")
+        handlers.syncCompleted = { _,_ in
+            exp2.fulfill()
+        }
+        
+        // Fetch the database state again.
+        try syncServer.sync()
+        waitForExpectations(timeout: 10, handler: nil)
+        handlers.syncCompleted = nil
+        
+        let exp4 = expectation(description: "exp4")
+        handlers.uuidCollision = { _, type, from, to in
+            XCTAssert(type == .file)
+            XCTAssert(from == fileUUID2)
+            XCTAssert(to == fileUUID1)
+            exp4.fulfill()
+        }
+        
+        // This is the upload that causes the collision
+        let fileUpload2 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleImageFileURL), uuid: fileUUID2)
+        let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload2])
+        try syncServer.queue(upload: upload2)
+        
+        waitForUploadsToComplete(numberUploads: 1, expectedUploadType: .conflict)
     }
 }

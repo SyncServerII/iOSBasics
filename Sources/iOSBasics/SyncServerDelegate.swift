@@ -49,6 +49,7 @@ public enum DeferredOperation {
 public struct UploadResult {
     public enum UploadType {
         case gone
+        case conflict
         case success
     }
     
@@ -132,7 +133,7 @@ public protocol SyncServerDelegate: AnyObject {
     // Called after the `sync` method is successful. If nil sharing group was given, the result is .noIndex. If non-nil sharing group, the .index is given.
     func syncCompleted(_ syncServer: SyncServer, result: SyncResult)
     
-    // A uuid that was initially generated on the client 
+    // A uuid that was initially generated on the client needs to be changed.
     func uuidCollision(_ syncServer: SyncServer, type: UUIDCollisionType, from: UUID, to: UUID)
     
     // The rest have informative detail; perhaps purely for testing.

@@ -118,7 +118,23 @@ extension ServerAPI: FileTransferDelegate {
             
             delegate.uploadCompleted(self, file: file, result: .success(UploadFileResult.gone(goneReason)))
             return
-        
+            
+        case .conflict(responseBody: let responseBody):
+            let decoder = JSONDecoder()
+
+            guard let conflictReasonString = responseBody?[ConflictReason.conflictReasonKey] as? String,
+                let data = conflictReasonString.data(using: .utf8),
+                let conflictReason = try? decoder.decode(ConflictReason.self, from: data) else {
+                
+                let message = "uploadCompleted: Conflict but no or invalid conflict reason: \(String(describing: responseBody?[ConflictReason.conflictReasonKey]))"
+                logger.error("\(message)")
+                delegate.uploadCompleted(self, file: file, result: .failure(ServerAPIError.generic(message)))
+                return
+            }
+            
+            delegate.uploadCompleted(self, file: file, result: .success(UploadFileResult.conflict(conflictReason)))
+            return
+            
         case .failure(error: let error, statusCode: let statusCode, let responseHeaders):
             if let error = error {
                 delegate.uploadCompleted(self, file: file, result: .failure(error))

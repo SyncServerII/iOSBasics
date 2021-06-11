@@ -565,32 +565,10 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         
         let sharingGroup = index.sharingGroups[0]
         
-        if informAllButSelf == nil {
-            XCTAssert(sharingGroup.contentsSummary == nil)
-            return
-        }
-        
-        guard let contentsSummary = sharingGroup.contentsSummary else {
+        guard sharingGroup.contentsSummary == nil else {
             XCTFail()
             return
         }
-        
-        guard contentsSummary.count == 1 else {
-            XCTFail()
-            return
-        }
-        
-        XCTAssert(contentsSummary[0].deleted == false)
-        XCTAssert(contentsSummary[0].fileGroupUUID == upload.fileGroupUUID.uuidString)
-
-        guard let inform = contentsSummary[0].inform,
-            inform.count == 2 else {
-            XCTFail()
-            return
-        }
-        
-        let filter = inform.filter {$0.inform == .others}
-        XCTAssert(filter.count == 2)
     }
     
     func testVNUpload_informAllButSelf() throws {

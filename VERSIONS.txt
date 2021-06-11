@@ -1,5 +1,11 @@
 iOSBasics
 
+Version 0.29.0 (6/10/21)
+	* Add conflict processing: When an upload occurs with a file label
+		and that file label had already been uploaded for that file group.
+		- See https://github.com/SyncServerII/Neebla/issues/15#issuecomment-855324838
+		- Now starting to use uuid collision delegate method with this.
+
 Version 0.28.4 (6/3/21)
     * Fix issue with updating mostRecentDate in SharingEntry's.
     	Only update the mostRecentDate if the new one is non-nil.

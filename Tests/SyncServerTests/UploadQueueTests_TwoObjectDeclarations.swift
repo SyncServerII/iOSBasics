@@ -23,8 +23,8 @@ class UploadQueueTests_TwoObjectDeclarations: XCTestCase, UserSetup, ServerBasic
         handlers = DelegateHandlers()
 
         // Running into `tooManyRequests` HTTP response, so switched from Dropbox to Google for these tests.
-        handlers.user = try googleUser()
-        // handlers.user = try dropboxUser()
+        //handlers.user = try googleUser()
+        handlers.user = try dropboxUser()
         
         deviceUUID = UUID()
         database = try Connection(.inMemory)

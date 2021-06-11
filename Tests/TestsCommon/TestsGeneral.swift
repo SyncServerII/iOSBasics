@@ -209,7 +209,7 @@ extension APITests where Self: XCTestCase {
         return sharingGroupUUID
     }
     
-    func waitForUploadsToComplete(numberUploads: Int, gone: Bool = false, v0Upload: Bool = true) {
+    func waitForUploadsToComplete(numberUploads: Int, expectedUploadType: UploadResult.UploadType = .success, v0Upload: Bool = true) {
         var count = 0
         let exp = expectation(description: "exp")
         
@@ -219,14 +219,21 @@ extension APITests where Self: XCTestCase {
             
             switch result.uploadType {
             case .gone:
-                guard gone else {
+                guard expectedUploadType == .gone else {
+                    XCTFail()
+                    exp.fulfill()
+                    return
+                }
+                
+            case .conflict:
+                guard expectedUploadType == .conflict else {
                     XCTFail()
                     exp.fulfill()
                     return
                 }
                 
             case .success:
-                guard !gone else {
+                guard expectedUploadType == .success else {
                     XCTFail()
                     exp.fulfill()
                     return

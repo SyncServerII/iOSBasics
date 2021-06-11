@@ -184,7 +184,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
             switch success {
             case .success(let upload):
                 XCTAssert(upload.uploadsFinished == .uploadsNotFinished)
-            case .gone:
+            case .gone, .conflict:
                 XCTFail()
             }
         default:
@@ -217,7 +217,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
             switch success {
             case .success(let upload):
                 XCTAssert(upload.uploadsFinished == .v0UploadsFinished)
-            case .gone:
+            case .gone, .conflict:
                 XCTFail()
             }
         default:

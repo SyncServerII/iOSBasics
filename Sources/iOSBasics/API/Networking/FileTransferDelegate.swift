@@ -21,6 +21,9 @@ enum FileTransferUploadEvent {
     // HTTPStatus.gone
     case gone(responseBody: [String: Any]?)
     
+    // HTTPStatus.conflict
+    case conflict(responseBody: [String: Any]?)
+    
     // Non-2XX status code (and non-gone) or other failure. Upload needs to be retried by app.
     case failure(error: Error?, statusCode:Int?, responseHeaders:[AnyHashable: Any]?)
 }

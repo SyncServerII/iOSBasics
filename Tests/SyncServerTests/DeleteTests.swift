@@ -28,8 +28,9 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
         try super.setUpWithError()
         handlers = DelegateHandlers()
         
+        handlers.user = try dropboxUser()
         // Running into `tooManyRequests` HTTP response, so switched from Dropbox to Google for these tests.
-        handlers.user = try googleUser()
+        //handlers.user = try googleUser()
         
         deviceUUID = UUID()
         database = try Connection(.inMemory)

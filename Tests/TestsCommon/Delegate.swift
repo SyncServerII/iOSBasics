@@ -36,6 +36,8 @@ class DelegateHandlers {
     
     var syncCompleted: ((SyncServer, SyncResult) -> ())?
     
+    var uuidCollision: ((SyncServer, UUIDCollisionType, _ from: UUID, _ to: UUID) -> ())?
+    
     // Use extras.
     // var uploadQueue:((SyncServer, UploadEvent) -> ())?
 
@@ -93,6 +95,7 @@ extension Delegate {
     
     // A uuid that was initially generated on the client
     func uuidCollision(_ syncServer: SyncServer, type: UUIDCollisionType, from: UUID, to: UUID) {
+        handlers.uuidCollision?(syncServer, type, from, to)
     }
     
     func uploadQueue(_ syncServer: SyncServer, event: UploadEvent) {

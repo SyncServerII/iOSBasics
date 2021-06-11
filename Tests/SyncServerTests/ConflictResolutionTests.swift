@@ -223,6 +223,6 @@ class ConflictResolutionTests: XCTestCase, UserSetup, ServerBasics, TestFiles, A
             DirectoryObjectEntry.deletedOnServerField.description <- false)
             
         try object1(v0: false)
-        waitForUploadsToComplete(numberUploads: 1, gone: true)
+        waitForUploadsToComplete(numberUploads: 1, expectedUploadType: .gone)
     }
 }
