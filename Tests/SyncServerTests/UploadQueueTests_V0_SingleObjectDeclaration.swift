@@ -5,6 +5,7 @@ import ServerShared
 import iOSShared
 import iOSSignIn
 @testable import TestsCommon
+import ChangeResolvers
 
 class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Delegate, SyncServerTests {
     var deviceUUID: UUID!
@@ -478,6 +479,25 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         try syncServer.register(object: example)
         
         let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleImageFileURL), uuid: fileUUID1)
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        try syncServer.queue(upload: upload)
+        
+        waitForUploadsToComplete(numberUploads: 1)
+    }
+    
+    func testQueueSingleMediaItemAttributeFile() throws {
+        let fileUUID1 = UUID()
+        
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: MediaItemAttributes.changeResolverName)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let data = try MediaItemAttributes.emptyFile()
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .data(data), uuid: fileUUID1)
         let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
         try syncServer.queue(upload: upload)
         

@@ -293,7 +293,7 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         try runUpload(goodUUIDButBadFileLabel: false)
     }
     
-    func runUpload(vNUploadWithChangeResolver: Bool) throws {
+    func runCommentUpload(vNUploadWithChangeResolver: Bool) throws {
         let fileUUID = UUID()
         try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
@@ -354,12 +354,82 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         waitForExpectations(timeout: 10, handler: nil)
     }
     
-    func testvNUploadWithoutChangeResolverFails() throws {
-        try runUpload(vNUploadWithChangeResolver: false)
+    func testvNCommentUploadWithoutChangeResolverFails() throws {
+        try runCommentUpload(vNUploadWithChangeResolver: false)
     }
     
-    func testvNUploadWithChangeResolverWorks() throws {
-        try runUpload(vNUploadWithChangeResolver: true)
+    func testvNCommentUploadWithChangeResolverWorks() throws {
+        try runCommentUpload(vNUploadWithChangeResolver: true)
+    }
+    
+    func runMediaItemAttributesUpload(vNUploadWithChangeResolver: Bool) throws {
+        let fileUUID = UUID()
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        var changeResolver: String?
+        if vNUploadWithChangeResolver {
+            changeResolver = MediaItemAttributes.changeResolverName
+        }
+        
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: changeResolver)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let emptyFileData = try MediaItemAttributes.emptyFile()
+                
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(emptyFileData), uuid: fileUUID)
+        let uploads = [file1]
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: uploads)
+
+        try syncServer.queue(upload: upload)
+        waitForUploadsToComplete(numberUploads: 1)
+
+        let encoder = JSONEncoder()
+        let keyValue1 = KeyValue.readCount(userId: "Foo", readCount: 100)
+        let exampleMutation = try encoder.encode(keyValue1)
+                
+        let file2 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .data(exampleMutation), uuid: fileUUID)
+        let uploads2 = [file2]
+        
+        let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: uploads2)
+        
+        do {
+            try syncServer.queue(upload: upload2)
+        } catch let error {
+            if vNUploadWithChangeResolver {
+                XCTFail("\(error)")
+            }
+            return
+        }
+        
+        if !vNUploadWithChangeResolver {
+            XCTFail()
+            return
+        }
+        
+        waitForUploadsToComplete(numberUploads: 1, v0Upload: false)
+        
+        // Wait for some period of time for the deferred upload to complete.
+        Thread.sleep(forTimeInterval: 5)
+        
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+
+        let exp3 = expectation(description: "exp2")
+        handlers.deferredCompleted = { _, operation, count in
+            exp3.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+    }
+    
+    func testvNMediaItemAttributeUploadWithoutChangeResolverFails() throws {
+        try runMediaItemAttributesUpload(vNUploadWithChangeResolver: false)
+    }
+    
+    func testvNMediaItemAttributeUploadWithChangeResolverWorks() throws {
+        try runMediaItemAttributesUpload(vNUploadWithChangeResolver: true)
     }
     
     func testVNUploadWithWrongMimeTypeFails() throws {
