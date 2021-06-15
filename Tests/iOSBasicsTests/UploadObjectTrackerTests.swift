@@ -412,4 +412,71 @@ class UploadObjectTrackerTests: XCTestCase {
         let result2 = result.filter {$0.object.fileGroupUUID == fileGroupUUID2}
         XCTAssert(result2.count == 1)
     }
+    
+    func testNumberFileGroupsUploading_noUploads() throws {
+        let number = try UploadObjectTracker.numberFileGroupsUploading(db: database)
+        XCTAssert(number == 0)
+    }
+    
+    func testNumberFileGroupsUploading_oneUploading() throws {
+        let fileGroupUUID1 = UUID()
+        
+        let objectTracker1 = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID1, v0Upload: true, batchUUID: UUID(), batchExpiryInterval: 100,  deferredUploadId: nil, pushNotificationMessage: message)
+        try objectTracker1.insert()
+        
+        let fileTracker1 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker1.id, status: .uploading, fileUUID: UUID(), mimeType: .text, fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil, uploadIndex: 0, uploadCount: 1, informAllButSelf: nil)
+        try fileTracker1.insert()
+        
+        let number = try UploadObjectTracker.numberFileGroupsUploading(db: database)
+        XCTAssert(number == 1)
+    }
+    
+    func testNumberFileGroupsUploading_oneUploading_twoFiles() throws {
+        let fileGroupUUID1 = UUID()
+        
+        let objectTracker1 = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID1, v0Upload: true, batchUUID: UUID(), batchExpiryInterval: 100,  deferredUploadId: nil, pushNotificationMessage: message)
+        try objectTracker1.insert()
+        
+        let fileTracker1 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker1.id, status: .uploading, fileUUID: UUID(), mimeType: .text, fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil, uploadIndex: 0, uploadCount: 1, informAllButSelf: nil)
+        try fileTracker1.insert()
+        
+        let fileTracker2 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker1.id, status: .uploading, fileUUID: UUID(), mimeType: .text, fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil, uploadIndex: 0, uploadCount: 1, informAllButSelf: nil)
+        try fileTracker2.insert()
+        
+        let number = try UploadObjectTracker.numberFileGroupsUploading(db: database)
+        XCTAssert(number == 1)
+    }
+    
+    func testNumberFileGroupsUploading_oneTrackerNoneUploading() throws {
+        let fileGroupUUID1 = UUID()
+        
+        let objectTracker1 = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID1, v0Upload: true, batchUUID: UUID(), batchExpiryInterval: 100,  deferredUploadId: nil, pushNotificationMessage: message)
+        try objectTracker1.insert()
+        
+        let fileTracker1 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker1.id, status: .notStarted, fileUUID: UUID(), mimeType: .text, fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil, uploadIndex: 0, uploadCount: 1, informAllButSelf: nil)
+        try fileTracker1.insert()
+        
+        let number = try UploadObjectTracker.numberFileGroupsUploading(db: database)
+        XCTAssert(number == 0)
+    }
+    
+    func testNumberFileGroupsUploading_twoUploading() throws {
+        let fileGroupUUID1 = UUID()
+        let fileGroupUUID2 = UUID()
+        
+        let objectTracker1 = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID1, v0Upload: true, batchUUID: UUID(), batchExpiryInterval: 100,  deferredUploadId: nil, pushNotificationMessage: message)
+        try objectTracker1.insert()
+        
+        let fileTracker1 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker1.id, status: .uploading, fileUUID: UUID(), mimeType: .text, fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil, uploadIndex: 0, uploadCount: 1, informAllButSelf: nil)
+        try fileTracker1.insert()
+        
+        let objectTracker2 = try UploadObjectTracker(db: database, fileGroupUUID: fileGroupUUID2, v0Upload: true, batchUUID: UUID(), batchExpiryInterval: 100,  deferredUploadId: nil, pushNotificationMessage: message)
+        try objectTracker2.insert()
+        
+        let fileTracker2 = try UploadFileTracker(db: database, uploadObjectTrackerId: objectTracker2.id, status: .uploading, fileUUID: UUID(), mimeType: .text, fileVersion: 0, localURL: nil, goneReason: nil, uploadCopy: false, checkSum: nil, appMetaData: nil, uploadIndex: 0, uploadCount: 1, informAllButSelf: nil)
+        try fileTracker2.insert()
+        
+        let number = try UploadObjectTracker.numberFileGroupsUploading(db: database)
+        XCTAssert(number == 2)
+    }
 }

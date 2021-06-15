@@ -14,12 +14,20 @@ extension SyncServer {
     
     // Trigger new uploads for file groups where those have been queued before, but not started (or started and failed). This handles v0 and vN uploads. v0 uploads will be triggered here if they failed in their initial upload from `queue(upload: UploadableObject)` (or if multiple v0 uploads occur for a given file group).
     private func triggerQueuedUploads() throws {
-        let toTrigger = try UploadObjectTracker.toBeStartedNext(db: db)
+        var toTrigger = try UploadObjectTracker.toBeStartedNext(db: db)
 
         logger.info("triggerQueuedUploads: toTrigger.count: \(toTrigger.count)")
         guard toTrigger.count > 0 else {
             return
         }
+        
+        let number = try UploadObjectTracker.numberFileGroupsUploading(db: db)
+        if number >= configuration.maxConcurrentFileGroupUploads {
+            return
+        }
+        
+        let additional = configuration.maxConcurrentFileGroupUploads - number
+        toTrigger = Array<UploadObjectTracker.UploadWithStatus>(toTrigger.prefix(additional))
                 
         for uploadObject in toTrigger {
             try triggerUploads(uploadObject: uploadObject)

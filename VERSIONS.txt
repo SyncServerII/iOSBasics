@@ -1,5 +1,11 @@
 iOSBasics
 
+Version 0.29.1 (6/14/21)
+    * Added logging for user sign out.
+    * Added `maxConcurrentFileGroupUploads` to configuration-- to limit the number
+        of concurrent uploads to the server. And some corresponding changes to the code
+        to use this parameter.
+
 Version 0.29.0 (6/10/21)
 	* Add conflict processing: When an upload occurs with a file label
 		and that file label had already been uploaded for that file group.

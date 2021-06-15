@@ -212,4 +212,13 @@ extension UploadObjectTracker {
         
         return uploadsToStart
     }
+    
+    static func numberFileGroupsUploading(db: Connection) throws -> Int {
+        let activeUploads =
+            try uploadsMatching(
+                filePredicate: {$0.status == .uploading},
+                scope: .any, db: db)
+        let distinctFileGroups = Set<UUID>(activeUploads.map { $0.object.fileGroupUUID })
+        return distinctFileGroups.count
+    }
 }

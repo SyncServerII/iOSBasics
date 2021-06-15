@@ -34,7 +34,7 @@ public class SignIns {
     func completeSignInProcess(accountMode: AccountMode, autoSignIn:Bool) {
         guard let credentials = signInServicesHelper.currentCredentials,
             let userType = signInServicesHelper.userType else {
-            signUserOut()
+            signUserOut(logMessage: "Failed completeSignInProcess")
             showAlert(withTitle: "Alert!", message: "Oh, yikes. Something bad has happened.")
             return
         }
@@ -50,9 +50,8 @@ public class SignIns {
                 case .success(let result):
                     switch result {
                     case .noUser:
-                        self.signUserOut()
+                        self.signUserOut(logMessage: "signUserOut: noUser in checkForExistingUser")
                         self.showAlert(withTitle: "Alert!", message: "User not found on system.")
-                        logger.info("signUserOut: noUser in checkForExistingUser")
 
                     case .user(userInfo: let userInfo, accessToken: let accessToken):
                         logger.info("SyncServer user signed in: access token: \(String(describing: accessToken)); userInfo: \(userInfo)")
@@ -67,8 +66,7 @@ public class SignIns {
                     // 10/22/17; It doesn't seem legit to sign user out if we're doing this during a launch sign-in. That is, the user was signed in last time the app launched. And this is a generic error (e.g., a network error). However, if we're not doing this during app launch, i.e., this is a sign-in request explicitly by the user, if that fails it means we're not already signed-in, so it's safe to force the sign out.
                     
                     if !autoSignIn {
-                        self.signUserOut()
-                        logger.error("signUserOut: error in checkForExistingUser and not autoSignIn")
+                        self.signUserOut(logMessage: "signUserOut: error in checkForExistingUser and not autoSignIn")
                         self.showAlert(withTitle: "Alert!", message: message.description)
                     }
                 }
@@ -77,10 +75,9 @@ public class SignIns {
         case .createOwningUser:
             if userType == .sharing {
                 // 10/22/17; Seems legit. Very odd error situation.
-                self.signUserOut()
+                self.signUserOut(logMessage: "signUserOut: sharing user tried to create an owning user!")
                  // Social users cannot be owning users! They don't have cloud storage.
                 showAlert(withTitle: "Alert!", message: "Somehow a sharing user attempted to create an owning user!!")
-                logger.error("signUserOut: sharing user tried to create an owning user!")
             }
             else {
                 // We should always have non-nil credentials here. We'll get to here only in the non-autosign-in case (explicit request from user to create an account). In which case, we must have credentials.
@@ -91,9 +88,8 @@ public class SignIns {
                     switch result {
                     case .failure(let error):
                         // 10/22/17; User is signing up. I.e., they don't have an account. Seems OK to sign them out.
-                        self.signUserOut()
+                        self.signUserOut(logMessage: "Error creating owning user: \(error)")
                         self.showAlert(withTitle: "Alert!", message: "Error creating owning user.")
-                        logger.error("Error creating owning user: \(error)")
                         
                     case .success(let addUserResult):
                         switch addUserResult {
@@ -101,7 +97,7 @@ public class SignIns {
                             self.delegate?.newOwningUserCreated(self)
                             
                         case .userAlreadyExisted:
-                            self.signUserOut()
+                            self.signUserOut(logMessage: "Success but userAlreadyExisted")
                             self.showAlert(withTitle: "Alert!", message: "That account has already been created: Please use the sign-in option.")
                         }
                     }
@@ -110,7 +106,7 @@ public class SignIns {
             
         case .acceptInvitation(invitation: let invitation):
             guard let codeUUID = UUID(uuidString: invitation.code) else {
-                self.signUserOut()
+                self.signUserOut(logMessage: "acceptInvitation worked, but bad codeUUID")
                 let message = "Invitation was invalid."
                 self.showAlert(withTitle: "Alert!", message: message)
                 return
@@ -121,10 +117,9 @@ public class SignIns {
                 switch result {
                 case .failure(let error):
                     // 10/22/17; The common situation here seems to be the user is signing up via a sharing invitation. They are not on the system yet in that case. Seems safe to sign them out.
-                    self.signUserOut()
+                    self.signUserOut(logMessage: "signUserOut: Error in redeemSharingInvitation: \(error)")
                     let message = "Error creating sharing user."
                     self.showAlert(withTitle: "Alert!", message: message)
-                    logger.error("signUserOut: Error in redeemSharingInvitation: \(error)")
                     
                 case .success(let result):
                     logger.info("Access token: \(String(describing: result.accessToken))")
@@ -134,7 +129,10 @@ public class SignIns {
         }
     }
     
-    private func signUserOut() {
+    private func signUserOut(logMessage: String? = nil) {
+        if let logMessage = logMessage {
+            logger.error("signUserOut: \(logMessage)")
+        }
         signInServicesHelper.signUserOut()
         self.delegate?.userIsSignedOut(self)
         delegate?.setCredentials(self, credentials: nil)

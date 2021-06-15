@@ -37,6 +37,11 @@ public struct Configuration {
     
     public let timeoutIntervalForResource: TimeInterval
     
+    // The maximum number of file groups that can be concurrently uploaded. Each of these file groups can have some number of files.
+    // See https://github.com/SyncServerII/Neebla/issues/15#issuecomment-861097721
+    public static let defaultMaxConcurrentFileGroupUploads:Int = 5
+    public let maxConcurrentFileGroupUploads: Int
+    
     /// Provide details about temporary files.
     ///
     /// - Parameters:
@@ -73,7 +78,8 @@ public struct Configuration {
     }
     
     public init(appGroupIdentifier: String?, urlSessionBackgroundIdentifier: String? = nil, serverURL: URL, minimumServerVersion:Version?, currentClientAppVersion: Version? = nil, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryFiles:TemporaryFiles = Self.defaultTemporaryFiles, packageTests: Bool = false, timeoutIntervalForRequest: TimeInterval = Self.defaultTimeoutIntervalForRequest, timeoutIntervalForResource: TimeInterval = Self.defaultTimeoutIntervalForResource,
-        deferredCheckInterval: TimeInterval? = Self.defaultDeferredCheckInterval) {
+        deferredCheckInterval: TimeInterval? = Self.defaultDeferredCheckInterval,
+        maxConcurrentFileGroupUploads: Int = Self.defaultMaxConcurrentFileGroupUploads) {
         self.appGroupIdentifier = appGroupIdentifier
         self.urlSessionBackgroundIdentifier = urlSessionBackgroundIdentifier
         self.serverURL = serverURL
@@ -86,6 +92,7 @@ public struct Configuration {
         self.timeoutIntervalForRequest = timeoutIntervalForRequest
         self.timeoutIntervalForResource = timeoutIntervalForResource
         self.deferredCheckInterval = deferredCheckInterval
+        self.maxConcurrentFileGroupUploads = maxConcurrentFileGroupUploads
         
 #if !DEBUG
         assert(!packageTests)

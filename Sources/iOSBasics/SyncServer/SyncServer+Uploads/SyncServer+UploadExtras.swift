@@ -8,6 +8,11 @@
 import Foundation
 
 extension SyncServer {
+    func reachedMaxUploadFileGroups() throws -> Bool {
+        let number = try UploadObjectTracker.numberFileGroupsUploading(db: db)
+        return number >= configuration.maxConcurrentFileGroupUploads
+    }
+    
     // Check to see if there are deferred uploads waiting. If no, the returned array is empty.
     func deferredUploadsWaiting() throws -> [UploadObjectTracker.UploadWithStatus] {
         // We consider all of these to be vN: Because, once a v0 upload completes for an object, the trackers are immediately removed (see cleanupAfterUploadCompleted).

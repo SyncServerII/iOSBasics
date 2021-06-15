@@ -210,8 +210,10 @@ extension SyncServer {
         // This is an upload for existing file instances.
         newObjectTracker.v0Upload = false
         try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- newObjectTracker.v0Upload)
-                
-        if activeUploadsForThisFileGroup || !requestable.canMakeNetworkRequests {
+        
+        let maxReached = try reachedMaxUploadFileGroups()
+        
+        if activeUploadsForThisFileGroup || !requestable.canMakeNetworkRequests || maxReached {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
                 delegate.uploadQueue(self, event: .queued(fileGroupUUID: upload.fileGroupUUID))
@@ -242,7 +244,9 @@ extension SyncServer {
         newObjectTracker.v0Upload = true
         try newObjectTracker.update(setters: UploadObjectTracker.v0UploadField.description <- newObjectTracker.v0Upload)
         
-        if activeUploadsForThisFileGroup || !requestable.canMakeNetworkRequests {
+        let maxReached = try reachedMaxUploadFileGroups()
+
+        if activeUploadsForThisFileGroup || !requestable.canMakeNetworkRequests || maxReached {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
                 delegate.uploadQueue(self, event: .queued(fileGroupUUID: upload.fileGroupUUID))
