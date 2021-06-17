@@ -194,6 +194,7 @@ class ServerAPI {
         networking.sendRequestTo(serverURL, method: endpoint.method) { response, httpStatus, error in
 
             if httpStatus == HTTPStatus.unauthorized.rawValue {
+                logger.error("checkCreds: HTTPStatus.unauthorized")
                 completion(.success(.noUser))
                 return
             }
