@@ -53,6 +53,7 @@ class Networking: NSObject {
     var handleEventsForBackgroundURLSessionCompletionHandler: (() -> Void)?
     let serialQueue:DispatchQueue
     let backgroundAsssertable: BackgroundAsssertable
+    var store = Set<CredentialsRefresh>()
 
     init?(database:Connection, serialQueue:DispatchQueue, backgroundAsssertable: BackgroundAsssertable, delegate: NetworkingDelegate, transferDelegate:FileTransferDelegate? = nil, config: Configuration) {
         self.delegate = delegate
@@ -174,18 +175,27 @@ class Networking: NSObject {
         
         logger.info("sendRequestTo: serverURL: \(serverURL)")
         
-        let uploadTask:URLSessionDataTask = session.dataTask(with: request) { [weak self] (data, urlResponse, error) in
-            guard let self = self else { return }
-
-            self.serialQueue.async { [weak self] in
+        let refresh = CredentialsRefresh(credentials: configuration?.credentials, delegate: self)
+        refresh.networkRequest = { [weak refresh] in
+            let uploadTask:URLSessionDataTask = session.dataTask(with: request) { [weak self] (data, urlResponse, error) in
                 guard let self = self else { return }
-                
-                let (serverResponse, statusCode, error) = self.processResponse(data: data, urlResponse: urlResponse, error: error)
-                completion?(serverResponse, statusCode, error)
+
+                self.serialQueue.async { [weak self, weak refresh] in
+                    guard let self = self,
+                        let refresh = refresh else { return }
+                    
+                    let (serverResponse, statusCode, error) = self.processResponse(data: data, urlResponse: urlResponse, error: error)
+                    refresh.checkResponse(statusCode: statusCode) { refreshError in
+                        let errorResult = error ?? refreshError
+                        completion?(serverResponse, statusCode, errorResult)
+                    }
+                }
             }
+            
+            uploadTask.resume()
         }
         
-        uploadTask.resume()
+        refresh.start()
     }
     
     func validStatusCode(_ statusCode: Int?) -> Bool {
@@ -388,3 +398,12 @@ class Networking: NSObject {
     }
 }
 
+extension Networking: CredentialsRefreshDelegate {
+    func cache(refresh: CredentialsRefresh) {
+        store.insert(refresh)
+    }
+    
+    func removeFromCache(refresh: CredentialsRefresh) {
+        store.remove(refresh)
+    }
+}

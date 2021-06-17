@@ -1,5 +1,9 @@
 iOSBasics
 
+Version 0.29.3 (6/16/21)
+	* Added credentials refresh for simple network requests.
+		See https://github.com/SyncServerII/Neebla/issues/17
+	
 Version 0.29.2 (6/16/21)
 	* Added logging.
 
