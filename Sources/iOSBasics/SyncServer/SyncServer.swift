@@ -279,6 +279,22 @@ public class SyncServer {
         }
     }
     
+    public struct FileGroupAttributes {
+        public struct FileAttributes {
+            public let fileLabel: String
+            public let fileUUID: UUID
+        }
+        
+        public let files: [FileAttributes]
+    }
+
+    // Returns attributes tracked by iOSBasics about a file group. Returns nil if fileGroupUUID isn't yet known to iOSBasics. A file group won't yet be known if a sync for a specific sharing group, in which the file group is contained, hasn't yet been done.
+    public func fileGroupAttributes(forFileGroupUUID fileGroupUUID: UUID) throws -> FileGroupAttributes? {
+        return try serialQueue.sync {
+            return try self.fileGroupInfoHelper(fileGroupUUID: fileGroupUUID)
+        }
+    }
+    
     // Is a particular file group being uploaded, deleted, or downloaded?
     public func isQueued(_ queueType: QueueType, fileGroupUUID: UUID) throws -> Bool {
         // `sync` because the immediate effect of this call is short running.

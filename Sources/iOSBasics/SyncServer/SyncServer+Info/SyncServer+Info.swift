@@ -45,4 +45,21 @@ extension SyncServer {
                 
         return FileAttributes(fileVersion: fileEntry.fileVersion, serverVersion: fileEntry.serverFileVersion)
     }
+    
+    func fileGroupInfoHelper(fileGroupUUID: UUID) throws -> FileGroupAttributes? {
+        guard let objectInfo = try DirectoryObjectEntry.lookup(fileGroupUUID: fileGroupUUID, db: db) else {
+            return nil
+        }
+        
+        let files = objectInfo.allFileEntries.map {
+            FileGroupAttributes.FileAttributes(fileLabel: $0.fileLabel, fileUUID: $0.fileUUID)
+        }
+        
+        // This should never happen, but check for it to be safe.
+        guard files.count > 0 else {
+            throw DatabaseError.noObject
+        }
+        
+        return FileGroupAttributes(files: files)
+    }
 }

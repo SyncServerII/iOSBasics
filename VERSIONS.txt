@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.29.4 (6/18/21)
+	* Added `fileGroupAttributes` method on interface.
+        
 Version 0.29.3 (6/16/21)
 	* Added credentials refresh for simple network requests.
 		See https://github.com/SyncServerII/Neebla/issues/17
