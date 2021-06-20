@@ -102,6 +102,34 @@ extension DownloadObjectTracker {
         return uploads
     }
     
+    // This resets all current downloads for a file group to .notStarted.
+    // I added this based on downloads that didn't complete: https://github.com/SyncServerII/Neebla/issues/21
+    // Throws `SyncServerError.noObject` if there were no files downloading for the file group.
+    static func reset(fileGroupUUID: UUID, db: Connection) throws {
+        let inProgress = try DownloadObjectTracker.downloadsWith(status: .downloading, scope: .all, db: db).filter {$0.object.fileGroupUUID == fileGroupUUID}
+        
+        switch inProgress.count {
+        case 0:
+            throw SyncServerError.noObject
+            
+        case 1:
+            break
+            
+        default:
+            throw SyncServerError.internalError("There was more than one DownloadObjectTracker for fileGroupUUID = \(fileGroupUUID)")
+        }
+        
+        let current = inProgress[0]
+        
+        guard current.files.count > 0 else {
+            throw SyncServerError.internalError("There were no files downloading for DownloadObjectTracker for fileGroupUUID = \(fileGroupUUID)")
+        }
+        
+        for file in current.files {
+            try DownloadFileTracker.reset(fileUUID: file.fileUUID.uuidString, objectTrackerId: file.downloadObjectTrackerId, db: db)
+        }
+    }
+    
     static let maxRetriesPerFile = 5
     
     // Check if the number of download retries for the file has been exceeded. If yes, then the `DownloadFileTracker` is removed. If there are no more, then remove the object tracker too.

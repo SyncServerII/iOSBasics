@@ -88,7 +88,7 @@ extension SyncServer {
         let existingObjectTracker = try DownloadObjectTracker.fetch(db: db, where: DownloadObjectTracker.fileGroupUUIDField.description == fileGroupUUID)
         
         guard existingObjectTracker.count == 0 else {
-            // There are existing download trackers for this file group.
+            // There are existing download trackers for this file group. Thus, it doesn't need downloading because it's already downloading.
             return nil
         }
         

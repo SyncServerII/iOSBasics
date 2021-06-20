@@ -197,6 +197,14 @@ public class SyncServer {
         }
     }
     
+    // There must be a queued download for the file group currently. I.e., this will restart all download(s) queued by a call to queue(download: ...) above. Throws `SyncServerError.noObject` if there were no files downloading for the file group.
+    public func restart(download fileGroupUUID: UUID) throws {
+        try self.serialQueue.sync { [weak self] in
+            guard let self = self else { return }
+            try self.restartDownloadHelper(fileGroupUUID: fileGroupUUID)
+        }
+    }
+    
     // The deletion of an entire existing object, referenced by its file group.
     public func queue(objectDeletion fileGroupUUID: UUID, pushNotificationMessage: String? = nil) throws {
         // `sync` because the immediate effect of this call is short running.
@@ -351,7 +359,7 @@ public class SyncServer {
         }
     }
     
-    // Do any of the files of the object need downloading? Analogous to `objectsNeedingDownload`, but for just a single object in a sharing group. Nil is returned if the object doesn't need downloading.
+    // Do any of the files of the object need downloading? Analogous to `objectsNeedingDownload`, but for just a single object in a sharing group. Nil is returned if the object doesn't need downloading (either if the object is already downloading, or if it doesn't need downloading).
     public func objectNeedsDownload(fileGroupUUID: UUID, includeGone: Bool = false) throws -> DownloadObject? {
         // `sync` because the immediate effect of this call is short running.
         return try serialQueue.sync { [weak self] in

@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import SQLite
+import iOSShared
 
 extension SyncServer {
     func reachedMaxUploadFileGroups() throws -> Bool {
@@ -48,6 +50,18 @@ extension SyncServer {
         func apply(upload: UploadObjectTracker.UploadWithStatus, completion: @escaping (Swift.Result<UUID?, Error>) -> ()) {
 
             guard let deferredUploadId = upload.object.deferredUploadId else {
+                // 6/20/21; This is temporary error handling. See https://github.com/SyncServerII/Neebla/issues/20.
+                // After getting the other changes in that issue completed, I'm going to move this to being a fallback *after* the `getUploadsResults`-- when that method is positively unable to get the uploads results.
+                do {
+                    let fileTrackers = try upload.object.dependentFileTrackers()
+                    for fileTracker in fileTrackers {
+                        try fileTracker.update(setters: UploadFileTracker.statusField.description <- .notStarted)
+                    }
+                    logger.notice("Attempt to restart all upload trackers succeeded!")
+                } catch let error {
+                    logger.error("Attempt to restart all upload trackers failed: \(error)")
+                }
+                
                 completion(.failure(SyncServerError.internalError("checkOnDeferredUploads: Did not have deferredUploadId.")))
                 return
             }

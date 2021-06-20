@@ -30,7 +30,7 @@ class UploadObjectTracker: DatabaseModel {
     static let pushNotificationMessageField = Field("pushNotificationMessage", \M.pushNotificationMessage)
     var pushNotificationMessage: String?
     
-    // These two `batch` fields must be the same for all N of N files being uploaded for a file group, N <= N.
+    // These two `batch` fields must be the same for all M of N files being uploaded for a file group, M <= N.
     static let batchUUIDField = Field("batchUUID", \M.batchUUID)
     var batchUUID: UUID
     

@@ -120,6 +120,7 @@ class DownloadFileTracker: DatabaseModel {
 
 extension DownloadFileTracker {
     // Returns the `DownloadFileTracker` corresponding to the fileUUID and objectTrackerId.
+    @discardableResult
     static func reset(fileUUID: String?, objectTrackerId: Int64, db: Connection) throws -> DownloadFileTracker {
         guard let fileUUIDString = fileUUID,
             let fileUUID = try UUID.from(fileUUIDString) else {

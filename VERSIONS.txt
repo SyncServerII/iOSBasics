@@ -1,5 +1,9 @@
 iOSBasics
 
+Version 0.29.8 (6/20/21)
+	* Added code to reset downloads from public interface. See https://github.com/SyncServerII/Neebla/issues/21
+	* Added temporary fix for https://github.com/SyncServerII/Neebla/issues/20
+
 Version 0.29.7 (6/20/21)
 	* Using updated `iOSShared`.
 
