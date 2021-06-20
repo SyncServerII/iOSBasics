@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.29.7 (6/20/21)
+	* Using updated `iOSShared`.
+
 Version 0.29.6 (6/20/21)
 	* Made debug info available in non-debug builds. Again-- using `notice`.
     
