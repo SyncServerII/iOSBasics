@@ -402,27 +402,27 @@ public class SyncServer {
     // Logs debugging information for the file.
     public func debug(fileUUID: UUID) throws {
         if let fileTracker = try DownloadFileTracker.fetchSingleRow(db: db, where: DownloadFileTracker.fileUUIDField.description == fileUUID) {
-            logger.info("debug: fileTracker: fileTracker.status: \(fileTracker.status)")
+            logger.notice("debug: fileTracker: fileTracker.status: \(fileTracker.status)")
         }
         else {
-            logger.info("debug: fileTracker: No DownloadFileTracker with UUID: \(fileUUID)")
+            logger.notice("debug: fileTracker: No DownloadFileTracker with UUID: \(fileUUID)")
         }
 
         if let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileUUIDField.description == fileUUID) {
-            logger.info("debug: fileEntry: fileEntry.fileVersion: \(String(describing: fileEntry.fileVersion)); fileEntry.serverFileVersion: \(String(describing: fileEntry.serverFileVersion))")
+            logger.notice("debug: fileEntry: fileEntry.fileVersion: \(String(describing: fileEntry.fileVersion)); fileEntry.serverFileVersion: \(String(describing: fileEntry.serverFileVersion))")
         }
         else {
-            logger.info("debug: fileEntry: No DirectoryFileEntry with UUID: \(fileUUID)")
+            logger.notice("debug: fileEntry: No DirectoryFileEntry with UUID: \(fileUUID)")
         }
     }
 
     // Logs debugging information for the object.
     public func debug(fileGroupUUID: UUID) throws {
         if let _ = try DownloadObjectTracker.fetchSingleRow(db: db, where: DownloadObjectTracker.fileGroupUUIDField.description == fileGroupUUID) {
-            logger.info("debug: objectTracker: exists.")
+            logger.notice("debug: objectTracker: exists.")
         }
         else {
-            logger.info("debug: objectTracker: No DownloadObjectTracker with UUID: \(fileGroupUUID)")
+            logger.notice("debug: objectTracker: No DownloadObjectTracker with UUID: \(fileGroupUUID)")
         }
     }
     
