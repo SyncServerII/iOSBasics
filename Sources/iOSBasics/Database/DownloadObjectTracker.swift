@@ -102,14 +102,15 @@ extension DownloadObjectTracker {
         return uploads
     }
     
-    // This resets all current downloads for a file group to .notStarted.
+    // This resets all current downloads for a file group that have a .downloading status to .notStarted.
     // I added this based on downloads that didn't complete: https://github.com/SyncServerII/Neebla/issues/21
-    // Throws `SyncServerError.noObject` if there were no files downloading for the file group.
+    // Throws `SyncServerError.noObject` if there were no files .downloading for the file group.
     static func reset(fileGroupUUID: UUID, db: Connection) throws {
-        let inProgress = try DownloadObjectTracker.downloadsWith(status: .downloading, scope: .all, db: db).filter {$0.object.fileGroupUUID == fileGroupUUID}
+        let inProgress = try DownloadObjectTracker.downloadsWith(status: .downloading, scope: .some, db: db).filter {$0.object.fileGroupUUID == fileGroupUUID}
         
         switch inProgress.count {
         case 0:
+            logger.notice("No downloads for fileGroupUUID \(fileGroupUUID) had status .downloading")
             throw SyncServerError.noObject
             
         case 1:
@@ -125,9 +126,12 @@ extension DownloadObjectTracker {
             throw SyncServerError.internalError("There were no files downloading for DownloadObjectTracker for fileGroupUUID = \(fileGroupUUID)")
         }
         
+        // The status of the `.files` here are only `.downloading` due to the `DownloadObjectTracker.downloadsWith` call above.
         for file in current.files {
             try DownloadFileTracker.reset(fileUUID: file.fileUUID.uuidString, objectTrackerId: file.downloadObjectTrackerId, db: db)
         }
+        
+        logger.notice("Successfully reset downloads for fileGroupUUID: \(fileGroupUUID)")
     }
     
     static let maxRetriesPerFile = 5

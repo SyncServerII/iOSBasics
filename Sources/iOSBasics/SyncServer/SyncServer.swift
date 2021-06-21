@@ -197,7 +197,7 @@ public class SyncServer {
         }
     }
     
-    // There must be a queued download for the file group currently. I.e., this will restart all download(s) queued by a call to queue(download: ...) above. Throws `SyncServerError.noObject` if there were no files downloading for the file group.
+    // There must be a queued download for the file group currently with at least some .downloading status files. I.e., this will restart .downloading files queued by a call to queue(download: ...) above. The downloads have been restarted but not yet triggered. E.g., this relies on the user also doing a pull-down-refresh in the UI. Throws `SyncServerError.noObject` if there were no files downloading for the file group.
     public func restart(download fileGroupUUID: UUID) throws {
         try self.serialQueue.sync { [weak self] in
             guard let self = self else { return }
