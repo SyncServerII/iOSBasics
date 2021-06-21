@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.29.10 (6/21/21)
+    * Added more logging.
+
 Version 0.29.9 (6/21/21)
     * Fixed issue with reset downloads. Had been using .all but really needed .some.
         - Improved some related log messaging.

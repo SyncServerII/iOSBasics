@@ -45,13 +45,22 @@ class CredentialsRefresh: Hashable {
             statusCode == HTTPStatus.unauthorized.rawValue, !refreshDone {
             refreshDone = true
             
+            logger.notice("CredentialsRefresh: got .unauthorized; attempting refresh.")
+            
             credentials.refreshCredentials { [weak self] error in
-                guard let self = self else { return }
+                guard let self = self else {
+                    logger.error("CredentialsRefresh: No self!")
+                    return
+                }
+                
                 if let error = error {
+                    logger.error("CredentialsRefresh: error on refresh: \(error)")
                     completion(error)
                     return
                 }
                 
+                logger.notice("CredentialsRefresh: Successs!")
+
                 self.networkRequest?()
             }
         }
