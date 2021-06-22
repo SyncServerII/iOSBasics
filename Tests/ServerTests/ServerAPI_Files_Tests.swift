@@ -349,7 +349,7 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         case .fileAlreadyDeleted:
             XCTFail()
         case .fileDeleted(deferredUploadId: let deferredUploadId):
-            let status = delayedGetUploadsResults(deferredUploadId: deferredUploadId)
+            let status = delayedGetUploadsResults(id: .deferredUploadId(deferredUploadId))
             XCTAssert(status == .completed, "\(String(describing: status))")
         }
     }

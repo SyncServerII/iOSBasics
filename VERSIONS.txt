@@ -1,5 +1,11 @@
 iOSBasics
 
+Version 0.29.11 (6/21/21)
+    * Enabled use of batchUUID when calling getUploadsResults
+    	- Corresponds to server version 1.11.5;
+    	See https://github.com/SyncServerII/Neebla/issues/20
+    * Added more credentials refresh logging.
+    
 Version 0.29.10 (6/21/21)
     * Added more logging.
 

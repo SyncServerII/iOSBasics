@@ -41,6 +41,8 @@ class CredentialsRefresh: Hashable {
     // If the status code indicates, do a credentials refresh a single time.
     // Otherwise, call the completion.
     func checkResponse(statusCode:Int?, completion: @escaping (Error?)->()) {
+        logger.notice("CredentialsRefresh: statusCode: \(String(describing: statusCode)); credentials: \(String(describing: credentials)); refreshDone: \(refreshDone)")
+
         if let credentials = credentials,
             statusCode == HTTPStatus.unauthorized.rawValue, !refreshDone {
             refreshDone = true

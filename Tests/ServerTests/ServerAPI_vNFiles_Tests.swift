@@ -104,7 +104,7 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         }
         
         if let deferredUploadId = deferredUploadId {            
-            let status = delayedGetUploadsResults(deferredUploadId: deferredUploadId)
+            let status = delayedGetUploadsResults(id: .deferredUploadId(deferredUploadId))
             XCTAssert(status == .completed, "\(String(describing: status))")
         }
         
@@ -159,5 +159,68 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         let downloadedDict = downloadedCommentFile[0]
         XCTAssert((downloadedDict?[CommentFile.idKey] as? String) == comment.id)
         XCTAssert((downloadedDict?[ExampleComment.messageKey] as? String) == comment.messageString)
+    }
+    
+    func testUploadUsingBatchUUIDToCheckForCompletion() throws {
+        let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
+
+        let fileUUID = UUID()
+        
+        let commentFileString = "{\"elements\":[]}"
+        let commentFileData = commentFileString.data(using: .utf8)!
+        let dropboxCheckSum =  "3ffce28e9fc6181b1e52226cba61dbdbd13fc1b75decb770f075541b25010575"
+                
+        guard let result = getIndex(sharingGroupUUID: nil),
+            result.sharingGroups.count > 0,
+            let sharingGroupUUID = result.sharingGroups[0].sharingGroupUUID else {
+            XCTFail()
+            return
+        }
+        
+        let changeResolverName = CommentFile.changeResolverName
+        
+        let commentDataURL1 = try FileUtils.copyDataToNewTemporary(data: commentFileData, config: config)
+
+        let file1 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version:
+            .v0(url: commentDataURL1, mimeType: MimeType.text, checkSum: dropboxCheckSum, changeResolverName: changeResolverName, fileGroup: nil, appMetaData: nil, fileLabel: UUID().uuidString)
+        )
+        
+        guard let uploadResult1 = uploadFile(file: file1, uploadIndex: 1, uploadCount: 1) else {
+            XCTFail()
+            return
+        }
+        
+        switch uploadResult1 {
+        case .success:
+            break
+        default:
+            XCTFail("\(uploadResult1)")
+            return
+        }
+        
+        let commentDataURL2 = try FileUtils.copyDataToNewTemporary(data: comment.updateContents, config: config)
+        
+        let batchUUID = UUID()
+        
+        let file2 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: batchUUID, batchExpiryInterval: 100, version:
+            .vN(url: commentDataURL2)
+        )
+        
+        guard let uploadResult2 = uploadFile(file: file2, uploadIndex: 1, uploadCount: 1) else {
+            XCTFail()
+            return
+        }
+        
+        switch uploadResult2 {
+        case .success:
+            break
+            
+        default:
+            XCTFail("\(uploadResult2)")
+            return
+        }
+        
+        let status = delayedGetUploadsResults(id: .batchUUID(batchUUID))
+        XCTAssert(status == .completed, "\(String(describing: status))")
     }
 }

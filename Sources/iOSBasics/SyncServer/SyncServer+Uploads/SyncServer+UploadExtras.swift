@@ -45,25 +45,17 @@ extension SyncServer {
             // This just means that there are no vN uploads we are waiting for to have their final deferred upload completed. It's the typical expected case when calling the current method.
             return []
         }
-                
+
         // The non-error completion result is the UUID of the file group that was uploaded if it's deferral is completed.
         func apply(upload: UploadObjectTracker.UploadWithStatus, completion: @escaping (Swift.Result<UUID?, Error>) -> ()) {
 
-            guard let deferredUploadId = upload.object.deferredUploadId else {
-                // 6/20/21; This is temporary error handling. See https://github.com/SyncServerII/Neebla/issues/20.
-                // After getting the other changes in that issue completed, I'm going to move this to being a fallback *after* the `getUploadsResults`-- when that method is positively unable to get the uploads results.
-                do {
-                    let fileTrackers = try upload.object.dependentFileTrackers()
-                    for fileTracker in fileTrackers {
-                        try fileTracker.update(setters: UploadFileTracker.statusField.description <- .notStarted)
-                    }
-                    logger.notice("Attempt to restart all upload trackers succeeded!")
-                } catch let error {
-                    logger.error("Attempt to restart all upload trackers failed: \(error)")
-                }
-                
-                completion(.failure(SyncServerError.internalError("checkOnDeferredUploads: Did not have deferredUploadId.")))
-                return
+            let uploadsResultsId: ServerAPI.UploadsResultsId
+            
+            if let deferredUploadId = upload.object.deferredUploadId {
+                uploadsResultsId = .deferredUploadId(deferredUploadId)
+            }
+            else {
+                uploadsResultsId = .batchUUID(upload.object.batchUUID)
             }
 
             guard let uploadObjectTrackerId = upload.object.id else {
@@ -71,15 +63,17 @@ extension SyncServer {
                 return
             }
             
-            api.getUploadsResults(deferredUploadId: deferredUploadId) { [weak self] result in
+            api.getUploadsResults(usingId: uploadsResultsId) { [weak self] result in
                 guard let self = self else { return }
                 switch result {
                 case .failure(let error):
+                    self.fallback(upload: upload)
                     completion(.failure(error))
                     
                 case .success(let status):
                     switch status {
                     case .error:
+                        self.fallback(upload: upload)
                         completion(.failure(
                             SyncServerError.internalError("Error reported within the `success` from getUploadsResults.")))
                     case .pendingChange, .pendingDeletion:
@@ -87,13 +81,14 @@ extension SyncServer {
                         completion(.success(nil))
                     case .completed:
                         do {
-                            try self.cleanupAfterVNUploadCompleted(uploadObjectTrackerId: uploadObjectTrackerId)
+                            try self.cleanupAfterVNUploadCompleted (uploadObjectTrackerId: uploadObjectTrackerId)
                             completion(.success(upload.object.fileGroupUUID))
                         } catch let error {
                             completion(.failure(error))
                         }
                     case .none:
                         // This indicates no record was found on the server. This should *not* happen.
+                        self.fallback(upload: upload)
                         completion(.failure(
                             SyncServerError.internalError("No record of deferred upload found on server.")))
                     }
@@ -107,5 +102,18 @@ extension SyncServer {
         }
                 
         return fileGroupUUIDs.compactMap {$0}
+    }
+    
+    // See https://github.com/SyncServerII/Neebla/issues/20.
+    private func fallback(upload: UploadObjectTracker.UploadWithStatus) {
+        do {
+            let fileTrackers = try upload.object.dependentFileTrackers()
+            for fileTracker in fileTrackers {
+                try fileTracker.update(setters: UploadFileTracker.statusField.description <- .notStarted)
+            }
+            logger.notice("Attempt to restart all upload trackers succeeded!")
+        } catch let error {
+            logger.error("Attempt to restart all upload trackers failed: \(error)")
+        }
     }
 }

@@ -282,7 +282,7 @@ class UploadQueueTests_VN_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         handlers.deferredCompleted = { _, operation, count in
             exp3.fulfill()
         }
-        waitForExpectations(timeout: 10, handler: nil)
+        waitForExpectations(timeout: 10, handler: nil)        
     }
 
     func testGoodUUIDButBadFileLabelFails() throws {

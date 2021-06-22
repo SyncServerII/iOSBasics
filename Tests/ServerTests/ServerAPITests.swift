@@ -192,7 +192,7 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
         _ = handlers.user.removeUser()
         XCTAssert(handlers.user.addUser())
         
-        let result = getUploadsResults(deferredUploadId: 0)
+        let result = getUploadsResults(id: .deferredUploadId(0))
         guard case .success(let status) = result else {
             XCTFail()
             return

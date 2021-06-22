@@ -145,12 +145,24 @@ extension ServerAPI {
         return networking.upload(fileUUID: file.fileUUID, uploadObjectTrackerId: file.uploadObjectTrackerId, from: url, toServerURL: serverURL, method: endpoint.method)
     }
     
-    func getUploadsResults(deferredUploadId: Int64, completion: @escaping (Result<DeferredUploadStatus?, Error>)->()) {
+    public enum UploadsResultsId {
+        case deferredUploadId(Int64)
+        case batchUUID(UUID)
+    }
+    
+    func getUploadsResults(usingId id: UploadsResultsId, completion: @escaping (Result<DeferredUploadStatus?, Error>)->()) {
 
         let endpoint = ServerEndpoints.getUploadsResults
                 
         let request = GetUploadsResultsRequest()
-        request.deferredUploadId = deferredUploadId
+        
+        switch id {
+        case .batchUUID(let batchUUID):
+            request.batchUUID = batchUUID.uuidString
+
+        case .deferredUploadId(let deferredUploadId):
+            request.deferredUploadId = deferredUploadId
+        }
         
         guard request.valid() else {
             completion(.failure(ServerAPIError.couldNotCreateRequest))

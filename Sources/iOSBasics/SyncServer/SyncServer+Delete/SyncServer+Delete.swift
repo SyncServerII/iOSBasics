@@ -98,7 +98,7 @@ extension SyncServer {
                 return
             }
             
-            api.getUploadsResults(deferredUploadId: deferredUploadId) { [weak self] result in
+            api.getUploadsResults(usingId: .deferredUploadId(deferredUploadId)) { [weak self] result in
                 guard let self = self else { return }
                 switch result {
                 case .failure(let error):

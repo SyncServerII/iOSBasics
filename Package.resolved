@@ -78,8 +78,8 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSGoogle.git",
         "state": {
           "branch": null,
-          "revision": "427a6ced4f253635b71e1fe07a895cd9d83a83c9",
-          "version": "0.3.3"
+          "revision": "594e3e6e855a489b6a08bcb9a06bb9c34a57f1df",
+          "version": "0.3.4"
         }
       },
       {
@@ -195,8 +195,8 @@
         "repositoryURL": "https://github.com/SyncServerII/ServerShared.git",
         "state": {
           "branch": null,
-          "revision": "0cb37a8683b287c82762dd5375eb3e880f8c5398",
-          "version": "0.10.7"
+          "revision": "e2669df3641318ae906a9060849ec35c0f993794",
+          "version": "0.10.8"
         }
       },
       {

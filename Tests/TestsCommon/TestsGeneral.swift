@@ -136,12 +136,12 @@ extension APITests where Self: XCTestCase {
         return returnResult
     }
     
-    func getUploadsResults(deferredUploadId: Int64) -> Swift.Result<DeferredUploadStatus?, Error> {
+    func getUploadsResults(id:ServerAPI.UploadsResultsId) -> Swift.Result<DeferredUploadStatus?, Error> {
         var theResult: Swift.Result<DeferredUploadStatus?, Error>!
         
         let exp = expectation(description: "exp")
 
-        api.getUploadsResults(deferredUploadId: deferredUploadId) { result in
+        api.getUploadsResults(usingId: id) { result in
             logger.debug("getUploadsResults: \(result)")
             theResult = result
             exp.fulfill()
@@ -170,7 +170,8 @@ extension APITests where Self: XCTestCase {
         return returnResult
     }
     
-    func delayedGetUploadsResults(delay: TimeInterval = 10, deferredUploadId:Int64) -> DeferredUploadStatus? {
+    func delayedGetUploadsResults(delay: TimeInterval = 10, id:ServerAPI.UploadsResultsId) -> DeferredUploadStatus? {
+        
         // Wait for a bit, before polling server to see if the upload is done.
         let exp = expectation(description: "Deferred Upload")
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
@@ -179,7 +180,7 @@ extension APITests where Self: XCTestCase {
         waitForExpectations(timeout: delay + 2, handler: nil)
         
         var status: DeferredUploadStatus?
-        let getUploadsResult = self.getUploadsResults(deferredUploadId: deferredUploadId)
+        let getUploadsResult = self.getUploadsResults(id: id)
         if case .success(let s) = getUploadsResult {
             status = s
         }
