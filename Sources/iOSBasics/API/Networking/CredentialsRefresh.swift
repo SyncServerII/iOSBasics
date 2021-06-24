@@ -24,10 +24,10 @@ class CredentialsRefresh: Hashable {
     
     var networkRequest: (()->())!
     private var refreshDone = false
-    private var credentials: GenericCredentials?
+    private let credentials: GenericCredentials
     weak var delegate: CredentialsRefreshDelegate?
     
-    init(credentials: GenericCredentials?, delegate: CredentialsRefreshDelegate) {
+    init(credentials: GenericCredentials, delegate: CredentialsRefreshDelegate) {
         self.credentials = credentials
         id = Self.nextId
         Self.nextId += 1
@@ -41,10 +41,9 @@ class CredentialsRefresh: Hashable {
     // If the status code indicates, do a credentials refresh a single time.
     // Otherwise, call the completion.
     func checkResponse(statusCode:Int?, completion: @escaping (Error?)->()) {
-        logger.notice("CredentialsRefresh: statusCode: \(String(describing: statusCode)); credentials: \(String(describing: credentials)); refreshDone: \(refreshDone)")
+        logger.notice("CredentialsRefresh: statusCode: \(String(describing: statusCode)); refreshDone: \(refreshDone)")
 
-        if let credentials = credentials,
-            statusCode == HTTPStatus.unauthorized.rawValue, !refreshDone {
+        if statusCode == HTTPStatus.unauthorized.rawValue, !refreshDone {
             refreshDone = true
             
             logger.notice("CredentialsRefresh: got .unauthorized; attempting refresh.")

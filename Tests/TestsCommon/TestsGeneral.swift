@@ -54,7 +54,7 @@ extension APITests where Self: XCTestCase {
         let exp = expectation(description: "exp")
         var returnResult: ServerAPI.CheckCredsResult?
         
-        api.checkCreds(handlers.user.credentials) { result in
+        api.checkCreds { result in
             switch result {
             case .success(let result):
                 returnResult = result

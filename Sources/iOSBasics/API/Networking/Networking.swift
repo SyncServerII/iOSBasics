@@ -111,23 +111,29 @@ class Networking: NSObject {
         return urlSession
     }
     
-    // Pass `credentials` if you need to replace the instance credentials.
-    private func headerAuthentication(credentials: GenericCredentials? = nil) -> [String:String] {
-        var result = [String:String]()
-        
+    private func credentialsForAuthentication(credentials: GenericCredentials? = nil) throws -> GenericCredentials  {
         if let credentials = credentials {
-            result = credentials.httpRequestHeaders
+            return credentials
         }
         else {
-            do {
-                result = try self.delegate.credentialsForNetworkRequests(self).httpRequestHeaders
-            } catch let error {
-                logger.error("\(error)")
-            }
+            return try self.delegate.credentialsForNetworkRequests(self)
         }
+    }
+    
+    struct Authentication {
+        let headers: [String:String]
+        let credentials: GenericCredentials
+    }
+    
+    // Pass `credentials` if you need to replace the instance credentials.
+    private func authentication(credentials: GenericCredentials? = nil) throws -> Authentication {
         
-        result[ServerConstants.httpRequestDeviceUUID] = self.delegate.deviceUUID(self).uuidString
-        return result
+        let credentials = try credentialsForAuthentication(credentials: credentials)
+        var headers = credentials.httpRequestHeaders
+        
+        headers[ServerConstants.httpRequestDeviceUUID] = self.delegate.deviceUUID(self).uuidString
+        
+        return Authentication(headers: headers, credentials: credentials)
     }
 
     struct RequestConfiguration {
@@ -161,7 +167,15 @@ class Networking: NSObject {
     
         let sessionConfig = sessionConfiguration(configuration: configuration)
         
-        sessionConfig.httpAdditionalHeaders = headerAuthentication(credentials: configuration?.credentials)
+        let auth: Authentication
+        do {
+            auth = try authentication(credentials: configuration?.credentials)
+        } catch let error {
+            completion?(nil, nil, error)
+            return
+        }
+        
+        sessionConfig.httpAdditionalHeaders = auth.headers
         
         logger.info("httpAdditionalHeaders: \(String(describing: sessionConfig.httpAdditionalHeaders))")
         
@@ -175,7 +189,7 @@ class Networking: NSObject {
         
         logger.info("sendRequestTo: serverURL: \(serverURL)")
         
-        let refresh = CredentialsRefresh(credentials: configuration?.credentials, delegate: self)
+        let refresh = CredentialsRefresh(credentials: auth.credentials, delegate: self)
         refresh.networkRequest = { [weak refresh] in
             let uploadTask:URLSessionDataTask = session.dataTask(with: request) { [weak self] (data, urlResponse, error) in
                 guard let self = self else { return }
@@ -325,21 +339,38 @@ class Networking: NSObject {
             clientAppVersionIsOK(headerFields: headerFields)
     }
     
-    private func uploadFile(localURL: URL, to serverURL: URL, method: ServerHTTPMethod) -> URLSessionUploadTask {
+    private func uploadFile(localURL: URL, to serverURL: URL, method: ServerHTTPMethod) -> Swift.Result<URLSessionUploadTask, Error> {
 
         var request = URLRequest(url: serverURL)
         request.httpMethod = method.rawValue.uppercased()
-        request.allHTTPHeaderFields = headerAuthentication()
+        
+        let auth: Authentication
+        do {
+            auth = try authentication()
+        } catch let error {
+            return .failure(error)
+        }
+        
+        request.allHTTPHeaderFields = auth.headers
         
         // It appears that `session.uploadTask` has a problem with relative URL's. I get "NSURLErrorDomain Code=-1 "unknown error" if I pass one of these. Make sure the URL is not relative.
         let uploadFilePath = localURL.path
         let nonRelativeUploadURL = URL(fileURLWithPath: uploadFilePath)
-        return backgroundSession.uploadTask(with: request, fromFile: nonRelativeUploadURL)
+        return .success(backgroundSession.uploadTask(with: request, fromFile: nonRelativeUploadURL))
     }
     
     // The return value just indicates if the upload could be started, not whether the upload completed. The transferDelegate is used for further indications if the return result is nil.
     func upload(fileUUID:String, uploadObjectTrackerId: Int64, from localURL: URL, toServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
-        let task = uploadFile(localURL: localURL, to: serverURL, method: method)
+    
+        let task: URLSessionUploadTask
+        
+        let uploadFileResult = uploadFile(localURL: localURL, to: serverURL, method: method)
+        switch uploadFileResult {
+        case .failure(let error):
+            return error
+        case .success(let t):
+            task = t
+        }
 
         do {
             try backgroundCache.initializeUploadCache(fileUUID: fileUUID, uploadObjectTrackerId: uploadObjectTrackerId, taskIdentifer: task.taskIdentifier)
@@ -355,18 +386,34 @@ class Networking: NSObject {
         return nil
     }
     
-    private func downloadFrom(_ serverURL: URL, method: ServerHTTPMethod) -> URLSessionDownloadTask {
+    private func downloadFrom(_ serverURL: URL, method: ServerHTTPMethod) -> Swift.Result<URLSessionDownloadTask, Error> {
     
         var request = URLRequest(url: serverURL)
         request.httpMethod = method.rawValue.uppercased()
-        request.allHTTPHeaderFields = headerAuthentication()
+        
+        let auth: Authentication
+        do {
+            auth = try authentication()
+        } catch let error {
+            return .failure(error)
+        }
+        
+        request.allHTTPHeaderFields = auth.headers
                 
-        return backgroundSession.downloadTask(with: request)
+        return .success(backgroundSession.downloadTask(with: request))
     }
     
     func download(file:Filenaming, downloadObjectTrackerId: Int64, fromServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
     
-        let task = downloadFrom(serverURL, method: method)
+        let task:URLSessionDownloadTask
+        
+        let downloadResult = downloadFrom(serverURL, method: method)
+        switch downloadResult {
+        case .failure(let error):
+            return error
+        case .success(let t):
+            task = t
+        }
         
         do {
             try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: task.taskIdentifier)
@@ -383,8 +430,16 @@ class Networking: NSObject {
     // userInfo is for request specific info.
     func sendBackgroundRequestTo(_ serverURL: URL, method: ServerHTTPMethod, uuid: UUID, trackerId: Int64, requestInfo: Data? = nil) -> Error? {
 
-        let task = downloadFrom(serverURL, method: method)
-
+        let downloadResult = downloadFrom(serverURL, method: method)
+        let task:URLSessionDownloadTask
+        
+        switch downloadResult {
+        case .failure(let error):
+            return error
+        case .success(let t):
+            task = t
+        }
+        
         do {
             try backgroundCache.initializeRequestCache(uuid: uuid.uuidString, trackerId: trackerId, taskIdentifer: task.taskIdentifier, requestInfo: requestInfo)
         } catch let error {

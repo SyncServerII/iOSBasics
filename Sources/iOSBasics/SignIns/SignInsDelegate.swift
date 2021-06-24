@@ -14,7 +14,5 @@ public protocol SignInsDelegate: AnyObject {
     func invitationAccepted(_ signIns: SignIns, redeemResult: RedeemResult)
     
     // Called in various circumstances where the user must be signed out.
-    func userIsSignedOut(_ signIns: SignIns)
-    
-    func setCredentials(_ signIns: SignIns, credentials: GenericCredentials?)
+    func userIsSignedOut(_ signIns: SignIns)    
 }

@@ -187,7 +187,8 @@ class ServerAPI {
         case user(userInfo:CheckCredsResponse.UserInfo, accessToken:String?)
     }
     
-    func checkCreds(_ creds: GenericCredentials, completion: @escaping (Swift.Result<CheckCredsResult, Error>)->(Void)) {
+    // The credentials being checked are obtained from the `credentialsForNetworkRequests` delegate method.
+    func checkCreds(completion: @escaping (Swift.Result<CheckCredsResult, Error>)->(Void)) {
         let endpoint = ServerEndpoints.checkCreds
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL)
         

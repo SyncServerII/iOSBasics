@@ -1,5 +1,10 @@
 iOSBasics
 
+Version 0.29.12 (6/23/21)
+    * Fixed issue with checkCreds-- it was using the wrong credentials object.
+    * Refactored some credentials related code in Networking.
+    * Removed unused `setCredentials` delegate method.
+    
 Version 0.29.11 (6/21/21)
     * Enabled use of batchUUID when calling getUploadsResults
     	- Corresponds to server version 1.11.5;

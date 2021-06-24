@@ -38,13 +38,10 @@ public class SignIns {
             showAlert(withTitle: "Alert!", message: "Oh, yikes. Something bad has happened.")
             return
         }
-
-        // We're about to use the API-- setup its credentials. If we have a failure, we'll sign the user out, and reset this.
-        delegate?.setCredentials(self, credentials: credentials)
         
         switch accountMode {
         case .signIn:
-            api.checkCreds(credentials) { [weak self] result in
+            api.checkCreds { [weak self] result in
                 guard let self = self else { return }
                 switch result {
                 case .success(let result):
@@ -135,7 +132,6 @@ public class SignIns {
         }
         signInServicesHelper.signUserOut()
         self.delegate?.userIsSignedOut(self)
-        delegate?.setCredentials(self, credentials: nil)
     }
     
     /// Update the user's userName
@@ -183,7 +179,6 @@ extension SignIns: iOSSignIn.SignInsDelegate {
     }
     
     public func userIsSignedOut(_ manager: SignInManager, signIn: GenericSignIn) {
-        delegate?.setCredentials(self, credentials: nil)
         delegate?.userIsSignedOut(self)
     }
 }
