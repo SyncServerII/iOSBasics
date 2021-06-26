@@ -175,14 +175,6 @@ class Networking: NSObject {
             return
         }
         
-        sessionConfig.httpAdditionalHeaders = auth.headers
-        
-        logger.info("httpAdditionalHeaders: \(String(describing: sessionConfig.httpAdditionalHeaders))")
-        
-        let session = URLSession(configuration: sessionConfig, delegate: nil, delegateQueue: nil)
-        
-        // Data uploading task. We could use NSURLSessionUploadTask instead of NSURLSessionDataTask if we needed to support uploads in the background
-        
         var request = URLRequest(url: serverURL)
         request.httpMethod = method.rawValue.uppercased()
         request.httpBody = configuration?.dataToUpload
@@ -191,6 +183,13 @@ class Networking: NSObject {
         
         let refresh = CredentialsRefresh(credentials: auth.credentials, delegate: self)
         refresh.networkRequest = { [weak refresh] in
+            // Need the use of `auth.headers` within this `networkRequest` closure so that on a credentials refresh, the refreshed credentials get used in the request.
+            sessionConfig.httpAdditionalHeaders = auth.headers
+            
+            logger.info("httpAdditionalHeaders: \(String(describing: sessionConfig.httpAdditionalHeaders))")
+            
+            let session = URLSession(configuration: sessionConfig, delegate: nil, delegateQueue: nil)
+
             let uploadTask:URLSessionDataTask = session.dataTask(with: request) { [weak self] (data, urlResponse, error) in
                 guard let self = self else { return }
 

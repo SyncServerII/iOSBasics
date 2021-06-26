@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.29.13 (6/26/21)
+    * Fixed (yet another) issue with credentials refresh.
+    
 Version 0.29.12 (6/23/21)
     * Fixed issue with checkCreds-- it was using the wrong credentials object.
     * Refactored some credentials related code in Networking.
