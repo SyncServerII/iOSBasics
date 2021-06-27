@@ -90,12 +90,17 @@ extension UserSetup {
     // Add the current user.
     @discardableResult
     private func addUser() -> Bool {
+        return addUser(withEmailAddress: nil)
+    }
+
+    @discardableResult
+    func addUser(withEmailAddress emailAddress: String?) -> Bool {
         let exp = expectation(description: "exp")
         
         var success = true
         let uuid = UUID()
         
-        api.addUser(cloudFolderName: cloudFolderName, sharingGroupUUID: uuid, sharingGroupName: nil) { result in
+        api.addUser(cloudFolderName: cloudFolderName, emailAddress: emailAddress, sharingGroupUUID: uuid, sharingGroupName: nil) { result in
             switch result {
             case .success(let result):
                 guard case .userId = result else {

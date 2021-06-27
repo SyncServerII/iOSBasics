@@ -132,7 +132,7 @@ class ServerAPI {
     
     // Adds the user specified by the creds property (or authenticationDelegate in ServerNetworking if that is nil).
     // If the type of owning user being added needs a cloud folder name, you must give it here (e.g., Google).
-    func addUser(cloudFolderName: String? = nil, sharingGroupUUID: UUID, sharingGroupName: String?, completion: @escaping (Swift.Result<AddUserResult, Error>)->(Void)) {
+    func addUser(cloudFolderName: String? = nil, emailAddress: String? = nil, sharingGroupUUID: UUID, sharingGroupName: String?, completion: @escaping (Swift.Result<AddUserResult, Error>)->(Void)) {
     
         let endpoint = ServerEndpoints.addUser
                 
@@ -140,6 +140,7 @@ class ServerAPI {
         addUserRequest.sharingGroupName = sharingGroupName
         addUserRequest.cloudFolderName = cloudFolderName
         addUserRequest.sharingGroupUUID = sharingGroupUUID.uuidString
+        addUserRequest.emailAddress = emailAddress
         
         guard addUserRequest.valid() else {
             completion(.failure(ServerAPIError.couldNotCreateRequest))
@@ -188,9 +189,20 @@ class ServerAPI {
     }
     
     // The credentials being checked are obtained from the `credentialsForNetworkRequests` delegate method.
-    func checkCreds(completion: @escaping (Swift.Result<CheckCredsResult, Error>)->(Void)) {
+    // The email address is just for migration purposes-- to get all users email addresses into the server db. It can be removed once we have them. See https://github.com/SyncServerII/ServerMain/issues/16
+    func checkCreds(emailAddress: String? = nil, completion: @escaping (Swift.Result<CheckCredsResult, Error>)->(Void)) {
         let endpoint = ServerEndpoints.checkCreds
-        let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL)
+        
+        let checkCredsRequest = CheckCredsRequest()
+        checkCredsRequest.emailAddress = emailAddress
+
+        guard checkCredsRequest.valid() else {
+            completion(.failure(ServerAPIError.couldNotCreateRequest))
+            return
+        }
+
+        let parameters = checkCredsRequest.urlParameters()
+        let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: parameters)
         
         networking.sendRequestTo(serverURL, method: endpoint.method) { response, httpStatus, error in
 

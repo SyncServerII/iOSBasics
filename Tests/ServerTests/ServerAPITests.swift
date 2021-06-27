@@ -62,6 +62,13 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
         _ = handlers.user.removeUser()
         XCTAssert(handlers.user.addUser())
     }
+
+    func testAddUserWithEmail() {
+        _ = handlers.user.removeUser()
+        
+        let result = addUser(withEmailAddress: "foo@bar.com")
+        XCTAssert(result)
+    }
     
     func testUpdateUser() {
         let newUserName = "XXX YYY"

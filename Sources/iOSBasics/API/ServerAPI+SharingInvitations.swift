@@ -45,12 +45,13 @@ extension ServerAPI {
     // Some accounts return an access token after sign-in (e.g., Facebook's long-lived access token).
     // When redeeming a sharing invitation for an owning user account type that requires a cloud folder, you must give a cloud folder in the redeeming request.
     // The error is SyncServerError.socialAcceptanceNotAllowed when attmepting to redeem with a social account, but the invitation doesn't allow this.
-    func redeemSharingInvitation(sharingInvitationUUID:UUID, cloudFolderName: String?, completion: @escaping (Result<RedeemResult, Error>)->()) {
+    func redeemSharingInvitation(sharingInvitationUUID:UUID, cloudFolderName: String?, emailAddress: String? = nil, completion: @escaping (Result<RedeemResult, Error>)->()) {
         let endpoint = ServerEndpoints.redeemSharingInvitation
 
         let redeemRequest = RedeemSharingInvitationRequest()
         redeemRequest.sharingInvitationUUID = sharingInvitationUUID.uuidString
         redeemRequest.cloudFolderName = cloudFolderName
+        redeemRequest.emailAddress = emailAddress
 
         guard let parameters = redeemRequest.urlParameters() else {
             completion(.failure(ServerAPIError.couldNotCreateRequest))

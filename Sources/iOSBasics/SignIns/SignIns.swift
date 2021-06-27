@@ -41,7 +41,7 @@ public class SignIns {
         
         switch accountMode {
         case .signIn:
-            api.checkCreds { [weak self] result in
+            api.checkCreds(emailAddress: credentials.emailAddress) { [weak self] result in
                 guard let self = self else { return }
                 switch result {
                 case .success(let result):
@@ -80,7 +80,7 @@ public class SignIns {
                 // We should always have non-nil credentials here. We'll get to here only in the non-autosign-in case (explicit request from user to create an account). In which case, we must have credentials.
 
                 let sharingGroupUUID = UUID()
-                api.addUser(cloudFolderName: cloudFolderName, sharingGroupUUID: sharingGroupUUID, sharingGroupName: nil) { [weak self] result in
+                api.addUser(cloudFolderName: cloudFolderName, emailAddress: credentials.emailAddress, sharingGroupUUID: sharingGroupUUID, sharingGroupName: nil) { [weak self] result in
                     guard let self = self else { return }
                     switch result {
                     case .failure(let error):

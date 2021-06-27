@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.29.15 (6/27/21)
+    * Add recording of user email addresses. In check creds, add user and redeem sharing invitation for new users. See https://github.com/SyncServerII/ServerMain/issues/16
+    
 Version 0.29.14 (6/26/21)
     * Another effort to fix the credentials refresh.
     

@@ -540,7 +540,7 @@ public class SyncServer {
     }
     
     /// On success, automatically syncs index before returning. `completion` returns SyncServerError.networkNotReachable if the network is not reachable. Only checks for network reachability (not app reachability) because this can be called when the app is just changing from background to foreground.
-    public func redeemSharingInvitation(sharingInvitationUUID:UUID, completion: @escaping (Swift.Result<RedeemResult, Error>)->()) {
+    public func redeemSharingInvitation(sharingInvitationUUID:UUID, emailAddress: String? = nil, completion: @escaping (Swift.Result<RedeemResult, Error>)->()) {
 
         guard requestable.canMakeNetworkRequests(options: .network) else {
             logger.info("Could not sync: Network not reachable")
@@ -551,7 +551,7 @@ public class SyncServer {
         serialQueue.async { [weak self] in
             guard let self = self else { return }
             
-            self.api.redeemSharingInvitation(sharingInvitationUUID: sharingInvitationUUID, cloudFolderName: self.configuration.cloudFolderName) { [weak self] result in
+            self.api.redeemSharingInvitation(sharingInvitationUUID: sharingInvitationUUID, cloudFolderName: self.configuration.cloudFolderName, emailAddress: emailAddress) { [weak self] result in
                 guard let self = self else { return }
 
                 switch result {
