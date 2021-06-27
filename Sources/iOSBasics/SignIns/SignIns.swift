@@ -109,7 +109,8 @@ public class SignIns {
                 return
             }
             
-            api.redeemSharingInvitation(sharingInvitationUUID: codeUUID, cloudFolderName: cloudFolderName) { [weak self] result in
+            // Passing email address-- because this is for a new user: https://github.com/SyncServerII/ServerMain/issues/16
+            api.redeemSharingInvitation(sharingInvitationUUID: codeUUID, cloudFolderName: cloudFolderName, emailAddress: credentials.emailAddress) { [weak self] result in
                 guard let self = self else { return }
                 switch result {
                 case .failure(let error):
