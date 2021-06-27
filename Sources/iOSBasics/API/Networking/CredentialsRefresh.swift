@@ -21,21 +21,25 @@ protocol CredentialsRefreshDelegate: AnyObject {
 class CredentialsRefresh: Hashable {
     let id:Int64
     private static var nextId: Int64 = 0
+
+    var networkRequest: ((_ headers: [String:String])->())!
     
-    var networkRequest: (()->())!
+    private let credentials:() throws -> (Networking.Authentication)
     private var refreshDone = false
-    private let credentials: GenericCredentials
     weak var delegate: CredentialsRefreshDelegate?
+    private var authentication: Networking.Authentication!
     
-    init(credentials: GenericCredentials, delegate: CredentialsRefreshDelegate) {
+    // `credentials` is called once before any refresh, and after a refresh if it is needed and if it is successful.
+    init(delegate: CredentialsRefreshDelegate, credentials: @escaping () throws ->(Networking.Authentication)) throws {
         self.credentials = credentials
         id = Self.nextId
         Self.nextId += 1
         self.delegate = delegate
+        self.authentication = try credentials()
     }
     
     deinit {
-        // logger.info("deinit: CredentialsRefresh")
+        logger.info("deinit: CredentialsRefresh")
     }
     
     // If the status code indicates, do a credentials refresh a single time.
@@ -48,9 +52,13 @@ class CredentialsRefresh: Hashable {
             
             logger.notice("CredentialsRefresh: got .unauthorized; attempting refresh.")
             
-            credentials.refreshCredentials { [weak self] error in
+            // The critical steps:
+            
+            // 1) Refresh credentials
+            self.authentication.credentials.refreshCredentials { [weak self] error in
                 guard let self = self else {
                     logger.error("CredentialsRefresh: No self!")
+                    completion(NetworkingError.noSelf)
                     return
                 }
                 
@@ -61,8 +69,17 @@ class CredentialsRefresh: Hashable {
                 }
                 
                 logger.notice("CredentialsRefresh: Successs!")
+                
+                // 2) Get the new credentials, after the successful refresh.
+                do {
+                    self.authentication = try self.credentials()
+                } catch let error {
+                    completion(error)
+                    return
+                }
 
-                self.networkRequest?()
+                // 3) Use those credentials to form the headers for the request retry
+                self.networkRequest?(self.authentication.headers)
             }
         }
         else {
@@ -72,8 +89,13 @@ class CredentialsRefresh: Hashable {
     }
     
     func start() {
+        guard let authentication = authentication else {
+            logger.error("Could not get authentication")
+            return
+        }
+        
         delegate?.cache(refresh: self)
-        networkRequest?()
+        networkRequest?(authentication.headers)
     }
     
     // MARK: Hashable

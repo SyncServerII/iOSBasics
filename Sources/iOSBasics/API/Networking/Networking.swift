@@ -29,6 +29,7 @@ enum NetworkingError: Error {
     case versionError
     case invalidHTTPStatusCode
     case failover
+    case noSelf
 }
 
 protocol NetworkingDelegate: AnyObject {
@@ -166,25 +167,29 @@ class Networking: NSObject {
     func sendRequestTo(_ serverURL: URL, method: ServerHTTPMethod, configuration: RequestConfiguration? = nil, completion:((_ serverResponse:[String:Any]?, _ statusCode:Int?, _ error:Error?)->())?) {
     
         let sessionConfig = sessionConfiguration(configuration: configuration)
-        
-        let auth: Authentication
-        do {
-            auth = try authentication(credentials: configuration?.credentials)
-        } catch let error {
-            completion?(nil, nil, error)
-            return
-        }
-        
+
         var request = URLRequest(url: serverURL)
         request.httpMethod = method.rawValue.uppercased()
         request.httpBody = configuration?.dataToUpload
         
         logger.info("sendRequestTo: serverURL: \(serverURL)")
         
-        let refresh = CredentialsRefresh(credentials: auth.credentials, delegate: self)
-        refresh.networkRequest = { [weak refresh] in
-            // Need the use of `auth.headers` within this `networkRequest` closure so that on a credentials refresh, the refreshed credentials get used in the request.
-            sessionConfig.httpAdditionalHeaders = auth.headers
+        let refresh:CredentialsRefresh
+        
+        do {
+            refresh = try CredentialsRefresh(delegate: self, credentials: { [weak self] in
+                guard let self = self else {
+                    throw NetworkingError.noSelf
+                }
+                return try self.authentication(credentials: configuration?.credentials)
+            })
+        } catch let error {
+            completion?(nil, nil, error)
+            return
+        }
+        
+        refresh.networkRequest = { [weak refresh] headers in
+            sessionConfig.httpAdditionalHeaders = headers
             
             logger.info("httpAdditionalHeaders: \(String(describing: sessionConfig.httpAdditionalHeaders))")
             
