@@ -1,5 +1,9 @@
 iOSBasics
 
+Version 0.30.0
+    * Changes for upload deletion- only uses fileGroupUUID now.
+    * Changes to require fileGroupUUID on v0 uploads.
+
 Version 0.29.16 (6/27/21)
     * Add email address to a redeemSharingInvitation case.
     

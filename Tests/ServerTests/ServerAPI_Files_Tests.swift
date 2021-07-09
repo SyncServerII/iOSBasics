@@ -77,7 +77,8 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
             appMetaData = data
         }
         
-        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: nil, appMetaData: appMetaData, fileLabel: UUID().uuidString))
+        let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: UUID(), objectType: "Foobar")
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup, appMetaData: appMetaData, fileLabel: UUID().uuidString))
         
         guard let uploadResult = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
@@ -95,7 +96,6 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
     }
     
     func testFileUpload() throws {
-        // 11/28/20; Uploads a file with a nil file group.
         try fileUpload()
     }
     
@@ -247,8 +247,10 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         if let appMetaData = appMetaData {
             amd = AppMetaData(contents: appMetaData)
         }
-        
-        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: nil, appMetaData: amd, fileLabel: UUID().uuidString))
+
+        let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: UUID(), objectType: "Foo")
+
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup, appMetaData: amd, fileLabel: UUID().uuidString))
         
         guard case .success = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
@@ -336,11 +338,14 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
     }
     
     func testDeleteV0File() throws {
-        // 11/28/20; Uploads a file with a nil file group.
         let upload = try fileUpload()
         
-        let file:ServerAPI.DeletionFile = .fileUUID(upload.fileUUID)
-        guard let deletionResult = uploadDeletion(file: file, sharingGroupUUID: upload.sharingGroupUUID) else {
+        guard let fileGroupUUID = upload.fileGroupUUID else {
+            XCTFail()
+            return
+        }
+        
+        guard let deletionResult = uploadDeletion(fileGroupUUID: fileGroupUUID, sharingGroupUUID: upload.sharingGroupUUID) else {
             XCTFail()
             return
         }

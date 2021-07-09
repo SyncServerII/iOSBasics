@@ -21,13 +21,12 @@ extension SyncServer {
         let fileGroupUUID = tracker.uuid
         
         // Send the deletion request to the server.
-        let file = ServerAPI.DeletionFile.fileGroupUUID(fileGroupUUID.uuidString)
 
         guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) else {
             throw SyncServerError.noObject
         }
         
-        if let error = api.uploadDeletion(file: file, sharingGroupUUID: objectEntry.sharingGroupUUID.uuidString, trackerId: trackerId) {
+        if let error = api.uploadDeletion(fileGroupUUID: fileGroupUUID, sharingGroupUUID: objectEntry.sharingGroupUUID.uuidString, trackerId: trackerId) {
             // As with uploads and downloads, don't make this a fatal error. We can restart this later.
             delegator { [weak self] delegate in
                 guard let self = self else { return }

@@ -40,7 +40,6 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         XCTAssert(handlers.user.addUser())
     }
     
-    // 11/28/20; Uploads a file with a nil file group.
     @discardableResult
     func fileUpload(comment:ExampleComment) throws -> ServerAPI.File? {        
         let fileUUID = UUID()
@@ -60,8 +59,9 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         
         let commentDataURL1 = try FileUtils.copyDataToNewTemporary(data: commentFileData, config: config)
 
+        let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: UUID(), objectType: "Foo")
         let file1 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version:
-            .v0(url: commentDataURL1, mimeType: MimeType.text, checkSum: dropboxCheckSum, changeResolverName: changeResolverName, fileGroup: nil, appMetaData: nil, fileLabel: UUID().uuidString)
+            .v0(url: commentDataURL1, mimeType: MimeType.text, checkSum: dropboxCheckSum, changeResolverName: changeResolverName, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString)
         )
         
         guard let uploadResult1 = uploadFile(file: file1, uploadIndex: 1, uploadCount: 1) else {
@@ -113,13 +113,11 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
     
     func testVNFileUploadWorks() throws {
         let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
-        // 11/28/20; Uploads a file with a nil file group.
         try fileUpload(comment: comment)
     }
     
     func testVNFileDownloadWorks() throws {
         let comment = ExampleComment(messageString: "Example", id: Foundation.UUID().uuidString)
-        // 11/28/20; Uploads a file with a nil file group.
         guard let file = try fileUpload(comment: comment) else {
             XCTFail()
             return
@@ -181,8 +179,10 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         
         let commentDataURL1 = try FileUtils.copyDataToNewTemporary(data: commentFileData, config: config)
 
+        let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: UUID(), objectType: "Foo")
+
         let file1 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version:
-            .v0(url: commentDataURL1, mimeType: MimeType.text, checkSum: dropboxCheckSum, changeResolverName: changeResolverName, fileGroup: nil, appMetaData: nil, fileLabel: UUID().uuidString)
+            .v0(url: commentDataURL1, mimeType: MimeType.text, checkSum: dropboxCheckSum, changeResolverName: changeResolverName, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString)
         )
         
         guard let uploadResult1 = uploadFile(file: file1, uploadIndex: 1, uploadCount: 1) else {

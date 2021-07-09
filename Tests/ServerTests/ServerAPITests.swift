@@ -158,8 +158,9 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
             XCTFail()
             return
         }
-                                
-        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: nil, appMetaData: nil, fileLabel: UUID().uuidString))
+                         
+        let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: UUID(), objectType: "foobar")
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString))
         
         guard case .success = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
@@ -185,7 +186,7 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
         let fileInfo = fileIndex[0]
         XCTAssert(fileInfo.fileUUID == fileUUID.uuidString)
         XCTAssert(fileInfo.deviceUUID == deviceUUID.uuidString)
-        XCTAssert(fileInfo.fileGroupUUID == nil)
+        XCTAssert(fileInfo.fileGroupUUID == fileGroup.fileGroupUUID.uuidString)
         XCTAssert(fileInfo.sharingGroupUUID == sharingGroupUUID)
         XCTAssert(fileInfo.mimeType == MimeType.text.rawValue)
         XCTAssert(fileInfo.sharingGroupUUID == sharingGroupUUID)
@@ -224,25 +225,26 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
             XCTFail()
             return
         }
-                                
-        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: nil, appMetaData: nil, fileLabel: UUID().uuidString))
+                           
+                           
+        let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: UUID(), objectType: "Foobar")
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString))
         
         guard case .success = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
             return
         }
         
-        let deletionFile = ServerAPI.DeletionFile.fileUUID(fileUUID.uuidString)
         let trackerId:Int64 = 142
         
-        let error = api.uploadDeletion(file: deletionFile, sharingGroupUUID: sharingGroupUUID, trackerId: trackerId)
+        let error = api.uploadDeletion(fileGroupUUID: fileGroup.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, trackerId: trackerId)
         
         guard error == nil else {
             XCTFail()
             return
         }
         
-        guard let _ = waitForDeletion(trackerId: trackerId, file: deletionFile) else {
+        guard let _ = waitForDeletion(trackerId: trackerId, fileGroupUUID: fileGroup.fileGroupUUID) else {
             XCTFail()
             return
         }

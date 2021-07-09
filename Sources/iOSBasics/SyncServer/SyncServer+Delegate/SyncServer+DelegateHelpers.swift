@@ -214,14 +214,12 @@ extension SyncServer {
                 
                 do {
                     let info = try JSONDecoder().decode(ServerAPI.DeletionRequestInfo.self, from: requestInfo)
-                    
-                    // Upload deletions are only using `fileGroupUUID` type so far.
-                    guard info.uuidType == .fileGroupUUID else {
-                        deletionError(SyncServerError.internalError("uuidType not fileGroupUUID as expected"), tracker: nil)
+                    guard let fileGroupUUID = info.fileGroupUUID else {
+                        deletionError(SyncServerError.internalError("No fileGroupUUID in deletion request."), tracker: nil)
                         return
                     }
                     
-                    tracker = try UploadDeletionTracker.fetchSingleRow(db: db, where: UploadDeletionTracker.uuidField.description == info.uuid)
+                    tracker = try UploadDeletionTracker.fetchSingleRow(db: db, where: UploadDeletionTracker.uuidField.description == fileGroupUUID)
                     
                     guard tracker != nil else {
                         deletionError(SyncServerError.internalError("Could not find UploadDeletionTracker"), tracker: nil)

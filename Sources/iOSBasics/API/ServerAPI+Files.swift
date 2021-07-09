@@ -87,6 +87,14 @@ extension ServerAPI {
             self.version = version
             self.informAllButSelf = informAllButSelf
         }
+        
+        var fileGroupUUID: UUID? {
+            guard case .v0(_, _, _, _, let fileGroup, _, _) = version else {
+                return nil
+            }
+            
+            return fileGroup?.fileGroupUUID
+        }
     }
 
     // Upload results, if nil is returned, are reported via the ServerAPIDelegate.
@@ -224,60 +232,17 @@ extension ServerAPI {
         return networking.download(file: file, downloadObjectTrackerId: file.trackerId, fromServerURL: serverURL, method: endpoint.method)
     }
     
-    enum DeletionFile {
-        enum UUIDType: String, Codable {
-            case fileUUID
-            case fileGroupUUID
-        }
-        
-        case fileUUID(String)
-        case fileGroupUUID(String)
-        
-        init(uuid: UUID, type: UUIDType) {
-            switch type {
-            case .fileUUID:
-                self = .fileUUID(uuid.uuidString)
-            case .fileGroupUUID:
-                self = .fileGroupUUID(uuid.uuidString)
-            }
-        }
-        
-        var uuidString:String {
-            switch self {
-            case .fileUUID(let uuid):
-                return uuid
-            case .fileGroupUUID(let uuid):
-                return uuid
-            }
-        }
-        
-        var uuidType: UUIDType {
-            switch self {
-            case .fileUUID:
-                return .fileUUID
-            case .fileGroupUUID:
-                return .fileGroupUUID
-            }
-        }
-    }
-    
     enum DeletionFileResult {
         case fileDeleted(deferredUploadId: Int64)
         case fileAlreadyDeleted
     }
     
-    private func prepareDeletion(file: DeletionFile, sharingGroupUUID: String) throws -> (URL, ServerEndpoint) {
+    private func prepareDeletion(fileGroupUUID: UUID, sharingGroupUUID: String) throws -> (URL, ServerEndpoint) {
         let endpoint = ServerEndpoints.uploadDeletion
                 
         let request = UploadDeletionRequest()
         request.sharingGroupUUID = sharingGroupUUID
-        
-        switch file {
-        case .fileUUID(let fileUUID):
-            request.fileUUID = fileUUID
-        case .fileGroupUUID(let fileGroupUUID):
-            request.fileGroupUUID = fileGroupUUID
-        }
+        request.fileGroupUUID = fileGroupUUID.uuidString
         
         guard request.valid() else {
             throw ServerAPIError.couldNotCreateRequest
@@ -292,12 +257,12 @@ extension ServerAPI {
         return (url, endpoint)
     }
     
-    func uploadDeletion(file: DeletionFile, sharingGroupUUID: String, completion: @escaping (Result<DeletionFileResult, Error>)->()) {
+    func uploadDeletion(fileGroupUUID: UUID, sharingGroupUUID: String, completion: @escaping (Result<DeletionFileResult, Error>)->()) {
         
         let serverURL:URL
         let endpoint: ServerEndpoint
         do {
-            let (url, ep) = try prepareDeletion(file: file, sharingGroupUUID: sharingGroupUUID)
+            let (url, ep) = try prepareDeletion(fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID)
             endpoint = ep
             serverURL = url
         } catch let error {
@@ -335,28 +300,22 @@ extension ServerAPI {
     }
     
     class DeletionRequestInfo: Codable {
-        var uuid: UUID!
-        var uuidType: DeletionFile.UUIDType!
+        var fileGroupUUID: UUID!
     }
     
     // Background upload deletion request. On success, the `backgroundRequestCompleted` will have `SuccessResult.requestInfo` set as `DeletionRequestInfo` coded data.
     // The `trackerId` references a `UploadDeletionTracker`.
-    func uploadDeletion(file: DeletionFile, sharingGroupUUID: String, trackerId: Int64) -> Error? {
-    
-        guard let uuid = UUID(uuidString: file.uuidString) else {
-            return ServerAPIError.badUUID
-        }
+    func uploadDeletion(fileGroupUUID: UUID, sharingGroupUUID: String, trackerId: Int64) -> Error? {
     
         let requestInfo = DeletionRequestInfo()
-        requestInfo.uuid = uuid
-        requestInfo.uuidType = file.uuidType
-    
+        requestInfo.fileGroupUUID = fileGroupUUID
+        
         let serverURL:URL
         let endpoint: ServerEndpoint
         let requestInfoData: Data
         
         do {
-            let (url, ep) = try prepareDeletion(file: file, sharingGroupUUID: sharingGroupUUID)
+            let (url, ep) = try prepareDeletion(fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID)
             endpoint = ep
             serverURL = url
             requestInfoData = try JSONEncoder().encode(requestInfo)
@@ -364,6 +323,6 @@ extension ServerAPI {
             return error
         }
 
-        return networking.sendBackgroundRequestTo(serverURL, method: endpoint.method, uuid: uuid, trackerId: trackerId, requestInfo: requestInfoData)
+        return networking.sendBackgroundRequestTo(serverURL, method: endpoint.method, uuid: fileGroupUUID, trackerId: trackerId, requestInfo: requestInfoData)
     }
 }

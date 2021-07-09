@@ -151,11 +151,11 @@ extension APITests where Self: XCTestCase {
         return theResult
     }
     
-    func uploadDeletion(file: ServerAPI.DeletionFile, sharingGroupUUID: String) -> ServerAPI.DeletionFileResult? {
+    func uploadDeletion(fileGroupUUID: UUID, sharingGroupUUID: String) -> ServerAPI.DeletionFileResult? {
         let exp = expectation(description: "exp")
         var returnResult:ServerAPI.DeletionFileResult?
         
-        api.uploadDeletion(file: file, sharingGroupUUID: sharingGroupUUID) { result in
+        api.uploadDeletion(fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID) { result in
             switch result {
             case .success(let result):
                 returnResult = result
@@ -295,7 +295,7 @@ extension APITests where Self: XCTestCase {
     }
 
     // On success, returns the `deferredUploadId` for the file deletion. i.e., the deferred upload is still pending.
-    func waitForDeletion(trackerId: Int64, file: ServerAPI.DeletionFile) -> Int64? {
+    func waitForDeletion(trackerId: Int64, fileGroupUUID: UUID) -> Int64? {
         var deferredUploadId: Int64?
         
         let exp = expectation(description: "exp")
@@ -323,8 +323,7 @@ extension APITests where Self: XCTestCase {
                         return
                     }
 
-                    XCTAssert(info.uuid.uuidString == file.uuidString)
-                    XCTAssert(info.uuidType == file.uuidType)
+                    XCTAssert(info.fileGroupUUID == fileGroupUUID)
         
                     do {
                         let data = try Data(contentsOf: result.serverResponse)
