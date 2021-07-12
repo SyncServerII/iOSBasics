@@ -12,7 +12,7 @@ class UploadDeletionTrackerTests: XCTestCase {
     
     override func setUpWithError() throws {
         database = try Connection(.inMemory)
-        entry = try UploadDeletionTracker(db: database, uuid: fileUUID, deletionType: .fileUUID, deferredUploadId: 0, status: .waitingForDeferredDeletion, pushNotificationMessage: message)
+        entry = try UploadDeletionTracker(db: database, uuid: fileUUID, deletionType: .fileGroupUUID, deferredUploadId: 0, status: .waitingForDeferredDeletion, pushNotificationMessage: message)
     }
 
     override func tearDownWithError() throws {
@@ -71,7 +71,7 @@ class UploadDeletionTrackerTests: XCTestCase {
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
-        let entry2 = try UploadDeletionTracker(db: database, uuid: UUID(), deletionType: .fileUUID, deferredUploadId: 0, status: .waitingForDeferredDeletion, pushNotificationMessage: message)
+        let entry2 = try UploadDeletionTracker(db: database, uuid: UUID(), deletionType: .fileGroupUUID, deferredUploadId: 0, status: .waitingForDeferredDeletion, pushNotificationMessage: message)
 
         try entry2.insert()
 
@@ -117,10 +117,10 @@ class UploadDeletionTrackerTests: XCTestCase {
         
         let originalStatus: UploadDeletionTracker.Status = .notStarted
         
-        let e1 = try UploadDeletionTracker(db: database, uuid: UUID(), deletionType: .fileUUID, deferredUploadId: 0, status: originalStatus, pushNotificationMessage: message)
+        let e1 = try UploadDeletionTracker(db: database, uuid: UUID(), deletionType: .fileGroupUUID, deferredUploadId: 0, status: originalStatus, pushNotificationMessage: message)
         try e1.insert()
         
-        let e2 = try UploadDeletionTracker(db: database, uuid: UUID(), deletionType: .fileUUID, deferredUploadId: 0, status: originalStatus, pushNotificationMessage: message)
+        let e2 = try UploadDeletionTracker(db: database, uuid: UUID(), deletionType: .fileGroupUUID, deferredUploadId: 0, status: originalStatus, pushNotificationMessage: message)
         try e2.insert()
         
         try e1.update(setters:

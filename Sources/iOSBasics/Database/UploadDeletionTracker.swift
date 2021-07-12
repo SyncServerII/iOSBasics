@@ -21,6 +21,8 @@ class UploadDeletionTracker: DatabaseModel {
     
     enum DeletionType : String {
         case fileGroupUUID
+        
+        @available(*, deprecated)
         case fileUUID
     }
     

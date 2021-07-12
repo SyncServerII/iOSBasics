@@ -515,6 +515,49 @@ public class SyncServer {
         }
     }
     
+    public enum MoveFileGroupsResult {
+        case success
+        
+        // Not all of the v0 uploaders of the file groups given in the request were members of the target sharing group.
+        case failedWithNotAllOwnersInTarget
+        
+        case currentUploads
+        case currentDeletions
+        
+        case error(Error?)
+    }
+    
+    /**
+     * Fails if any uploads or deletions are currently occuring or
+     * queued for the indicated file groups in the source sharing group.
+     * (No uploads are allowed as I don't have an easy way to distinguish between
+     * v0 and vN uploads-- I'd rather just disallow v0 uploads;
+     * downloads are allowed as they should not be affected by a change in
+     * sharing group for a file group).
+     * On a successful completion, updates the local sharing groups of the
+     * indicated file groups. And sends the push notification -- to the source
+     * sharing group.
+     */
+    public func moveFileGroups(_ fileGroups: [UUID], fromSourceSharingGroup sourceSharingGroup: UUID, toDestinationSharinGroup destinationSharinGroup:UUID, pushNotificationMessage: String? = nil, completion:@escaping (MoveFileGroupsResult)->()) {
+        serialQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            do {
+                try self.moveFileGroupsHelper(fileGroups, fromSourceSharingGroup: sourceSharingGroup, toDestinationSharinGroup: destinationSharinGroup, pushNotificationMessage: pushNotificationMessage) { [weak self] result in
+                    guard let self = self else { return }
+
+                    self.dispatchQueue.async {
+                        completion(result)
+                    }
+                }
+            } catch let error {
+                self.dispatchQueue.async {
+                    completion(.error(error))
+                }
+            }
+        }
+    }
+    
     // MARK: Sharing invitations
 
     // The non-error result is the code for the sharing invitation, a UUID.  `completion` returns SyncServerError.networkNotReachable if the network is not reachable.

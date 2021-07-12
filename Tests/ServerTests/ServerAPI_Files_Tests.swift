@@ -52,7 +52,6 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         case uploadFile
     }
     
-    // 11/28/20; This uploads a file with a nil file group.
     @discardableResult
     func fileUpload(upload: FileUpload = .normal) throws -> ServerAPI.File {
         // Get ready for test.

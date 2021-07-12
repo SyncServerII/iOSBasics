@@ -4,6 +4,8 @@ import SQLite
 import ServerShared
 import iOSShared
 
+// Represent specific objects -- i.e., having an object type, and specific fileGroupUUID and specific sharingGroupUUID.
+
 class DirectoryObjectEntry: DatabaseModel, Equatable {
     let db: Connection
     var id: Int64!
@@ -35,9 +37,9 @@ class DirectoryObjectEntry: DatabaseModel, Equatable {
             lhs.cloudStorageType == rhs.cloudStorageType
     }
     
+    // This is equality for invariants. Doesn't include sharingGroupUUID because that can change for a DirectoryObjectEntry.
     static func == (lhs: DirectoryObjectEntry, rhs: FileInfo) -> Bool {
         return lhs.fileGroupUUID.uuidString == rhs.fileGroupUUID &&
-            lhs.sharingGroupUUID.uuidString == rhs.sharingGroupUUID &&
             lhs.objectType == rhs.objectType &&
             lhs.cloudStorageType.rawValue == rhs.cloudStorageType
     }
@@ -157,8 +159,10 @@ extension DirectoryObjectEntry {
         return objectEntry
     }
     
-    // If the DirectoryObjectEntry exists, it must match the `FileInfo`. If it doesn't exist, it's created.
-    static func matchSert(fileInfo: FileInfo, objectType: String, db: Connection) throws -> DirectoryObjectEntry {
+    // If the DirectoryObjectEntry exists, it must match the invariants of the `FileInfo`.
+    // If the sharingGroupUUID of the DirectoryObjectEntry has changed, it is updated (to deal with: https://github.com/SyncServerII/Neebla/issues/23).
+    // If the DirectoryObjectEntry doesn't exist, it's created.
+    static func matchUpsert(fileInfo: FileInfo, objectType: String, db: Connection) throws -> DirectoryObjectEntry {
         guard let fileGroupUUIDString = fileInfo.fileGroupUUID,
               let fileGroupUUID = UUID(uuidString: fileGroupUUIDString) else {
             throw DatabaseError.invalidUUID
@@ -177,6 +181,11 @@ extension DirectoryObjectEntry {
         if let entry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) {
             guard entry == fileInfo else {
                 throw DatabaseError.notMatching
+            }
+            
+            if entry.sharingGroupUUID != sharingGroupUUID {
+                // There must have been a file group move: https://github.com/SyncServerII/Neebla/issues/23
+                try entry.update(setters: DirectoryObjectEntry.sharingGroupUUIDField.description <- sharingGroupUUID)
             }
             
             if entry.deletedOnServer != fileInfo.deleted {

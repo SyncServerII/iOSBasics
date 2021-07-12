@@ -133,7 +133,7 @@ extension SyncServer {
             
             let objectType = try helperDelegate.getObjectType(file: firstFile)
 
-            let _ = try DirectoryObjectEntry.matchSert(fileInfo: firstFile, objectType: objectType, db: db)
+            let _ = try DirectoryObjectEntry.matchUpsert(fileInfo: firstFile, objectType: objectType, db: db)
             
             var deletedCount = 0
             
