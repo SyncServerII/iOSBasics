@@ -16,7 +16,7 @@ extension SyncServer {
         case noObject
     }
     
-    func moveFileGroupsHelper(_ fileGroups: [UUID], fromSourceSharingGroup sourceSharingGroup: UUID, toDestinationSharinGroup destinationSharinGroup:UUID, pushNotificationMessage: String? = nil, completion:@escaping (MoveFileGroupsResult)->()) throws {
+    func moveFileGroupsHelper(_ fileGroups: [UUID], fromSourceSharingGroup sourceSharingGroup: UUID, toDestinationSharingGroup destinationSharingGroup:UUID, sourcePushNotificationMessage: String? = nil, destinationPushNotificationMessage: String? = nil, completion:@escaping (MoveFileGroupsResult)->()) throws {
     
         guard fileGroups.count > 0 else {
             throw MoveFileGroupsError.noFileGroups
@@ -56,7 +56,7 @@ extension SyncServer {
         
         // After a successful move, change the sharing group of the file groups.
         
-        api.moveFileGroups(fileGroups, fromSourceSharingGroup: sourceSharingGroup, toDestinationSharinGroup: destinationSharinGroup) { [weak self] result in
+        api.moveFileGroups(fileGroups, fromSourceSharingGroup: sourceSharingGroup, toDestinationSharingGroup: destinationSharingGroup) { [weak self] result in
             guard let self = self else { return }
 
             switch result {
@@ -67,8 +67,9 @@ extension SyncServer {
                     
                 case .success:
                     do {
-                        try self.changeSharingGroup(fileGroups: fileGroups, toDestinationSharinGroup: destinationSharinGroup)
-                        self.send(pushNotificationMessage: pushNotificationMessage, sourceSharingGroupUUID: sourceSharingGroup)
+                        try self.changeSharingGroup(fileGroups: fileGroups, toDestinationSharingGroup: destinationSharingGroup)
+                        self.send(pushNotificationMessage: sourcePushNotificationMessage, sharingGroupUUID: sourceSharingGroup)
+                        self.send(pushNotificationMessage: destinationPushNotificationMessage, sharingGroupUUID: destinationSharingGroup)
                         completion(.success)
                     }
                     catch let error {
@@ -86,7 +87,7 @@ extension SyncServer {
         }
     }
     
-    private func changeSharingGroup(fileGroups: [UUID], toDestinationSharinGroup destinationSharinGroup:UUID) throws {
+    private func changeSharingGroup(fileGroups: [UUID], toDestinationSharingGroup destinationSharinGroup:UUID) throws {
         for fileGroup in fileGroups {
             guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroup) else {
                 throw MoveFileGroupsError.noObject
@@ -96,9 +97,9 @@ extension SyncServer {
         }
     }
     
-    private func send(pushNotificationMessage: String?, sourceSharingGroupUUID: UUID) {
+    private func send(pushNotificationMessage: String?, sharingGroupUUID: UUID) {
         if let pushNotificationMessage = pushNotificationMessage {
-            api.sendPushNotification(pushNotificationMessage, sharingGroupUUID: sourceSharingGroupUUID) { [weak self] error in
+            api.sendPushNotification(pushNotificationMessage, sharingGroupUUID: sharingGroupUUID) { [weak self] error in
                 if let error = error {
                     self?.reportError(SyncServerError.internalError("Failed sending push notification"))
                     logger.error("\(error)")

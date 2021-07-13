@@ -537,13 +537,15 @@ public class SyncServer {
      * On a successful completion, updates the local sharing groups of the
      * indicated file groups. And sends the push notification -- to the source
      * sharing group.
+     * sourcePushNotificationMessage: A message to be sent to the source sharing group;
+     * destinationPushNotificationMessage: A message to be sent to the destination sharing group;
      */
-    public func moveFileGroups(_ fileGroups: [UUID], fromSourceSharingGroup sourceSharingGroup: UUID, toDestinationSharinGroup destinationSharinGroup:UUID, pushNotificationMessage: String? = nil, completion:@escaping (MoveFileGroupsResult)->()) {
+    public func moveFileGroups(_ fileGroups: [UUID], fromSourceSharingGroup sourceSharingGroup: UUID, toDestinationSharingGroup destinationSharinGroup:UUID, sourcePushNotificationMessage: String? = nil, destinationPushNotificationMessage: String? = nil, completion:@escaping (MoveFileGroupsResult)->()) {
         serialQueue.async { [weak self] in
             guard let self = self else { return }
             
             do {
-                try self.moveFileGroupsHelper(fileGroups, fromSourceSharingGroup: sourceSharingGroup, toDestinationSharinGroup: destinationSharinGroup, pushNotificationMessage: pushNotificationMessage) { [weak self] result in
+                try self.moveFileGroupsHelper(fileGroups, fromSourceSharingGroup: sourceSharingGroup, toDestinationSharingGroup: destinationSharinGroup, sourcePushNotificationMessage: sourcePushNotificationMessage, destinationPushNotificationMessage: destinationPushNotificationMessage) { [weak self] result in
                     guard let self = self else { return }
 
                     self.dispatchQueue.async {

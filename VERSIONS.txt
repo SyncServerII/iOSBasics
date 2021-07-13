@@ -1,5 +1,9 @@
 iOSBasics
-    
+
+Version 0.30.1 (7/13/21)
+    * Changed to a pair of push notifications for the file group move-- one to the
+        source sharing group, one to the destination sharing group.
+
 Version 0.30.0 (7/11/21)
     * Changes for upload deletion- only uses fileGroupUUID now.
     * Changes to require fileGroupUUID on v0 uploads.

@@ -120,12 +120,12 @@ extension ServerAPI {
         }
     }
     
-    func moveFileGroups(_ fileGroups: [UUID], fromSourceSharingGroup sourceSharingGroup: UUID, toDestinationSharinGroup destinationSharinGroup:UUID, completion:@escaping (Swift.Result<MoveFileGroupsResponse, Error>)->()) {
+    func moveFileGroups(_ fileGroups: [UUID], fromSourceSharingGroup sourceSharingGroup: UUID, toDestinationSharingGroup destinationSharingGroup: UUID, completion:@escaping (Swift.Result<MoveFileGroupsResponse, Error>)->()) {
         let endpoint = ServerEndpoints.moveFileGroupsFromSourceSharingGroupToDest
         
         let request = MoveFileGroupsRequest()
         request.sourceSharingGroupUUID = sourceSharingGroup.uuidString
-        request.destinationSharingGroupUUID = destinationSharinGroup.uuidString
+        request.destinationSharingGroupUUID = destinationSharingGroup.uuidString
         request.fileGroupUUIDs = fileGroups.map { $0.uuidString }
         
         guard request.reallyValid() else {

@@ -97,7 +97,7 @@ class SharingGroupTests_MoveFileGroups: XCTestCase, UserSetup, ServerBasics, Tes
         let exp2 = expectation(description: "exp2")
         var moveResult : SyncServer.MoveFileGroupsResult?
         
-        syncServer.moveFileGroups([uploadable1.fileGroupUUID], fromSourceSharingGroup: sharingGroupUUID, toDestinationSharinGroup: destSharingGroupUUID) { result in
+        syncServer.moveFileGroups([uploadable1.fileGroupUUID], fromSourceSharingGroup: sharingGroupUUID, toDestinationSharingGroup: destSharingGroupUUID) { result in
             moveResult = result
             exp2.fulfill()
         }
@@ -162,7 +162,7 @@ class SharingGroupTests_MoveFileGroups: XCTestCase, UserSetup, ServerBasics, Tes
         let exp2 = expectation(description: "exp2")
         var moveResult : SyncServer.MoveFileGroupsResult?
         
-        syncServer.moveFileGroups([uploadable1.fileGroupUUID], fromSourceSharingGroup: sharingGroupUUID, toDestinationSharinGroup: destSharingGroupUUID) { result in
+        syncServer.moveFileGroups([uploadable1.fileGroupUUID], fromSourceSharingGroup: sharingGroupUUID, toDestinationSharingGroup: destSharingGroupUUID) { result in
             moveResult = result
             exp2.fulfill()
         }
@@ -249,7 +249,7 @@ class SharingGroupTests_MoveFileGroups: XCTestCase, UserSetup, ServerBasics, Tes
         let exp2 = expectation(description: "exp2")
         var moveResult : SyncServer.MoveFileGroupsResult?
         
-        syncServer.moveFileGroups([uploadable1.fileGroupUUID, uploadable2.fileGroupUUID], fromSourceSharingGroup: sharingGroupUUID, toDestinationSharinGroup: destSharingGroupUUID) { result in
+        syncServer.moveFileGroups([uploadable1.fileGroupUUID, uploadable2.fileGroupUUID], fromSourceSharingGroup: sharingGroupUUID, toDestinationSharingGroup: destSharingGroupUUID) { result in
             moveResult = result
             exp2.fulfill()
         }
@@ -313,7 +313,7 @@ class SharingGroupTests_MoveFileGroups: XCTestCase, UserSetup, ServerBasics, Tes
         let exp2 = expectation(description: "exp2")
         var moveResult : SyncServer.MoveFileGroupsResult?
         
-        syncServer.moveFileGroups([uploadable1.fileGroupUUID], fromSourceSharingGroup: sharingGroupUUID, toDestinationSharinGroup: destSharingGroupUUID) { result in
+        syncServer.moveFileGroups([uploadable1.fileGroupUUID], fromSourceSharingGroup: sharingGroupUUID, toDestinationSharingGroup: destSharingGroupUUID) { result in
             moveResult = result
             exp2.fulfill()
         }
@@ -401,7 +401,7 @@ class SharingGroupTests_MoveFileGroups: XCTestCase, UserSetup, ServerBasics, Tes
         
         var moveResult : SyncServer.MoveFileGroupsResult?
         
-        syncServer.moveFileGroups([upload.fileGroupUUID], fromSourceSharingGroup: sharingGroupUUID, toDestinationSharinGroup: destSharingGroupUUID) { result in
+        syncServer.moveFileGroups([upload.fileGroupUUID], fromSourceSharingGroup: sharingGroupUUID, toDestinationSharingGroup: destSharingGroupUUID) { result in
             moveResult = result
             exp2.fulfill()
         }
@@ -500,7 +500,7 @@ class SharingGroupTests_MoveFileGroups: XCTestCase, UserSetup, ServerBasics, Tes
         let exp4 = expectation(description: "exp4")
         var moveResult : SyncServer.MoveFileGroupsResult?
         
-        syncServer.moveFileGroups([uploadable1.fileGroupUUID], fromSourceSharingGroup: sharingGroupUUID, toDestinationSharinGroup: destSharingGroupUUID) { result in
+        syncServer.moveFileGroups([uploadable1.fileGroupUUID], fromSourceSharingGroup: sharingGroupUUID, toDestinationSharingGroup: destSharingGroupUUID) { result in
             moveResult = result
             exp4.fulfill()
         }

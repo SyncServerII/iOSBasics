@@ -101,7 +101,7 @@ class ServerAPI_SharingGroups_MoveFileGroups: XCTestCase, UserSetup, APITests, S
         var moveSucceeded = false
 
         let exp2 = expectation(description: "exp")
-        api.moveFileGroups([fileGroup.fileGroupUUID], fromSourceSharingGroup: sourceSharingGroup, toDestinationSharinGroup: destSharingGroupUUID) { result in
+        api.moveFileGroups([fileGroup.fileGroupUUID], fromSourceSharingGroup: sourceSharingGroup, toDestinationSharingGroup: destSharingGroupUUID) { result in
             switch result {
             case .failure(let error):
                 XCTFail("\(error)")
@@ -217,7 +217,7 @@ class ServerAPI_SharingGroups_MoveFileGroups: XCTestCase, UserSetup, APITests, S
         var moveSucceeded = false
 
         let exp2 = expectation(description: "exp")
-        api.moveFileGroups([fileGroup1.fileGroupUUID, fileGroup2.fileGroupUUID], fromSourceSharingGroup: sourceSharingGroup, toDestinationSharinGroup: destSharingGroupUUID) { result in
+        api.moveFileGroups([fileGroup1.fileGroupUUID, fileGroup2.fileGroupUUID], fromSourceSharingGroup: sourceSharingGroup, toDestinationSharingGroup: destSharingGroupUUID) { result in
             switch result {
             case .failure(let error):
                 XCTFail("\(error)")
