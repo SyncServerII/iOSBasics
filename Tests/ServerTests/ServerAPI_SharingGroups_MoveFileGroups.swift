@@ -109,7 +109,7 @@ class ServerAPI_SharingGroups_MoveFileGroups: XCTestCase, UserSetup, APITests, S
                 switch response.result {
                 case .success:
                     moveSucceeded = true
-                case .failedWithNotAllOwnersInTarget:
+                case .failedWithNotAllOwnersInTarget, .failedWithUserConstraintNotSatisfied:
                     XCTFail()
                 case .none:
                     XCTFail()
@@ -225,7 +225,7 @@ class ServerAPI_SharingGroups_MoveFileGroups: XCTestCase, UserSetup, APITests, S
                 switch response.result {
                 case .success:
                     moveSucceeded = true
-                case .failedWithNotAllOwnersInTarget:
+                case .failedWithNotAllOwnersInTarget, .failedWithUserConstraintNotSatisfied:
                     XCTFail()
                 case .none:
                     XCTFail()

@@ -16,7 +16,7 @@ extension SyncServer {
         case noObject
     }
     
-    func moveFileGroupsHelper(_ fileGroups: [UUID], fromSourceSharingGroup sourceSharingGroup: UUID, toDestinationSharingGroup destinationSharingGroup:UUID, sourcePushNotificationMessage: String? = nil, destinationPushNotificationMessage: String? = nil, completion:@escaping (MoveFileGroupsResult)->()) throws {
+    func moveFileGroupsHelper(_ fileGroups: [UUID], usersThatMustBeInDestination: Set<UserId>? = nil, fromSourceSharingGroup sourceSharingGroup: UUID, toDestinationSharingGroup destinationSharingGroup:UUID, sourcePushNotificationMessage: String? = nil, destinationPushNotificationMessage: String? = nil, completion:@escaping (MoveFileGroupsResult)->()) throws {
     
         guard fileGroups.count > 0 else {
             throw MoveFileGroupsError.noFileGroups
@@ -55,8 +55,8 @@ extension SyncServer {
         }
         
         // After a successful move, change the sharing group of the file groups.
-        
-        api.moveFileGroups(fileGroups, fromSourceSharingGroup: sourceSharingGroup, toDestinationSharingGroup: destinationSharingGroup) { [weak self] result in
+
+        api.moveFileGroups(fileGroups, usersThatMustBeInDestination: usersThatMustBeInDestination, fromSourceSharingGroup: sourceSharingGroup, toDestinationSharingGroup: destinationSharingGroup) { [weak self] result in
             guard let self = self else { return }
 
             switch result {
@@ -64,6 +64,9 @@ extension SyncServer {
                 switch response.result {
                 case .failedWithNotAllOwnersInTarget:
                     completion(.failedWithNotAllOwnersInTarget)
+                    
+                case .failedWithUserConstraintNotSatisfied:
+                    completion(.failedWithUserConstraintNotSatisfied)
                     
                 case .success:
                     do {
@@ -97,6 +100,7 @@ extension SyncServer {
         }
     }
     
+    // Does not send a push notification if `pushNotificationMessage` is nil.
     private func send(pushNotificationMessage: String?, sharingGroupUUID: UUID) {
         if let pushNotificationMessage = pushNotificationMessage {
             api.sendPushNotification(pushNotificationMessage, sharingGroupUUID: sharingGroupUUID) { [weak self] error in

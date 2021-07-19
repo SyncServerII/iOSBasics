@@ -521,6 +521,8 @@ public class SyncServer {
         // Not all of the v0 uploaders of the file groups given in the request were members of the target sharing group.
         case failedWithNotAllOwnersInTarget
         
+        case failedWithUserConstraintNotSatisfied
+        
         case currentUploads
         case currentDeletions
         
@@ -540,12 +542,12 @@ public class SyncServer {
      * sourcePushNotificationMessage: A message to be sent to the source sharing group;
      * destinationPushNotificationMessage: A message to be sent to the destination sharing group;
      */
-    public func moveFileGroups(_ fileGroups: [UUID], fromSourceSharingGroup sourceSharingGroup: UUID, toDestinationSharingGroup destinationSharinGroup:UUID, sourcePushNotificationMessage: String? = nil, destinationPushNotificationMessage: String? = nil, completion:@escaping (MoveFileGroupsResult)->()) {
+    public func moveFileGroups(_ fileGroups: [UUID], usersThatMustBeInDestination: Set<UserId>? = nil, fromSourceSharingGroup sourceSharingGroup: UUID, toDestinationSharingGroup destinationSharinGroup:UUID, sourcePushNotificationMessage: String? = nil, destinationPushNotificationMessage: String? = nil, completion:@escaping (MoveFileGroupsResult)->()) {
         serialQueue.async { [weak self] in
             guard let self = self else { return }
             
             do {
-                try self.moveFileGroupsHelper(fileGroups, fromSourceSharingGroup: sourceSharingGroup, toDestinationSharingGroup: destinationSharinGroup, sourcePushNotificationMessage: sourcePushNotificationMessage, destinationPushNotificationMessage: destinationPushNotificationMessage) { [weak self] result in
+                try self.moveFileGroupsHelper(fileGroups, usersThatMustBeInDestination: usersThatMustBeInDestination, fromSourceSharingGroup: sourceSharingGroup, toDestinationSharingGroup: destinationSharinGroup, sourcePushNotificationMessage: sourcePushNotificationMessage, destinationPushNotificationMessage: destinationPushNotificationMessage) { [weak self] result in
                     guard let self = self else { return }
 
                     self.dispatchQueue.async {
