@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.30.3 (7/21/21)
+    * Fix an issue in upsert(fileIndex ...)
+    
 Version 0.30.2 (7/18/21)
     * Added `usersThatMustBeInDestination` to move file groups.
     

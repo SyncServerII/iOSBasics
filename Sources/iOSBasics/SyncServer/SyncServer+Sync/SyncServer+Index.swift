@@ -149,7 +149,9 @@ extension SyncServer {
             }
 
             guard deletedCount == 0 || deletedCount == fileGroup.count else {
-                throw SyncServerError.internalError("Some but not all of file group deleted.")
+                // Not going to throw an error here as this will stop processing of the remaining file groups. Just log an error and continue.
+                logger.error("Some but not all of a file group deleted: fileGroup: \(fileGroupUUID); deletedCount = \(deletedCount); fileGroup.count= \(fileGroup.count)")
+                continue
             }
             
             if deletedCount > 0 {
