@@ -1,5 +1,9 @@
 iOSBasics
 
+Version 0.30.4 (8/1/21)
+	* Fixed an issue (that an Apple reviewer found-- thank you Apple!) in `sendRequestTo` which, since the addition of refresh retries to refresh an expired access token, wasn't allowing requests to endpoints which didn't require authentication. And specifically, requests to `getSharingInvitationInfo` had no longer been working. And so when the Apple reviewer tried to redeem a sharing invitation, that failed because the request to `getSharingInvitationInfo` failed.
+	* Added an automated test to ensure that the `getSharingInvitationInfo` failure doesn't happen again.
+	
 Version 0.30.3 (7/21/21)
     * Fix an issue in upsert(fileIndex ...)
     

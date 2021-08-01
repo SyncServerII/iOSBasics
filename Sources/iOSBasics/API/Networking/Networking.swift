@@ -164,7 +164,7 @@ class Networking: NSObject {
         return sessionConfiguration
     }
     
-    func sendRequestTo(_ serverURL: URL, method: ServerHTTPMethod, configuration: RequestConfiguration? = nil, completion:((_ serverResponse:[String:Any]?, _ statusCode:Int?, _ error:Error?)->())?) {
+    func sendRequestTo(_ serverURL: URL, method: ServerHTTPMethod, configuration: RequestConfiguration? = nil, authenticationLevelNone: Bool = false, completion:((_ serverResponse:[String:Any]?, _ statusCode:Int?, _ error:Error?)->())?) {
     
         let sessionConfig = sessionConfiguration(configuration: configuration)
 
@@ -173,6 +173,11 @@ class Networking: NSObject {
         request.httpBody = configuration?.dataToUpload
         
         logger.info("sendRequestTo: serverURL: \(serverURL)")
+        
+        if authenticationLevelNone {
+            authenticationNoneUploadTaskForSendRequestTo(request: request, sessionConfig: sessionConfig, completion: completion)
+            return
+        }
         
         let refresh:CredentialsRefresh
         
@@ -214,6 +219,25 @@ class Networking: NSObject {
         }
         
         refresh.start()
+    }
+    
+    // To be used only for ServerEndpoint's where `authenticationLevel: .none`
+    // Only for `sendRequestTo`; split out into a separate function because it's more readable than a nested function.
+    private func authenticationNoneUploadTaskForSendRequestTo(request: URLRequest, sessionConfig: URLSessionConfiguration, completion:((_ serverResponse:[String:Any]?, _ statusCode:Int?, _ error:Error?)->())?) {
+        let session = URLSession(configuration: sessionConfig, delegate: nil, delegateQueue: nil)
+
+        let uploadTask:URLSessionDataTask = session.dataTask(with: request) { [weak self] (data, urlResponse, error) in
+            guard let self = self else { return }
+
+            self.serialQueue.async { [weak self] in
+                guard let self = self else { return }
+                
+                let (serverResponse, statusCode, errorResult) = self.processResponse(data: data, urlResponse: urlResponse, error: error)
+                completion?(serverResponse, statusCode, errorResult)
+            }
+        }
+        
+        uploadTask.resume()
     }
     
     func validStatusCode(_ statusCode: Int?) -> Bool {

@@ -83,7 +83,7 @@ class SharingInvitationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, AP
         waitForExpectations(timeout: 10, handler: nil)
     }
     
-    func testGetSharingInvitationInfo() throws {
+    func testGetSharingInvitationInfo_userIsSignedIn() throws {
         let permission:Permission = .write
         let sharingGroupUUID = try getSharingGroupUUID()
         
@@ -112,6 +112,50 @@ class SharingInvitationTests: XCTestCase, UserSetup, ServerBasics, TestFiles, AP
             exp2.fulfill()
         }
         waitForExpectations(timeout: 10, handler: nil)
+    }
+
+    // See iOSBasic VERSIONS.txt notes for v0.30.4. GetSharingInvitationInfo *must* work while the user is not signed in.
+    func testGetSharingInvitationInfo_userIsNotSignedIn() throws {
+        let permission:Permission = .write
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        var code: UUID!
+        
+        let exp = expectation(description: "exp")
+        syncServer.createSharingInvitation(withPermission: permission, sharingGroupUUID: sharingGroupUUID, numberAcceptors: 2, allowSocialAcceptance: false) { result in
+            switch result {
+            case .success(let uuid):
+                code = uuid
+            case .failure:
+                XCTFail()
+            }
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Remove/sign out user so we can do the test.
+        guard handlers.user.removeUser() else {
+            throw SyncServerError.internalError("Could not remove user")
+        }
+        
+        let user = handlers.user
+        handlers.user = nil
+        
+        // Do the test.
+        
+        let exp2 = expectation(description: "exp")
+        syncServer.getSharingInvitationInfo(sharingInvitationUUID: code) { result in
+            switch result {
+            case .success:
+                break
+            case .failure:
+                XCTFail()
+            }
+            exp2.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        handlers.user = user
     }
     
     func testRedeemSharingInvitation() throws {

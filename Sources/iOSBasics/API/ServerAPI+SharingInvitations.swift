@@ -90,6 +90,7 @@ extension ServerAPI {
         }
     }
 
+    // This endpoint doesn't require the user to be signed in.
     func getSharingInvitationInfo(sharingInvitationUUID: UUID, completion: @escaping (Result<SharingInvitationInfo, Error>)->()) {
         let endpoint = ServerEndpoints.getSharingInvitationInfo
         
@@ -108,7 +109,7 @@ extension ServerAPI {
         
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: parameters)
         
-        networking.sendRequestTo(serverURL, method: endpoint.method) { [weak self] response, httpStatus, error in
+        networking.sendRequestTo(serverURL, method: endpoint.method, authenticationLevelNone: true) { [weak self] response, httpStatus, error in
             guard let self = self else { return }
             
             if httpStatus == HTTPStatus.gone.rawValue {
