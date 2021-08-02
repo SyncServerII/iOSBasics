@@ -448,7 +448,7 @@ public class SyncServer {
             
             let fileTrackers = try objectTracker.dependentFileTrackers()
             for fileTracker in fileTrackers {
-                result += "\tUploadFileTracker: fileUUID: \(fileTracker.fileUUID); fileVersion: \(String(describing: fileTracker.fileVersion)); uploadIndex: \(String(describing: fileTracker.uploadIndex)); uploadCount: \(String(describing: fileTracker.uploadCount))\n"
+                result += "\tUploadFileTracker: fileUUID: \(fileTracker.fileUUID); fileVersion: \(String(describing: fileTracker.fileVersion)); status: \(fileTracker.status); uploadIndex: \(fileTracker.uploadIndex); uploadCount: \(fileTracker.uploadCount)\n"
             }
         }
         

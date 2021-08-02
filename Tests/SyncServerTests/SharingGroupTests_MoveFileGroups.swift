@@ -463,7 +463,6 @@ class SharingGroupTests_MoveFileGroups: XCTestCase, UserSetup, ServerBasics, Tes
             return
         }
         
-        let firstUser = handlers.user
         handlers.user = user2
         
         let exp2 = expectation(description: "exp2")
