@@ -33,7 +33,8 @@ class UploadObjectTracker: DatabaseModel {
     // These two `batch` fields must be the same for all M of N files being uploaded for a file group, M <= N.
     static let batchUUIDField = Field("batchUUID", \M.batchUUID)
     var batchUUID: UUID
-    
+
+    // When should this batch of uploads be removed, on the server, because it's stale. Added to the current date on the server.
     static let expiryInterval: TimeInterval = 60 * 60 * 2 // 2 hours
     static let batchExpiryIntervalField = Field("batchExpiryInterval", \M.batchExpiryInterval)
     var batchExpiryInterval:TimeInterval

@@ -87,8 +87,8 @@
         "repositoryURL": "https://github.com/SyncServerII/iOSShared.git",
         "state": {
           "branch": null,
-          "revision": "68678c7309ae511d773618ffee430664447c56a8",
-          "version": "0.14.2"
+          "revision": "4b732b4915f51ab83d1c54ccb3ad6854a968084f",
+          "version": "0.15.0"
         }
       },
       {
@@ -186,8 +186,8 @@
         "repositoryURL": "https://github.com/SyncServerII/ServerAccount.git",
         "state": {
           "branch": null,
-          "revision": "8dc5b24eb55f97c90bc989fac746302be53a1a0d",
-          "version": "0.0.8"
+          "revision": "37d7362d1348b7687db4bb77cb5bd510e17d89d9",
+          "version": "0.0.10"
         }
       },
       {
@@ -195,8 +195,8 @@
         "repositoryURL": "https://github.com/SyncServerII/ServerShared.git",
         "state": {
           "branch": null,
-          "revision": "2a035a156b75f689d386cda0d0816eddcd88f15e",
-          "version": "0.12.10"
+          "revision": "5f6ed0477e1eb33794fc52957aefecfc0cfa410f",
+          "version": "0.13.2"
         }
       },
       {

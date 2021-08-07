@@ -26,6 +26,7 @@ extension SyncServer {
         try uploadSingle(objectType: objectType, objectTracker: objectTracker, objectEntry: objectEntry, fileTracker: fileTracker, fileLabel: fileLabel)
     }
     
+    // Start a single file uploading.
     func uploadSingle(objectType: DeclaredObjectModel, objectTracker: UploadObjectTracker, objectEntry: DirectoryObjectEntry, fileTracker: UploadFileTracker, fileLabel: String) throws {
         let fileVersion:ServerAPI.File.Version
 
@@ -63,8 +64,10 @@ extension SyncServer {
             }
         }
         else {
+            let expiry = try UploadFileTracker.expiryDate(uploadExpiryDuration: configuration.uploadExpiryDuration)
             try fileTracker.update(setters:
-                UploadFileTracker.statusField.description <- .uploading)
+                UploadFileTracker.statusField.description <- .uploading,
+                UploadFileTracker.expiryField.description <- expiry)
             if !v0Upload {
                 // vNUpload, so we'll start to poll for completion of deferred uploads.
                 startTimedDeferredCheckIfNeeded()

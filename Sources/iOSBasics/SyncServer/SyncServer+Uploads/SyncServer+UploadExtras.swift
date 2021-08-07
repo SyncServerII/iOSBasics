@@ -109,7 +109,9 @@ extension SyncServer {
         do {
             let fileTrackers = try upload.object.dependentFileTrackers()
             for fileTracker in fileTrackers {
-                try fileTracker.update(setters: UploadFileTracker.statusField.description <- .notStarted)
+                try fileTracker.update(setters:
+                    UploadFileTracker.statusField.description <- .notStarted,
+                    UploadFileTracker.expiryField.description <- nil)
             }
             logger.notice("Attempt to restart all upload trackers succeeded!")
         } catch let error {

@@ -8,6 +8,7 @@ import iOSShared
 class UploadFileTracker: DatabaseModel {
     enum UploadFileTrackerError: Error {
         case notExactlyOneMimeType
+        case couldNotSetExpiry
     }
         
     let db: Connection
@@ -60,6 +61,11 @@ class UploadFileTracker: DatabaseModel {
     // MIGRATION: 5/30/21
     static let informAllButSelfField = Field("informAllButSelf", \M.informAllButSelf)
     var informAllButSelf: Bool?
+    
+    // MIGRATION: 8/2/21
+    static let expiryField = Field("expiry", \M.expiry)
+    // When should the upload be retried if it is in an `uploading` state and hasn't yet been completed? This is optional because it will be nil until the state of the `UploadFileTracker` changes to `.uploading`.
+    var expiry: Date?
         
     init(db: Connection,
         id: Int64! = nil,
@@ -75,7 +81,8 @@ class UploadFileTracker: DatabaseModel {
         appMetaData: String?,
         uploadIndex: Int32,
         uploadCount: Int32,
-        informAllButSelf: Bool?) throws {
+        informAllButSelf: Bool?,
+        expiry: Date?) throws {
 
         self.db = db
         self.id = id
@@ -92,6 +99,7 @@ class UploadFileTracker: DatabaseModel {
         self.uploadIndex = uploadIndex
         self.uploadCount = uploadCount
         self.informAllButSelf = informAllButSelf
+        self.expiry = expiry
     }
     
     // MARK: DatabaseModel
@@ -114,16 +122,31 @@ class UploadFileTracker: DatabaseModel {
             
             // MIGRATION, 5/30/21
             // t.column(informAllButSelfField.description)
+            
+            // MIGRATION, 8/2/21
+            // t.column(expiryField.description)
         }
     }
     
     static func migration_2021_5_30(db: Connection) throws {
         try addColumn(db: db, column: informAllButSelfField.description)
     }
+
+    static func migration_2021_8_2(configuration: UploadConfigurable, db: Connection) throws {
+        try addColumn(db: db, column: expiryField.description)
+        
+        // For all upload file trackers that are in an .uploading state, give them an expiry date.
+        let uploadingFileTrackers = try fetch(db: db, where: UploadFileTracker.statusField.description == .uploading)
+        for uploadingFileTracker in uploadingFileTrackers {
+            let expiryDate = try expiryDate(uploadExpiryDuration: configuration.uploadExpiryDuration)
+            try uploadingFileTracker.update(setters: UploadFileTracker.expiryField.description <- expiryDate)
+        }
+    }
     
 #if DEBUG
-    static func allMigrations(db: Connection) throws {
+    static func allMigrations(configuration: UploadConfigurable, db: Connection) throws {
         try migration_2021_5_30(db: db)
+        try migration_2021_8_2(configuration: configuration, db: db)
     }
 #endif
     
@@ -142,7 +165,8 @@ class UploadFileTracker: DatabaseModel {
             appMetaData: row[Self.appMetaDataField.description],
             uploadIndex: row[Self.uploadIndexField.description],
             uploadCount: row[Self.uploadCountField.description],
-            informAllButSelf: row[Self.informAllButSelfField.description]
+            informAllButSelf: row[Self.informAllButSelfField.description],
+            expiry: row[Self.expiryField.description]
         )
     }
     
@@ -160,12 +184,22 @@ class UploadFileTracker: DatabaseModel {
             Self.mimeTypeField.description <- mimeType,
             Self.uploadIndexField.description <- uploadIndex,
             Self.uploadCountField.description <- uploadCount,
-            Self.informAllButSelfField.description <- informAllButSelf
+            Self.informAllButSelfField.description <- informAllButSelf,
+            Self.expiryField.description <- expiry
         )
     }
 }
 
 extension UploadFileTracker {
+    static func expiryDate(uploadExpiryDuration: TimeInterval) throws -> Date {
+        let calendar = Calendar.current
+        guard let expiryDate = calendar.date(byAdding: .second, value: Int(uploadExpiryDuration), to: Date()) else {
+            throw UploadFileTrackerError.couldNotSetExpiry
+        }
+        
+        return expiryDate
+    }
+    
     // Creates an `UploadFileTracker` and copies data from the file's UploadableDataSource to a temporary file location if needed.
     // The returned `UploadFileTracker` has been inserted into the database.
     // The objectTrackerId is the id of the UploadObjectTracker for this file.
@@ -195,8 +229,8 @@ extension UploadFileTracker {
             }
             uploadMimeType = mimeType
         }
-        
-        let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: objectTrackerId, status: .notStarted, fileUUID: file.uuid, mimeType: uploadMimeType, fileVersion: nil, localURL: url, goneReason: nil, uploadCopy: file.dataSource.isCopy, checkSum: checkSum, appMetaData: file.appMetaData, uploadIndex: uploadIndex, uploadCount: uploadCount, informAllButSelf: informAllButSelf)
+                
+        let fileTracker = try UploadFileTracker(db: db, uploadObjectTrackerId: objectTrackerId, status: .notStarted, fileUUID: file.uuid, mimeType: uploadMimeType, fileVersion: nil, localURL: url, goneReason: nil, uploadCopy: file.dataSource.isCopy, checkSum: checkSum, appMetaData: file.appMetaData, uploadIndex: uploadIndex, uploadCount: uploadCount, informAllButSelf: informAllButSelf, expiry: nil)
         try fileTracker.insert()
         
         return fileTracker

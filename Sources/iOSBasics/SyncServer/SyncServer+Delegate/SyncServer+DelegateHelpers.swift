@@ -120,7 +120,8 @@ extension SyncServer {
             }
             
             try fileTracker.update(setters:
-                UploadFileTracker.statusField.description <- .notStarted)
+                UploadFileTracker.statusField.description <- .notStarted,
+                UploadFileTracker.expiryField.description <- nil)
         } catch let error {
             logger.error("\(error)")
             delegator { [weak self] delegate in
@@ -422,7 +423,8 @@ extension SyncServer {
     func cleanupAfterUploadCompleted(fileUUID: UUID, uploadObjectTrackerId: Int64, result: UploadCleanup) throws {
 
         // There can be more than one row in UploadFileTracker with the same fileUUID here because we can queue the same upload multiple times. Therefore, need to also search by uploadObjectTrackerId.
-        guard let fileTracker = try UploadFileTracker.fetchSingleRow(db: db, where: fileUUID == UploadFileTracker.fileUUIDField.description &&
+        guard let fileTracker = try UploadFileTracker.fetchSingleRow(db: db, where:
+            fileUUID == UploadFileTracker.fileUUIDField.description &&
             uploadObjectTrackerId == UploadFileTracker.uploadObjectTrackerIdField.description) else {
             throw SyncServerError.internalError("Problem in fetchSingleRow for UploadFileTracker")
         }

@@ -224,6 +224,60 @@ class ServerAPI_v0Files_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         }
     }
     
+    // Demonstrate that if a v0 upload is repeated, it will not fail.
+    // See https://github.com/SyncServerII/Neebla/issues/25#issuecomment-891842298
+    func testRepeatedV0UploadDoesNotFail() throws {
+        // First upload
+        let fileUUID = UUID()
+
+        let fileURL = exampleTextFileURL
+        
+        let checkSum = try hashingManager.hashFor(cloudStorageType: handlers.user.cloudStorageType).hash(forURL: fileURL)
+        
+        guard let result = getIndex(sharingGroupUUID: nil),
+            result.sharingGroups.count > 0,
+            let sharingGroupUUID = result.sharingGroups[0].sharingGroupUUID else {
+            XCTFail()
+            throw UploadError.getIndex
+        }
+        
+        let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: UUID(), objectType: "Foobar")
+        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString))
+        
+        guard let uploadResult1 = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
+            XCTFail()
+            throw UploadError.uploadFile
+        }
+        
+        switch uploadResult1 {
+        case .success:
+            break
+        default:
+            XCTFail()
+        }
+        
+        // Second upload
+        guard let uploadResult2 = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
+            XCTFail()
+            throw UploadError.uploadFile
+        }
+        
+        switch uploadResult2 {
+        case .success(let successResult):
+            switch successResult {
+            case .success(let upload):
+                XCTAssert(upload.uploadsFinished == .v0DuplicateFileUpload)
+
+            default:
+                XCTFail()
+                return
+            }
+
+        default:
+            XCTFail()
+        }
+    }
+    
     @discardableResult
     func downloadFile(downloadFileVersion:FileVersionInt? = nil,
         expectedFailure: Bool = false, appMetaData: String? = nil) throws -> DownloadFileResult? {

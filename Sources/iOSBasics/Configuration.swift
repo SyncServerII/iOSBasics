@@ -2,7 +2,11 @@ import Foundation
 import Version
 import iOSShared
 
-public struct Configuration {
+protocol UploadConfigurable {
+    var uploadExpiryDuration: TimeInterval { get }
+}
+
+public struct Configuration: UploadConfigurable {
     // https://stackoverflow.com/questions/26172783
     // https://stackoverflow.com/questions/25438709
     // If your app uses an app group identifier to have a shared container between extensions and your app.
@@ -42,6 +46,10 @@ public struct Configuration {
     public static let defaultMaxConcurrentFileGroupUploads:Int = 5
     public let maxConcurrentFileGroupUploads: Int
     
+    // The number of seconds to allow before retrying a file upload, if the upload hasn't already completed in this time. The current default of 6 hours is probably too long. Probably this should be only slightly longer than the expiry of any access token for any account type that we're using in the app. Since, once an upload is triggered it has the same access token.
+    public static let defaultUploadExpiryDuration:TimeInterval = 60 * 60 * 6 // 6 hours
+    public let uploadExpiryDuration: TimeInterval
+    
     /// Provide details about temporary files.
     ///
     /// - Parameters:
@@ -79,7 +87,9 @@ public struct Configuration {
     
     public init(appGroupIdentifier: String?, urlSessionBackgroundIdentifier: String? = nil, serverURL: URL, minimumServerVersion:Version?, currentClientAppVersion: Version? = nil, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryFiles:TemporaryFiles = Self.defaultTemporaryFiles, packageTests: Bool = false, timeoutIntervalForRequest: TimeInterval = Self.defaultTimeoutIntervalForRequest, timeoutIntervalForResource: TimeInterval = Self.defaultTimeoutIntervalForResource,
         deferredCheckInterval: TimeInterval? = Self.defaultDeferredCheckInterval,
-        maxConcurrentFileGroupUploads: Int = Self.defaultMaxConcurrentFileGroupUploads) {
+        maxConcurrentFileGroupUploads: Int = Self.defaultMaxConcurrentFileGroupUploads,
+        uploadExpiryDuration: TimeInterval = Self.defaultUploadExpiryDuration) {
+        
         self.appGroupIdentifier = appGroupIdentifier
         self.urlSessionBackgroundIdentifier = urlSessionBackgroundIdentifier
         self.serverURL = serverURL
@@ -93,6 +103,7 @@ public struct Configuration {
         self.timeoutIntervalForResource = timeoutIntervalForResource
         self.deferredCheckInterval = deferredCheckInterval
         self.maxConcurrentFileGroupUploads = maxConcurrentFileGroupUploads
+        self.uploadExpiryDuration = uploadExpiryDuration
         
 #if !DEBUG
         assert(!packageTests)

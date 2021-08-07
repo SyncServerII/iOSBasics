@@ -14,6 +14,7 @@ enum SpecificMigration {
     public static let m2021_5_8: Int32 = 2021_5_8
     public static let m2021_05_30: Int32 = 2021_05_30
     public static let m2021_06_03: Int32 = 2021_06_03
+    public static let m2021_08_02: Int32 = 2021_08_02
 }
 
 class Migration: VersionedMigrationRunner {
@@ -54,7 +55,7 @@ class Migration: VersionedMigrationRunner {
         migrate()
     }
     
-    static func all(db: Connection) -> [iOSShared.Migration] {
+    static func all(configuration: Configuration, db: Connection) -> [iOSShared.Migration] {
         return [
             MigrationObject(version: SpecificMigration.m2021_5_8, apply: {
                 try DownloadFileTracker.migration_2021_5_8(db: db)
@@ -64,6 +65,9 @@ class Migration: VersionedMigrationRunner {
             }),
             MigrationObject(version: SpecificMigration.m2021_06_03, apply: {
                 try SharingEntry.migration_2021_6_3(db: db)
+            }),
+            MigrationObject(version: SpecificMigration.m2021_08_02, apply: {
+                try UploadFileTracker.migration_2021_8_2(configuration: configuration, db: db)
             }),
         ]
     }

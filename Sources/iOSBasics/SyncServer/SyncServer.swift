@@ -94,7 +94,7 @@ public class SyncServer {
         else {
             runner = try Migration(db: db)
         }
-        try runner.run(migrations: Migration.all(db: db))
+        try runner.run(migrations: Migration.all(configuration: configuration, db: db))
         
         self.signIns = signIns
         
