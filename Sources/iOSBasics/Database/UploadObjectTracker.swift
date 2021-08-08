@@ -105,14 +105,6 @@ extension UploadObjectTracker {
         return try UploadFileTracker.fetch(db: db, where: id == UploadFileTracker.uploadObjectTrackerIdField.description)
     }
     
-    static func dependentFileTrackers(forId id: Int64, db: Connection) throws -> [UploadFileTracker] {
-        guard let objectTracker = try UploadObjectTracker.fetchSingleRow(db: db, where: id == UploadObjectTracker.idField.description) else {
-            throw DatabaseModelError.notExactlyOneRowWithId
-        }
-    
-        return try objectTracker.dependentFileTrackers()
-    }
-    
     struct UploadWithStatus {
         let object: UploadObjectTracker
         let files: [UploadFileTracker]

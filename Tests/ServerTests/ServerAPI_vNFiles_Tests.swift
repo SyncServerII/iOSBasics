@@ -58,9 +58,10 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         let changeResolverName = CommentFile.changeResolverName
         
         let commentDataURL1 = try FileUtils.copyDataToNewTemporary(data: commentFileData, config: config)
+        let fileTracker1 = FileTrackerStub(networkCacheId: -1)
 
         let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: UUID(), objectType: "Foo")
-        let file1 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version:
+        let file1 = ServerAPI.File(fileTracker: fileTracker1, fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version:
             .v0(url: commentDataURL1, mimeType: MimeType.text, checkSum: dropboxCheckSum, changeResolverName: changeResolverName, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString)
         )
         
@@ -78,8 +79,9 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         }
         
         let commentDataURL2 = try FileUtils.copyDataToNewTemporary(data: comment.updateContents, config: config)
+        let fileTracker2 = FileTrackerStub(networkCacheId: -1)
         
-        let file2 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version:
+        let file2 = ServerAPI.File(fileTracker: fileTracker2, fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version:
             .vN(url: commentDataURL2)
         )
         
@@ -180,8 +182,9 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         let commentDataURL1 = try FileUtils.copyDataToNewTemporary(data: commentFileData, config: config)
 
         let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: UUID(), objectType: "Foo")
+        let fileTracker1 = FileTrackerStub(networkCacheId: -1)
 
-        let file1 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version:
+        let file1 = ServerAPI.File(fileTracker: fileTracker1, fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version:
             .v0(url: commentDataURL1, mimeType: MimeType.text, checkSum: dropboxCheckSum, changeResolverName: changeResolverName, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString)
         )
         
@@ -201,8 +204,9 @@ class ServerAPI_vNFiles_Tests: XCTestCase, UserSetup, APITests, ServerAPIDelegat
         let commentDataURL2 = try FileUtils.copyDataToNewTemporary(data: comment.updateContents, config: config)
         
         let batchUUID = UUID()
+        let fileTracker2 = FileTrackerStub(networkCacheId: -1)
         
-        let file2 = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: batchUUID, batchExpiryInterval: 100, version:
+        let file2 = ServerAPI.File(fileTracker: fileTracker2, fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: batchUUID, batchExpiryInterval: 100, version:
             .vN(url: commentDataURL2)
         )
         

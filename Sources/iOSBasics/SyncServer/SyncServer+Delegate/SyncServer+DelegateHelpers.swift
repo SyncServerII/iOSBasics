@@ -488,9 +488,9 @@ extension SyncServer {
             try deleteUploadTrackers(fileTrackers: fileTrackers, objectTracker: objectTracker)
             
             if let uploadResult = uploadResult {
-                if uploadResult.uploadsFinished == .v0UploadsFinished {
+                if uploadResult.uploadsFinished != .v0UploadsFinished {
                     // Not going to throw an error-- This can happen in some "normal" error situations.
-                    logger.error("Did not get v0UploadsFinished when expected.")
+                    logger.error("Did not get v0UploadsFinished when expected: \(uploadResult.uploadsFinished)")
                 }
             }
             
@@ -515,7 +515,7 @@ extension SyncServer {
                 }
                 try FileManager.default.removeItem(at: url)
             }
-            try fileTracker.remove()
+            try fileTracker.delete()
         }
         
         try objectTracker.delete()

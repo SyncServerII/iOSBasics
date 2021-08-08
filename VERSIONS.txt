@@ -1,5 +1,11 @@
 iOSBasics
 
+Version 0.31.1 (8/8/21)
+	* Run automated tests, and make updates for v0.31.0 changes.
+		- Removed unused method.
+		- Reverted a cache deletion change because it was causing test failures.
+		- Fixed an incorrect logging condition.
+		
 Version 0.31.0 (8/8/21)
 	* Changes for https://github.com/SyncServerII/Neebla/issues/25
 		- Add support for retries of uploads based on an expiry duration: 

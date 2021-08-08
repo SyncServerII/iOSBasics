@@ -5,6 +5,12 @@ import ServerShared
 
 // For caching the results of downloading and uploading files using a background URLSession.
 
+// So we don't have to expose UploadFileTracker down into the API layer. This makes it easier for testing. Plus, the `UploadFileTracker` is a higher level structure, above the API.
+protocol BackgroundCacheFileTracker {
+    var networkCacheId: Int64? { get }
+    func update(networkCacheId: Int64) throws
+}
+
 class BackgroundCache {
     enum BackgroundCacheError: Error {
         case couldNotLookup
@@ -18,7 +24,7 @@ class BackgroundCache {
         self.database = database
     }
     
-    func initializeUploadCache(fileTracker: UploadFileTracker, fileUUID:String, uploadObjectTrackerId: Int64, taskIdentifer: Int) throws {
+    func initializeUploadCache(fileTracker: BackgroundCacheFileTracker, fileUUID:String, uploadObjectTrackerId: Int64, taskIdentifer: Int) throws {
         guard let fileUUID = UUID(uuidString: fileUUID) else {
             throw BackgroundCacheError.badUUID
         }
@@ -31,7 +37,7 @@ class BackgroundCache {
         let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, uuid: fileUUID, trackerId: uploadObjectTrackerId, fileVersion: nil, transfer: .upload(nil))
         try cache.insert()
         
-        try fileTracker.update(setters: UploadFileTracker.networkCacheIdField.description <- cache.id)
+        try fileTracker.update(networkCacheId: cache.id)
     }
     
     func initializeDownloadCache(file:Filenaming,

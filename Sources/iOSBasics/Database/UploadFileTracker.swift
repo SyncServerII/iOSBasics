@@ -207,17 +207,7 @@ class UploadFileTracker: DatabaseModel {
     }
 }
 
-extension UploadFileTracker {
-    // Calling this `remove` because I need to call `delete` within this.
-    func remove() throws {
-        if let networkCacheId = networkCacheId {
-            let cache = try NetworkCache.fetchSingleRow(db: db, where: NetworkCache.idField.description == networkCacheId)
-            try cache?.delete()
-        }
-    
-        try delete()
-    }
-    
+extension UploadFileTracker {    
     static func expiryDate(uploadExpiryDuration: TimeInterval) throws -> Date {
         let calendar = Calendar.current
         guard let expiryDate = calendar.date(byAdding: .second, value: Int(uploadExpiryDuration), to: Date()) else {
@@ -270,5 +260,11 @@ extension UploadFileTracker {
         try fileTracker.insert()
         
         return fileTracker
+    }
+}
+
+extension UploadFileTracker: BackgroundCacheFileTracker {
+    func update(networkCacheId: Int64) throws {
+        try update(setters: UploadFileTracker.networkCacheIdField.description <- networkCacheId)
     }
 }

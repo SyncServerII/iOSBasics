@@ -160,7 +160,9 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
         }
                          
         let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: UUID(), objectType: "foobar")
-        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString))
+        let fileTracker = FileTrackerStub(networkCacheId: -1)
+
+        let file = ServerAPI.File(fileTracker: fileTracker, fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString))
         
         guard case .success = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
@@ -225,10 +227,12 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
             XCTFail()
             return
         }
-                           
-                           
+
+        let uploadObjectTrackerId: Int64 = -1
+        let fileTracker = FileTrackerStub(networkCacheId: -1)
+
         let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: UUID(), objectType: "Foobar")
-        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString))
+        let file = ServerAPI.File(fileTracker: fileTracker, fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: uploadObjectTrackerId, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString))
         
         guard case .success = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()

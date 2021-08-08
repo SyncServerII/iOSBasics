@@ -60,7 +60,9 @@ class ServerAPI_SharingGroups_MoveFileGroups: XCTestCase, UserSetup, APITests, S
         }
         
         let fileGroup = ServerAPI.File.Version.FileGroup(fileGroupUUID: UUID(), objectType: "Foobar")
-        let file = ServerAPI.File(fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString))
+        let fileTracker = FileTrackerStub(networkCacheId: -1)
+
+        let file = ServerAPI.File(fileTracker: fileTracker, fileUUID: fileUUID.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup, appMetaData: nil, fileLabel: UUID().uuidString))
         
         guard let uploadResult = uploadFile(file: file, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
@@ -160,8 +162,10 @@ class ServerAPI_SharingGroups_MoveFileGroups: XCTestCase, UserSetup, APITests, S
             XCTFail()
             return
         }
-        
-        let file1 = ServerAPI.File(fileUUID: fileUUID1.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup1, appMetaData: nil, fileLabel: UUID().uuidString))
+
+        let fileTracker1 = FileTrackerStub(networkCacheId: -1)
+
+        let file1 = ServerAPI.File(fileTracker: fileTracker1, fileUUID: fileUUID1.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup1, appMetaData: nil, fileLabel: UUID().uuidString))
         
         guard let uploadResult1 = uploadFile(file: file1, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()
@@ -176,7 +180,9 @@ class ServerAPI_SharingGroups_MoveFileGroups: XCTestCase, UserSetup, APITests, S
             return
         }
 
-        let file2 = ServerAPI.File(fileUUID: fileUUID2.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup2, appMetaData: nil, fileLabel: UUID().uuidString))
+        let fileTracker2 = FileTrackerStub(networkCacheId: -1)
+
+        let file2 = ServerAPI.File(fileTracker: fileTracker2, fileUUID: fileUUID2.uuidString, sharingGroupUUID: sharingGroupUUID, deviceUUID: deviceUUID.uuidString, uploadObjectTrackerId: -1, batchUUID: UUID(), batchExpiryInterval: 100, version: .v0(url: fileURL, mimeType: MimeType.text, checkSum: checkSum, changeResolverName: nil, fileGroup: fileGroup2, appMetaData: nil, fileLabel: UUID().uuidString))
         
         guard let uploadResult2 = uploadFile(file: file2, uploadIndex: 1, uploadCount: 1) else {
             XCTFail()

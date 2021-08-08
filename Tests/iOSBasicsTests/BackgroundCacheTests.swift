@@ -5,7 +5,7 @@ import ServerShared
 @testable import TestsCommon
 import iOSShared
 
-class BackgroundCacheTests: XCTestCase {
+class BackgroundCacheTests: XCTestCase {    
     var database: Connection!
     var entry:NetworkCache!
     var backgroundCache:BackgroundCache!
@@ -22,8 +22,12 @@ class BackgroundCacheTests: XCTestCase {
     }
 
     func testInitializeUploadCache() throws {
-        let fileUUID = UUID().uuidString
-        try backgroundCache.initializeUploadCache(fileUUID: fileUUID, uploadObjectTrackerId: -1, taskIdentifer: taskIdentifier)
+        let fileUUID = UUID()
+        let uploadObjectTrackerId: Int64 = -1
+        
+        let fileTracker = FileTrackerStub(networkCacheId: -1)
+
+        try backgroundCache.initializeUploadCache(fileTracker: fileTracker, fileUUID: fileUUID.uuidString, uploadObjectTrackerId: uploadObjectTrackerId, taskIdentifer: taskIdentifier)
         
         guard let result = try NetworkCache.fetchSingleRow(db: database, where:
             taskIdentifier == NetworkCache.taskIdentifierField.description) else {
@@ -31,7 +35,7 @@ class BackgroundCacheTests: XCTestCase {
             return
         }
         
-        XCTAssert(result.uuid.uuidString == fileUUID)
+        XCTAssert(result.uuid.uuidString == fileUUID.uuidString)
         XCTAssert(result.taskIdentifier == taskIdentifier)
         
         guard case .upload(let body) = result.transfer, body == nil else {

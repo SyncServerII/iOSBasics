@@ -64,7 +64,7 @@ extension ServerAPI {
             )
         }
         
-        let fileTracker: UploadFileTracker?
+        let fileTracker: BackgroundCacheFileTracker?
         let fileUUID:String
         let sharingGroupUUID: String
         let deviceUUID:String
@@ -78,7 +78,7 @@ extension ServerAPI {
         
         let informAllButSelf: Bool?
         
-        init(fileTracker: UploadFileTracker? = nil, fileUUID:String, sharingGroupUUID: String, deviceUUID:String, uploadObjectTrackerId: Int64, batchUUID: UUID, batchExpiryInterval:TimeInterval, version: Version, informAllButSelf: Bool? = nil) {
+        init(fileTracker: BackgroundCacheFileTracker? = nil, fileUUID:String, sharingGroupUUID: String, deviceUUID:String, uploadObjectTrackerId: Int64, batchUUID: UUID, batchExpiryInterval:TimeInterval, version: Version, informAllButSelf: Bool? = nil) {
             self.fileTracker = fileTracker
             self.fileUUID = fileUUID
             self.sharingGroupUUID = sharingGroupUUID
