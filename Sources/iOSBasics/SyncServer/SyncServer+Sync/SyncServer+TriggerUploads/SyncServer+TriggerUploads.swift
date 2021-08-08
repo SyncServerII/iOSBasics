@@ -2,14 +2,70 @@
 import Foundation
 import SQLite
 import iOSShared
+import ServerShared
 
 extension SyncServer {
+    enum UploadRetryError: Error {
+        case noV0Upload
+    }
+    
     func triggerUploads() throws {
+        // Retry file uploads that haven't completed, but that have exceeded their expiry duration.
+        try triggerRetryOfExpiredFileUploads()
+        
         // Retry any upload objects that are still .uploading, but that have files that are not yet started.
         try triggerRetryFileUploads()
         
         // Trigger other upload objects that are .notStarted -- these will either be completely new uploads or uploads that were already tried before.
         try triggerQueuedUploads()
+    }
+
+    // See if individual files need re-triggering because their expiry date was exceeded. We have found specifically that we can fail to get positive results of the server succeeding on uploads in some cases, and the files remain in an `.uploading` state. See https://github.com/SyncServerII/Neebla/issues/25#issuecomment-894711039
+    private func triggerRetryOfExpiredFileUploads() throws {
+        let expiredUploadTrackers = try UploadFileTracker.fetch(db: db, where: UploadFileTracker.statusField.description == .uploading).filter {
+            try $0.hasExpired()
+        }
+        
+        guard expiredUploadTrackers.count > 0 else {
+            return
+        }
+        
+        let backgroundCache = BackgroundCache(database: db)
+        
+        // Restarting v0 uploads is fairly straightforward. However, restarting vN uploads is not so simple.
+        // Partition the upload trackers by their uploading object to assess v0 vs. vN.
+        
+        let partitionedUploadTrackers = Partition.array(expiredUploadTrackers, using: \.uploadObjectTrackerId)
+        for uploadsForSingleObject in partitionedUploadTrackers {
+            // This shouldn't happen. But just be safe.
+            guard uploadsForSingleObject.count > 0 else {
+                continue
+            }
+            
+            let firstFileTracker = uploadsForSingleObject[0]
+            
+            guard let uploadObject = try UploadObjectTracker.fetchSingleRow(db: db, where: UploadObjectTracker.idField.description == firstFileTracker.uploadObjectTrackerId) else {
+                throw DatabaseError.notExactlyOneRow
+            }
+            
+            guard let v0Upload = uploadObject.v0Upload else {
+                throw UploadRetryError.noV0Upload
+            }
+            
+            if v0Upload {
+                try retryExpiredUploads(uploadsForSingleObject: uploadsForSingleObject, object: uploadObject, backgroundCache: backgroundCache)
+            }
+            else {
+                // Check with the server to see if these have actually completed. We're trying to deal with the possibility that the server actually completed all of these uploads (but the results didn't get back to the client). vN uploads are more complicated because if they've all completed, an upload retry won't simply respond with success -- at the point we try to use the same batchUUID in the DeferredUpload table.
+                checkExpiredVNFileUploads(uploadsForSingleObject: uploadsForSingleObject, object: uploadObject, backgroundCache: backgroundCache)
+            }
+        }
+    }
+    
+    func retryExpiredUploads(uploadsForSingleObject: [UploadFileTracker], object: UploadObjectTracker, backgroundCache: BackgroundCache) throws {
+        for expiredUpload in uploadsForSingleObject {                    
+            try retryFileUpload(fileTracker: expiredUpload, objectTracker: object)
+        }
     }
     
     // Trigger new uploads for file groups where those have been queued before, but not started (or started and failed). This handles v0 and vN uploads. v0 uploads will be triggered here if they failed in their initial upload from `queue(upload: UploadableObject)` (or if multiple v0 uploads occur for a given file group).

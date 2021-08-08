@@ -388,7 +388,7 @@ class Networking: NSObject {
     }
     
     // The return value just indicates if the upload could be started, not whether the upload completed. The transferDelegate is used for further indications if the return result is nil.
-    func upload(fileUUID:String, uploadObjectTrackerId: Int64, from localURL: URL, toServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
+    func upload(fileTracker: UploadFileTracker, fileUUID:String, uploadObjectTrackerId: Int64, from localURL: URL, toServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
     
         let task: URLSessionUploadTask
         
@@ -401,7 +401,7 @@ class Networking: NSObject {
         }
 
         do {
-            try backgroundCache.initializeUploadCache(fileUUID: fileUUID, uploadObjectTrackerId: uploadObjectTrackerId, taskIdentifer: task.taskIdentifier)
+            try backgroundCache.initializeUploadCache(fileTracker: fileTracker, fileUUID: fileUUID, uploadObjectTrackerId: uploadObjectTrackerId, taskIdentifer: task.taskIdentifier)
         } catch let error {
             task.cancel()
             let file = FileObject(fileUUID: fileUUID, fileVersion: nil, trackerId: uploadObjectTrackerId)

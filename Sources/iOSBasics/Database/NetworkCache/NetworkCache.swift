@@ -11,6 +11,7 @@ class NetworkCache: DatabaseModel {
     static let taskIdentifierField = Field("taskIdentifier", \M.taskIdentifier)
     var taskIdentifier: Int
     
+    // E.g., a fileGroupUUID or a fileUUID.
     static let uuidField = Field("uuid", \M.uuid)
     var uuid: UUID
     

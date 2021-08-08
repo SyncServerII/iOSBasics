@@ -1,9 +1,13 @@
 iOSBasics
 
-Version 0.31.0
-	* Add support for retries of uploads based on an expiry duration: `uploadExpiryDuration`.
-	* Also added a test for new server support of detecting a duplicate v0 upload: 	
-		.v0DuplicateFileUpload
+Version 0.31.0 (8/8/21)
+	* Changes for https://github.com/SyncServerII/Neebla/issues/25
+		- Add support for retries of uploads based on an expiry duration: 
+			`uploadExpiryDuration`.
+		- Also added a test for new server support of detecting a duplicate v0 upload: 	
+			.v0DuplicateFileUpload
+		- Uses defaultUploadExpiryDuration of 10 minutes. This is for initial TestFlight
+			build only. Don't release this to App Store.
 
 Version 0.30.5 (8/2/21)
 	* Add debugging output. Trying to gather info to fix Rod's issue: https://github.com/SyncServerII/Neebla/issues/25

@@ -9,6 +9,7 @@ class UploadFileTracker: DatabaseModel {
     enum UploadFileTrackerError: Error {
         case notExactlyOneMimeType
         case couldNotSetExpiry
+        case noExpiryDate
     }
         
     let db: Connection
@@ -66,7 +67,11 @@ class UploadFileTracker: DatabaseModel {
     static let expiryField = Field("expiry", \M.expiry)
     // When should the upload be retried if it is in an `uploading` state and hasn't yet been completed? This is optional because it will be nil until the state of the `UploadFileTracker` changes to `.uploading`.
     var expiry: Date?
-        
+    
+    // NetworkCache Id, if uploading.
+    static let networkCacheIdField = Field("networkCacheId", \M.networkCacheId)
+    var networkCacheId: Int64?
+    
     init(db: Connection,
         id: Int64! = nil,
         uploadObjectTrackerId: Int64,
@@ -82,7 +87,8 @@ class UploadFileTracker: DatabaseModel {
         uploadIndex: Int32,
         uploadCount: Int32,
         informAllButSelf: Bool?,
-        expiry: Date?) throws {
+        expiry: Date?,
+        networkCacheId: Int64? = nil) throws {
 
         self.db = db
         self.id = id
@@ -100,6 +106,7 @@ class UploadFileTracker: DatabaseModel {
         self.uploadCount = uploadCount
         self.informAllButSelf = informAllButSelf
         self.expiry = expiry
+        self.networkCacheId = networkCacheId
     }
     
     // MARK: DatabaseModel
@@ -125,6 +132,9 @@ class UploadFileTracker: DatabaseModel {
             
             // MIGRATION, 8/2/21
             // t.column(expiryField.description)
+
+            // MIGRATION, 8/7/21
+            // t.column(networkCacheIdField.description)
         }
     }
     
@@ -142,11 +152,16 @@ class UploadFileTracker: DatabaseModel {
             try uploadingFileTracker.update(setters: UploadFileTracker.expiryField.description <- expiryDate)
         }
     }
+
+    static func migration_2021_8_7(db: Connection) throws {
+        try addColumn(db: db, column: networkCacheIdField.description)
+    }
     
 #if DEBUG
     static func allMigrations(configuration: UploadConfigurable, db: Connection) throws {
         try migration_2021_5_30(db: db)
         try migration_2021_8_2(configuration: configuration, db: db)
+        try migration_2021_8_7(db: db)
     }
 #endif
     
@@ -166,7 +181,8 @@ class UploadFileTracker: DatabaseModel {
             uploadIndex: row[Self.uploadIndexField.description],
             uploadCount: row[Self.uploadCountField.description],
             informAllButSelf: row[Self.informAllButSelfField.description],
-            expiry: row[Self.expiryField.description]
+            expiry: row[Self.expiryField.description],
+            networkCacheId: row[Self.networkCacheIdField.description]
         )
     }
     
@@ -185,12 +201,23 @@ class UploadFileTracker: DatabaseModel {
             Self.uploadIndexField.description <- uploadIndex,
             Self.uploadCountField.description <- uploadCount,
             Self.informAllButSelfField.description <- informAllButSelf,
-            Self.expiryField.description <- expiry
+            Self.expiryField.description <- expiry,
+            Self.networkCacheIdField.description <- networkCacheId
         )
     }
 }
 
 extension UploadFileTracker {
+    // Calling this `remove` because I need to call `delete` within this.
+    func remove() throws {
+        if let networkCacheId = networkCacheId {
+            let cache = try NetworkCache.fetchSingleRow(db: db, where: NetworkCache.idField.description == networkCacheId)
+            try cache?.delete()
+        }
+    
+        try delete()
+    }
+    
     static func expiryDate(uploadExpiryDuration: TimeInterval) throws -> Date {
         let calendar = Calendar.current
         guard let expiryDate = calendar.date(byAdding: .second, value: Int(uploadExpiryDuration), to: Date()) else {
@@ -198,6 +225,15 @@ extension UploadFileTracker {
         }
         
         return expiryDate
+    }
+    
+    // Has the `expiry` Date of the UploadFileTracker expired? Assumes that this UploadFileTracker is in an .uploading state (and thus has a non-nil `expiry`) and throws an error if the `expiry` Date is nil.
+    func hasExpired() throws -> Bool {
+        guard let expiry = expiry else {
+            throw UploadFileTrackerError.noExpiryDate
+        }
+        
+        return expiry <= Date()
     }
     
     // Creates an `UploadFileTracker` and copies data from the file's UploadableDataSource to a temporary file location if needed.

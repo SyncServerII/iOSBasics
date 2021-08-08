@@ -64,6 +64,7 @@ extension ServerAPI {
             )
         }
         
+        let fileTracker: UploadFileTracker?
         let fileUUID:String
         let sharingGroupUUID: String
         let deviceUUID:String
@@ -77,7 +78,8 @@ extension ServerAPI {
         
         let informAllButSelf: Bool?
         
-        init(fileUUID:String, sharingGroupUUID: String, deviceUUID:String, uploadObjectTrackerId: Int64, batchUUID: UUID, batchExpiryInterval:TimeInterval, version: Version, informAllButSelf: Bool? = nil) {
+        init(fileTracker: UploadFileTracker? = nil, fileUUID:String, sharingGroupUUID: String, deviceUUID:String, uploadObjectTrackerId: Int64, batchUUID: UUID, batchExpiryInterval:TimeInterval, version: Version, informAllButSelf: Bool? = nil) {
+            self.fileTracker = fileTracker
             self.fileUUID = fileUUID
             self.sharingGroupUUID = sharingGroupUUID
             self.deviceUUID = deviceUUID
@@ -150,7 +152,11 @@ extension ServerAPI {
         
         let serverURL = Self.makeURL(forEndpoint: endpoint, baseURL: config.baseURL, parameters: parameters)
         
-        return networking.upload(fileUUID: file.fileUUID, uploadObjectTrackerId: file.uploadObjectTrackerId, from: url, toServerURL: serverURL, method: endpoint.method)
+        guard let fileTracker = file.fileTracker else {
+            return ServerAPIError.generic("Should have a file tracker.")
+        }
+        
+        return networking.upload(fileTracker: fileTracker, fileUUID: file.fileUUID, uploadObjectTrackerId: file.uploadObjectTrackerId, from: url, toServerURL: serverURL, method: endpoint.method)
     }
     
     public enum UploadsResultsId {
