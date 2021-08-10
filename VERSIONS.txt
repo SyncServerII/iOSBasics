@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.31.2 (8/9/21)
+	* Fix migration issue. See https://github.com/SyncServerII/Neebla/issues/26
+
 Version 0.31.1 (8/8/21)
 	* Run automated tests, and make updates for v0.31.0 changes.
 		- Removed unused method.

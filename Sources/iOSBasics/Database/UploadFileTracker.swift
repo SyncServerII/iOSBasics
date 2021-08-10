@@ -68,6 +68,7 @@ class UploadFileTracker: DatabaseModel {
     // When should the upload be retried if it is in an `uploading` state and hasn't yet been completed? This is optional because it will be nil until the state of the `UploadFileTracker` changes to `.uploading`.
     var expiry: Date?
     
+    // MIGRATION: 8/7/21
     // NetworkCache Id, if uploading.
     static let networkCacheIdField = Field("networkCacheId", \M.networkCacheId)
     var networkCacheId: Int64?
@@ -138,13 +139,24 @@ class UploadFileTracker: DatabaseModel {
         }
     }
     
+    // MARK: Metadata migrations
+    
     static func migration_2021_5_30(db: Connection) throws {
         try addColumn(db: db, column: informAllButSelfField.description)
     }
 
-    static func migration_2021_8_2(configuration: UploadConfigurable, db: Connection) throws {
-        try addColumn(db: db, column: expiryField.description)
-        
+    static func migration_2021_8_2(db: Connection) throws {
+        // 9/9/21; I'm not going to throw an error on failing this because I believe Rod is now in a state where this has been applied, but the expiry dates for uploading file trackers haven't yet been applied. And other users don't yet have this migration.
+        try? addColumn(db: db, column: expiryField.description)
+    }
+
+    static func migration_2021_8_7(db: Connection) throws {
+        try addColumn(db: db, column: networkCacheIdField.description)
+    }
+    
+    // MARK: Content migrations
+    
+    static func migration_2021_8_2_updateUploads(configuration: UploadConfigurable, db: Connection) throws {
         // For all upload file trackers that are in an .uploading state, give them an expiry date.
         let uploadingFileTrackers = try fetch(db: db, where: UploadFileTracker.statusField.description == .uploading)
         for uploadingFileTracker in uploadingFileTrackers {
@@ -152,16 +164,16 @@ class UploadFileTracker: DatabaseModel {
             try uploadingFileTracker.update(setters: UploadFileTracker.expiryField.description <- expiryDate)
         }
     }
-
-    static func migration_2021_8_7(db: Connection) throws {
-        try addColumn(db: db, column: networkCacheIdField.description)
-    }
     
 #if DEBUG
-    static func allMigrations(configuration: UploadConfigurable, db: Connection) throws {
+    static func allMigrations(configuration: UploadConfigurable, updateUploads: Bool = true, db: Connection) throws {
+        // MARK: Metadata
         try migration_2021_5_30(db: db)
-        try migration_2021_8_2(configuration: configuration, db: db)
+        try migration_2021_8_2(db: db)
         try migration_2021_8_7(db: db)
+        
+        // MARK: Content
+        try migration_2021_8_2_updateUploads(configuration: configuration, db: db)
     }
 #endif
     

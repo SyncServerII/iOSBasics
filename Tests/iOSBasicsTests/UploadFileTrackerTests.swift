@@ -161,4 +161,21 @@ class UploadFileTrackerTests: XCTestCase, UploadConfigurable {
         
         XCTAssert(result[0].mimeType == mimeType)
     }
+    
+    func testMigration_2021_8_2() throws {
+        try UploadFileTracker.createTable(db: database)
+        
+        try UploadFileTracker.migration_2021_5_30(db: database)
+        try UploadFileTracker.migration_2021_8_2(db: database)
+        try UploadFileTracker.migration_2021_8_7(db: database)
+        
+        // Add some UploadFileTracker records; the records *must* have status .uploading-- as part of the migration applies to these records.
+        
+        let e1 = try UploadFileTracker(db: database, uploadObjectTrackerId: 1, status: .uploading, fileUUID: UUID(), mimeType: .text, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: "moo", uploadIndex: 1, uploadCount: 1, informAllButSelf: true, expiry: nil)
+        try e1.insert()
+        let e2 = try UploadFileTracker(db: database, uploadObjectTrackerId: 1, status: .uploading, fileUUID: UUID(), mimeType: .text, fileVersion: 11, localURL: URL(fileURLWithPath: "Foobly"), goneReason: .userRemoved, uploadCopy: false, checkSum: "Meebly", appMetaData: "moo", uploadIndex: 1, uploadCount: 1, informAllButSelf: true, expiry: nil)
+        try e2.insert()
+        
+        try UploadFileTracker.migration_2021_8_2_updateUploads(configuration: self, db: database)
+    }
 }

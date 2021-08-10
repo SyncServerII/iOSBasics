@@ -8,8 +8,8 @@
 import Foundation
 import iOSShared
 
-class MigrationRunnerFake: MigrationRunner {
-    func run(migrations: [Migration]) throws {
+class MigrationRunnerFake: MigrationRunner {    
+    func run(migrations: [Migration], contentChanges: [Migration]) throws {
         for migration in migrations {
             try migration.apply()
         }

@@ -56,7 +56,8 @@ class Migration: VersionedMigrationRunner {
         migrate()
     }
     
-    static func all(configuration: Configuration, db: Connection) -> [iOSShared.Migration] {
+    // These migrations can only do column additions (and possibly deletions). See https://github.com/SyncServerII/Neebla/issues/26
+    static func metadata(db: Connection) -> [iOSShared.Migration] {
         return [
             MigrationObject(version: SpecificMigration.m2021_5_8, apply: {
                 try DownloadFileTracker.migration_2021_5_8(db: db)
@@ -68,10 +69,20 @@ class Migration: VersionedMigrationRunner {
                 try SharingEntry.migration_2021_6_3(db: db)
             }),
             MigrationObject(version: SpecificMigration.m2021_08_02, apply: {
-                try UploadFileTracker.migration_2021_8_2(configuration: configuration, db: db)
+                try UploadFileTracker.migration_2021_8_2(db: db)
             }),
             MigrationObject(version: SpecificMigration.m2021_08_07, apply: {
                 try UploadFileTracker.migration_2021_8_7(db: db)
+            }),
+        ]
+    }
+    
+    // These migrations can only do content changes to rows. See https://github.com/SyncServerII/Neebla/issues/26
+    static func content(configuration: Configuration, db: Connection) -> [iOSShared.Migration] {
+        return [
+            MigrationObject(version: SpecificMigration.m2021_08_02, apply: {
+                try UploadFileTracker.migration_2021_8_2_updateUploads(
+                    configuration: configuration, db: db)
             }),
         ]
     }
