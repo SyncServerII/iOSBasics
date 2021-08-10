@@ -254,6 +254,7 @@ public class SyncServer {
                 do {
                     try self.syncHelper(completion: completion, sharingGroupUUID: sharingGroupUUID)
                 } catch let error {
+                    logger.error("syncHelper: \(error)")
                     self.delegator { delegate in
                         delegate.userEvent(self, event: .error(error))
                     }
@@ -451,7 +452,7 @@ public class SyncServer {
             
             let fileTrackers = try objectTracker.dependentFileTrackers()
             for fileTracker in fileTrackers {
-                result += "\tUploadFileTracker: fileUUID: \(fileTracker.fileUUID); fileVersion: \(String(describing: fileTracker.fileVersion)); status: \(fileTracker.status); uploadIndex: \(fileTracker.uploadIndex); uploadCount: \(fileTracker.uploadCount)\n"
+                result += "\tUploadFileTracker: fileUUID: \(fileTracker.fileUUID); fileVersion: \(String(describing: fileTracker.fileVersion)); status: \(fileTracker.status); uploadIndex: \(fileTracker.uploadIndex); uploadCount: \(fileTracker.uploadCount); expiry: \(String(describing: fileTracker.expiry))\n"
             }
         }
         
