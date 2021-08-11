@@ -151,7 +151,8 @@ class UploadFileTracker: DatabaseModel {
     }
 
     static func migration_2021_8_7(db: Connection) throws {
-        try addColumn(db: db, column: networkCacheIdField.description)
+        // 9/10/21; Not sure why, but this is now crashing for Rod. Not throwing error.
+        try? addColumn(db: db, column: networkCacheIdField.description)
     }
     
     // MARK: Content migrations

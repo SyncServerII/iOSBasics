@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.31.5 (8/10/21)
+	* Not throwing error from `migration_2021_8_7` because this is causing a problem for Rod.
+	
 Version 0.31.4 (8/10/21)
 	* Add a check to ensure a file can be read, immediately before uploading because an error in this regard happened today.
 	* Add `allowUploadDownload` to configuration to enable debugging.
