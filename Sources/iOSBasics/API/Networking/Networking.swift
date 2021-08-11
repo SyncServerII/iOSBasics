@@ -30,6 +30,8 @@ enum NetworkingError: Error {
     case invalidHTTPStatusCode
     case failover
     case noSelf
+    case cannotOpenFile
+    case cannotCloseFile
 }
 
 protocol NetworkingDelegate: AnyObject {
@@ -384,6 +386,13 @@ class Networking: NSObject {
         // It appears that `session.uploadTask` has a problem with relative URL's. I get "NSURLErrorDomain Code=-1 "unknown error" if I pass one of these. Make sure the URL is not relative.
         let uploadFilePath = localURL.path
         let nonRelativeUploadURL = URL(fileURLWithPath: uploadFilePath)
+        
+        // 8/10/21: Make sure we can access the file. Just ran into an issue where an upload that had been queued for a long time couldn't access its file. I could try to use `FileManager.default.attributesOfItem` here but I can't see file attributes that definitively tell me what I need to know (see https://developer.apple.com/documentation/foundation/fileattributekey/1415539-appendonly).
+        
+        guard nonRelativeUploadURL.canReadFile() else {
+            return .failure(NetworkingError.cannotOpenFile)
+        }
+        
         return .success(backgroundSession.uploadTask(with: request, fromFile: nonRelativeUploadURL))
     }
     

@@ -6,6 +6,12 @@ import ServerShared
 
 extension SyncServer {
     func singleDownload(fileUUID: UUID, fileVersion: FileVersionInt, tracker: DownloadFileTracker, objectTrackerId: Int64, sharingGroupUUID: UUID) throws {
+    
+        guard configuration.allowUploadDownload else {
+            logger.warning("allowUploadDownload is false; not doing download.")
+            return
+        }
+    
         let file = FileObject(fileUUID: fileUUID.uuidString, fileVersion: fileVersion, trackerId: objectTrackerId)
         
         if let error = api.downloadFile(file: file, sharingGroupUUID: sharingGroupUUID.uuidString) {

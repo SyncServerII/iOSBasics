@@ -8,6 +8,7 @@
 import Foundation
 import ServerShared
 import SQLite
+import iOSShared
 
 extension SyncServer {
     // Assumes that an UploadFileTracker has already been created for the file referenced by fileUUID.
@@ -30,6 +31,11 @@ extension SyncServer {
     func uploadSingle(objectType: DeclaredObjectModel, objectTracker: UploadObjectTracker, objectEntry: DirectoryObjectEntry, fileTracker: UploadFileTracker, fileLabel: String) throws {
         let fileVersion:ServerAPI.File.Version
 
+        guard configuration.allowUploadDownload else {
+            logger.warning("allowUploadDownload is false; not doing upload.")
+            return
+        }
+        
         guard let checkSum = fileTracker.checkSum,
             let localURL = fileTracker.localURL else {
             throw SyncServerError.internalError("Could not get checkSum or localURL")
