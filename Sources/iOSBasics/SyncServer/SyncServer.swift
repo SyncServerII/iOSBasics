@@ -448,7 +448,10 @@ public class SyncServer {
         var result = ""
         
         for objectTracker in objectTrackers {
-            result += "UploadObjectTracker: fileGroupUUID: \(objectTracker.fileGroupUUID); v0Upload: \(String(describing: objectTracker.v0Upload)); batchUUID: \(objectTracker.batchUUID):\n"
+            // Shouldn't happen, but see if this file group is deleted.
+            let directoryObject = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == objectTracker.fileGroupUUID)
+                    
+            result += "UploadObjectTracker: fileGroupUUID: \(objectTracker.fileGroupUUID); v0Upload: \(String(describing: objectTracker.v0Upload)); batchUUID: \(objectTracker.batchUUID); deletedLocally: \(String(describing: directoryObject?.deletedLocally)); deletedOnServer: \(String(describing: directoryObject?.deletedOnServer))\n"
             
             let fileTrackers = try objectTracker.dependentFileTrackers()
             for fileTracker in fileTrackers {
@@ -456,9 +459,27 @@ public class SyncServer {
                 if let localURL = fileTracker.localURL {
                     canReadFile = localURL.canReadFile()
                 }
-            
-                result += "\tUploadFileTracker: fileUUID: \(fileTracker.fileUUID); fileVersion: \(String(describing: fileTracker.fileVersion)); status: \(fileTracker.status); uploadIndex: \(fileTracker.uploadIndex); uploadCount: \(fileTracker.uploadCount); expiry: \(String(describing: fileTracker.expiry)); canReadFile: \(String(describing: canReadFile)); mimeType: \(String(describing: fileTracker.mimeType)); uploadCopy: \(String(describing: fileTracker.uploadCopy))\n"
+                
+                let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileGroupUUIDField.description == fileTracker.fileUUID)
+
+                result += "\tUploadFileTracker: fileUUID: \(fileTracker.fileUUID); fileVersion: \(String(describing: fileTracker.fileVersion)); status: \(fileTracker.status); uploadIndex: \(fileTracker.uploadIndex); uploadCount: \(fileTracker.uploadCount); expiry: \(String(describing: fileTracker.expiry)); canReadFile: \(String(describing: canReadFile)); mimeType: \(String(describing: fileTracker.mimeType)); uploadCopy: \(String(describing: fileTracker.uploadCopy)); deletedLocally: \(String(describing: fileEntry?.deletedLocally)); deletedOnServer: \(String(describing: fileEntry?.deletedOnServer))\n"
             }
+        }
+        
+        return result
+    }
+
+    // Generate debugging information for pending deletions if any. Returns nil if none.
+    public func debugPendingDeletions() throws -> String? {
+        let deletionTrackers = try UploadDeletionTracker.fetch(db:db)
+        guard deletionTrackers.count > 0 else {
+            return nil
+        }
+        
+        var result = ""
+            
+        for deletionTracker in deletionTrackers {
+            result += "UploadDeletionTracker: uuid: \(deletionTracker.uuid); deletionType: \(deletionTracker.deletionType); status: \(deletionTracker.status);\n"
         }
         
         return result

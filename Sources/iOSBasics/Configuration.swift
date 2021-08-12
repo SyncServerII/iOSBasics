@@ -52,7 +52,7 @@ public struct Configuration: UploadConfigurable {
     
     public let uploadExpiryDuration: TimeInterval
     
-    /// This is for debugging; if you set this to `false`, then no uploads and downloads will take place. In that case, uploads and downloads will only be queued for later.
+    /// This is for debugging; if you set this to `false`, then no uploads and downloads will take place. In that case, uploads and downloads will only be queued for later. Similarly, deletions too will be queued.
     public let allowUploadDownload: Bool
     
     /// Provide details about temporary files.

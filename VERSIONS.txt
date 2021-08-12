@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.31.7 (8/11/21)
+	* Added more logging; queueing deletions when `allowUploadDownload` is true.
+	
 Version 0.31.6 (8/11/21)
 	* Added more logging
 

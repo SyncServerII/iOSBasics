@@ -7,9 +7,15 @@
 
 import Foundation
 import SQLite
+import iOSShared
 
 extension SyncServer {
     func startSingleDeletion(tracker: UploadDeletionTracker) throws {
+        guard configuration.allowUploadDownload else {
+            logger.warning("allowUploadDownload is false; not doing deletion.")
+            return
+        }
+    
         guard let trackerId = tracker.id else {
             throw SyncServerError.internalError("No tracker id")
         }
