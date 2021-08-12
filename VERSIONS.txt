@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.31.6 (8/11/21)
+	* Added more logging
+
 Version 0.31.5 (8/10/21)
 	* Not throwing error from `migration_2021_8_7` because this is causing a problem for Rod.
 	

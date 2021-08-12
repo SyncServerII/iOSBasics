@@ -457,7 +457,7 @@ public class SyncServer {
                     canReadFile = localURL.canReadFile()
                 }
             
-                result += "\tUploadFileTracker: fileUUID: \(fileTracker.fileUUID); fileVersion: \(String(describing: fileTracker.fileVersion)); status: \(fileTracker.status); uploadIndex: \(fileTracker.uploadIndex); uploadCount: \(fileTracker.uploadCount); expiry: \(String(describing: fileTracker.expiry)); canReadFile: \(String(describing: canReadFile))\n"
+                result += "\tUploadFileTracker: fileUUID: \(fileTracker.fileUUID); fileVersion: \(String(describing: fileTracker.fileVersion)); status: \(fileTracker.status); uploadIndex: \(fileTracker.uploadIndex); uploadCount: \(fileTracker.uploadCount); expiry: \(String(describing: fileTracker.expiry)); canReadFile: \(String(describing: canReadFile)); mimeType: \(String(describing: fileTracker.mimeType)); uploadCopy: \(String(describing: fileTracker.uploadCopy))\n"
             }
         }
         
