@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.31.8 (8/13/21)
+	* Removed URL+Extras-- moved to iOSShared.
+    
 Version 0.31.7 (8/11/21)
 	* Added more logging; queueing deletions when `allowUploadDownload` is true.
 	
