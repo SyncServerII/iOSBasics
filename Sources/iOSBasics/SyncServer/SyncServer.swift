@@ -456,13 +456,23 @@ public class SyncServer {
             let fileTrackers = try objectTracker.dependentFileTrackers()
             for fileTracker in fileTrackers {
                 var canReadFile: Bool?
+                var url: URL?
+                var nonRelativeURL: URL?
+                
                 if let localURL = fileTracker.localURL {
-                    canReadFile = localURL.canReadFile()
+                    let read = localURL.canReadFile()
+                    
+                    if !read {
+                        url = localURL
+                        nonRelativeURL = URL(fileURLWithPath: localURL.path)
+                    }
+                    
+                    canReadFile = read
                 }
                 
                 let fileEntry = try DirectoryFileEntry.fetchSingleRow(db: db, where: DirectoryFileEntry.fileGroupUUIDField.description == fileTracker.fileUUID)
 
-                result += "\tUploadFileTracker: fileUUID: \(fileTracker.fileUUID); fileVersion: \(String(describing: fileTracker.fileVersion)); status: \(fileTracker.status); uploadIndex: \(fileTracker.uploadIndex); uploadCount: \(fileTracker.uploadCount); expiry: \(String(describing: fileTracker.expiry)); canReadFile: \(String(describing: canReadFile)); mimeType: \(String(describing: fileTracker.mimeType)); uploadCopy: \(String(describing: fileTracker.uploadCopy)); deletedLocally: \(String(describing: fileEntry?.deletedLocally)); deletedOnServer: \(String(describing: fileEntry?.deletedOnServer))\n"
+                result += "\tUploadFileTracker: fileUUID: \(fileTracker.fileUUID); fileVersion: \(String(describing: fileTracker.fileVersion)); status: \(fileTracker.status); uploadIndex: \(fileTracker.uploadIndex); uploadCount: \(fileTracker.uploadCount); expiry: \(String(describing: fileTracker.expiry)); canReadFile: \(String(describing: canReadFile)); mimeType: \(String(describing: fileTracker.mimeType)); uploadCopy: \(String(describing: fileTracker.uploadCopy)); deletedLocally: \(String(describing: fileEntry?.deletedLocally)); deletedOnServer: \(String(describing: fileEntry?.deletedOnServer)); url: \(String(describing: url)); nonRelativeURL: \(String(describing: nonRelativeURL))\n"
             }
         }
         

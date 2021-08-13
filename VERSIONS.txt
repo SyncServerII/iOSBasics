@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.31.9 (8/13/21)
+	* Add logging.
+    
 Version 0.31.8 (8/13/21)
 	* Removed URL+Extras-- moved to iOSShared.
     
