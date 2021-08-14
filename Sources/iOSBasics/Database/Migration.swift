@@ -9,6 +9,7 @@ import Foundation
 import iOSShared
 import SQLite
 import PersistentValue
+import ServerShared
 
 enum SpecificMigration {
     public static let m2021_5_8: Int32 = 2021_5_8
@@ -16,6 +17,7 @@ enum SpecificMigration {
     public static let m2021_06_03: Int32 = 2021_06_03
     public static let m2021_08_02: Int32 = 2021_08_02
     public static let m2021_08_07: Int32 = 2021_08_07
+    public static let m2021_08_13: Int32 = 2021_08_13
 }
 
 class Migration: VersionedMigrationRunner {
@@ -78,11 +80,14 @@ class Migration: VersionedMigrationRunner {
     }
     
     // These migrations can only do content changes to rows. See https://github.com/SyncServerII/Neebla/issues/26
-    static func content(configuration: Configuration, db: Connection) -> [iOSShared.Migration] {
+    static func content(configuration: Configuration, currentUserId: UserId?, db: Connection) -> [iOSShared.Migration] {
         return [
             MigrationObject(version: SpecificMigration.m2021_08_02, apply: {
                 try UploadFileTracker.migration_2021_8_2_updateUploads(
                     configuration: configuration, db: db)
+            }),
+            MigrationObject(version: SpecificMigration.m2021_08_13, apply: {
+                try UploadFileTracker.migration_2021_8_13_Rod(currentUserId: currentUserId, db: db)
             }),
         ]
     }

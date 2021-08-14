@@ -151,6 +151,56 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         XCTAssert(download.uuid == fileUUID1)
     }
     
+    func testFilesNeedingDownload_NotNeededWhenUploadingWorks() throws {
+        let sharingGroupUUID = try syncToGetSharingGroupUUID()
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+        
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeTypes: [.text], changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
+        try syncServer.register(object: example)
+
+        let fileGroupUUID = UUID()
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
+        
+        try syncServer.queue(upload: upload)
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        // Reset the database show a state *as if* another client instance had done the upload-- and show the upload as ready for download.
+        database = try Connection(.inMemory)
+        let fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
+        let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, requestable: FakeRequestable(), configuration: config, signIns: fakeSignIns, backgroundAsssertable: MainAppBackgroundTask(), migrationRunner: MigrationRunnerFake())
+        syncServer.delegate = self
+        syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
+        handlers.objectType = { _, _ in
+            return nil
+        }
+        
+        // It's as if the app restarted-- need to re-register the object type.
+        try syncServer.register(object: example)
+
+        try sync(withSharingGroupUUID:sharingGroupUUID)
+        
+        let file2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID2)
+        let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [file2])
+        
+        try syncServer.queue(upload: upload2)
+        
+        let downloadables = try syncServer.objectsNeedingDownload(sharingGroupUUID: sharingGroupUUID)
+        
+        guard downloadables.count == 0 else {
+            XCTFail("\(downloadables.count)")
+            return
+        }
+        
+        waitForUploadsToComplete(numberUploads: 1)
+    }
+    
     func testTwoFilesNeedingDownloadInSameFileGroupWorks() throws {
         let sharingGroupUUID = try syncToGetSharingGroupUUID()
         let fileUUID1 = UUID()
@@ -454,6 +504,50 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         else {
             XCTAssert(object == nil)
         }
+    }
+    
+    func testObjectNeedsDownloadButObjectIsUploading() throws {
+        let sharingGroupUUID = try syncToGetSharingGroupUUID()
+
+        let fileGroupUUID = UUID()
+        let objectType = "Foo"
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeTypes: [.text], changeResolverName: nil)
+
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
+        try syncServer.register(object: example)
+        
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+
+        let file1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID1)
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [file1])
+        
+        try syncServer.queue(upload: upload)
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        // Reset the database to a state *as if* another client instance had done the upload-- and show the upload as ready for download.
+        database = try Connection(.inMemory)
+        let fakeHelper = SignInServicesHelperFake(testUser: handlers.user)
+        let fakeSignIns = SignIns(signInServicesHelper: fakeHelper)
+        syncServer = try SyncServer(hashingManager: hashingManager, db: database, requestable: FakeRequestable(), configuration: config, signIns: fakeSignIns, backgroundAsssertable: MainAppBackgroundTask(), migrationRunner: MigrationRunnerFake())
+        syncServer.delegate = self
+        syncServer.credentialsDelegate = self
+        syncServer.helperDelegate = self
+        
+        try syncServer.register(object: example)
+        
+        try sync(withSharingGroupUUID:sharingGroupUUID)
+        
+        let file2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, dataSource: .copy(exampleTextFileURL), uuid: fileUUID2)
+        let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [file2])
+        try syncServer.queue(upload: upload2)
+        
+        let object = try syncServer.objectNeedsDownload(fileGroupUUID: fileGroupUUID)
+        XCTAssert(object == nil)
+        
+        waitForUploadsToComplete(numberUploads: 1)
     }
     
     // objectNeedsDownload for file group that does/doesn't need download. (File group is always known)

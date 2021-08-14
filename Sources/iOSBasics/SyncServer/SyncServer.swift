@@ -67,6 +67,8 @@ public class SyncServer {
     ///     - migrationRunner: Provide a means to run database migrations.
     ///         Except for testing this should be nil. When nil, this class provides
     ///         its own `MigrationRunner`.
+    ///     - currentUserId: The user id of the current signed in user.
+    ///         This is for specific migration/fixes for specific users.
     ///     - dispatchQueue: used to call `SyncServerDelegate` methods.
     ///         (`SyncServerCredentials` and `SyncServerHelpers` methods may be called on any queue.)
     ///         Also used for any callbacks defined on this interface.
@@ -77,6 +79,7 @@ public class SyncServer {
         signIns: SignIns,
         backgroundAsssertable: BackgroundAsssertable,
         migrationRunner: MigrationRunner? = nil,
+        currentUserId: UserId? = nil,
         dispatchQueue: DispatchQueue = DispatchQueue.main) throws {
         self.configuration = configuration
         self.db = db
@@ -97,7 +100,7 @@ public class SyncServer {
         
         try runner.run(
             migrations: Migration.metadata(db: db),
-            contentChanges: Migration.content(configuration: configuration, db: db))
+            contentChanges: Migration.content(configuration: configuration, currentUserId: currentUserId, db: db))
         
         self.signIns = signIns
         

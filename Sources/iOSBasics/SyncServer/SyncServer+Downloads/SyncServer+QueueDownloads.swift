@@ -9,6 +9,12 @@ extension SyncServer {
             throw SyncServerError.noDownloads
         }
         
+        let uploadObjectTrackers = try UploadObjectTracker.fetch(db: db, where: UploadObjectTracker.fileGroupUUIDField.description == download.fileGroupUUID)
+        guard uploadObjectTrackers.count == 0 else {
+            // There are existing upload trackers for this file group. I'm not going to allow downloading in this situation. See https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898779555
+            throw SyncServerError.downloadingObjectCurrentlyBeingUploaded
+        }
+        
         let fileUUIDsToDownload = download.downloads.map {$0.uuid}
         
         // Make sure all files in the downloads have distinct uuid's

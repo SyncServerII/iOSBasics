@@ -36,6 +36,13 @@ extension SyncServer {
         for downloadGroup in downloadGroups {
             let first = downloadGroup[0]
 
+            // Is the object currently uploading?
+            let uploadObjectTrackers = try UploadObjectTracker.fetch(db: db, where: UploadObjectTracker.fileGroupUUIDField.description == first.fileGroupUUID)
+            guard uploadObjectTrackers.count == 0 else {
+                // There are existing upload trackers for this file group. I'm not going to allow downloading in this situation. See https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898779555
+                continue
+            }
+        
             // To account for an issue I'm seeing on 3/10/21 where an object tracker exists but file trackers don't.
             try DownloadObjectTracker.cleanupIfNeeded(fileGroupUUID: first.fileGroupUUID, db: db)
         
@@ -63,8 +70,20 @@ extension SyncServer {
         return result
     }
     
-    // Returns nil if the file (a) doesn't need download or (b) if it's currently being downloaded or is queued for download. Returns non-nil otherwise.
+    /* Returns nil if the object:
+        (a) doesn't need download, or
+        (b) if it's currently being downloaded or is queued for download.
+        (c) if it's currently being uploaded. (See https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898779555).
+    */
     func objectNeedsDownloadHelper(object fileGroupUUID: UUID, includeGone: Bool) throws -> DownloadObject? {
+
+        // Is the object currently uploading?
+        let uploadObjectTrackers = try UploadObjectTracker.fetch(db: db, where: UploadObjectTracker.fileGroupUUIDField.description == fileGroupUUID)
+        guard uploadObjectTrackers.count == 0 else {
+            // There are existing upload trackers for this file group. I'm not going to allow downloading in this situation.
+            return nil
+        }
+        
         let fileEntries = try DirectoryFileEntry.fetch(db: db, where:
             DirectoryFileEntry.fileGroupUUIDField.description == fileGroupUUID &&
             DirectoryFileEntry.deletedLocallyField.description == false &&

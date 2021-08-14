@@ -27,6 +27,7 @@ public enum SyncServerError: Error, Equatable, UserDisplayable {
     
     case attemptToQueueAFileThatHasNotBeenDownloaded
     case downloadingObjectAlreadyBeingDownloaded
+    case downloadingObjectCurrentlyBeingUploaded
     case downloadsDoNotHaveDistinctUUIDs
     case noMatchingUUID
     case matchingUUIDButNoFileLabel
@@ -317,6 +318,12 @@ public enum SyncServerError: Error, Equatable, UserDisplayable {
             }
             return true
 
+        case .downloadingObjectCurrentlyBeingUploaded:
+            guard case .downloadingObjectCurrentlyBeingUploaded = rhs else {
+                return false
+            }
+            return true
+            
         case downloadsDoNotHaveDistinctUUIDs:
             guard case .downloadsDoNotHaveDistinctUUIDs = rhs else {
                 return false

@@ -1,5 +1,10 @@
 iOSBasics
 
+Version 0.31.10 (8/13/21)
+    * Added some constraints to not allow downloading of files currently being uploaded: https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898779555
+    * Added related tests.
+    * Added a specific migration/fix for this issue for Rod.
+    
 Version 0.31.9 (8/13/21)
 	* Add logging.
     

@@ -139,45 +139,6 @@ class UploadFileTracker: DatabaseModel {
         }
     }
     
-    // MARK: Metadata migrations
-    
-    static func migration_2021_5_30(db: Connection) throws {
-        try addColumn(db: db, column: informAllButSelfField.description)
-    }
-
-    static func migration_2021_8_2(db: Connection) throws {
-        // 9/9/21; I'm not going to throw an error on failing this because I believe Rod is now in a state where this has been applied, but the expiry dates for uploading file trackers haven't yet been applied. And other users don't yet have this migration.
-        try? addColumn(db: db, column: expiryField.description)
-    }
-
-    static func migration_2021_8_7(db: Connection) throws {
-        // 9/10/21; Not sure why, but this is now crashing for Rod. Not throwing error.
-        try? addColumn(db: db, column: networkCacheIdField.description)
-    }
-    
-    // MARK: Content migrations
-    
-    static func migration_2021_8_2_updateUploads(configuration: UploadConfigurable, db: Connection) throws {
-        // For all upload file trackers that are in an .uploading state, give them an expiry date.
-        let uploadingFileTrackers = try fetch(db: db, where: UploadFileTracker.statusField.description == .uploading)
-        for uploadingFileTracker in uploadingFileTrackers {
-            let expiryDate = try expiryDate(uploadExpiryDuration: configuration.uploadExpiryDuration)
-            try uploadingFileTracker.update(setters: UploadFileTracker.expiryField.description <- expiryDate)
-        }
-    }
-    
-#if DEBUG
-    static func allMigrations(configuration: UploadConfigurable, updateUploads: Bool = true, db: Connection) throws {
-        // MARK: Metadata
-        try migration_2021_5_30(db: db)
-        try migration_2021_8_2(db: db)
-        try migration_2021_8_7(db: db)
-        
-        // MARK: Content
-        try migration_2021_8_2_updateUploads(configuration: configuration, db: db)
-    }
-#endif
-    
     static func rowToModel(db: Connection, row: Row) throws -> UploadFileTracker {
         return try UploadFileTracker(db: db,
             id: row[Self.idField.description],
@@ -218,6 +179,83 @@ class UploadFileTracker: DatabaseModel {
             Self.networkCacheIdField.description <- networkCacheId
         )
     }
+}
+
+// MARK: Migrations
+
+extension UploadFileTracker {
+    // MARK: Metadata migrations
+    
+    static func migration_2021_5_30(db: Connection) throws {
+        try addColumn(db: db, column: informAllButSelfField.description)
+    }
+
+    static func migration_2021_8_2(db: Connection) throws {
+        // 9/9/21; I'm not going to throw an error on failing this because I believe Rod is now in a state where this has been applied, but the expiry dates for uploading file trackers haven't yet been applied. And other users don't yet have this migration.
+        try? addColumn(db: db, column: expiryField.description)
+    }
+
+    static func migration_2021_8_7(db: Connection) throws {
+        // 9/10/21; Not sure why, but this is now crashing for Rod. Not throwing error.
+        try? addColumn(db: db, column: networkCacheIdField.description)
+    }
+    
+    // MARK: Content migrations
+    
+    static func migration_2021_8_2_updateUploads(configuration: UploadConfigurable, db: Connection) throws {
+        // For all upload file trackers that are in an .uploading state, give them an expiry date.
+        let uploadingFileTrackers = try fetch(db: db, where: UploadFileTracker.statusField.description == .uploading)
+        for uploadingFileTracker in uploadingFileTrackers {
+            let expiryDate = try expiryDate(uploadExpiryDuration: configuration.uploadExpiryDuration)
+            try uploadingFileTracker.update(setters: UploadFileTracker.expiryField.description <- expiryDate)
+        }
+    }
+
+    // This is a specific fix for Rod for https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898773102
+    static func migration_2021_8_13_Rod(currentUserId: UserId?, db: Connection) throws {
+        
+        let makeChangeForUserId: UserId = 3 // Rod's user Id.
+        
+        guard currentUserId == makeChangeForUserId else {
+            logger.notice("migration_2021_8_13_Rod: Didn't have needed userId: \(String(describing: currentUserId))")
+            return
+        }
+        
+        let changes:[(fileUUID: UUID, newURL: URL)] = [
+            (UUID(uuidString: "5E0531A2-6E86-435E-859B-D4A13F3C7F54")!,
+                URL(fileURLWithPath: "/private/var/mobile/Containers/Shared/AppGroup/8D71FCAB-402E-4820-843E-564B0BEAD8CD/Documents/objects/Neebla.B3B4EDB9-F2C0-430F-B4E5-2F8BFA6AFAC2.url")),
+                
+            (UUID(uuidString: "B22449D3-BCAB-4E93-8B4A-74DCFC2E6C34")!, URL(fileURLWithPath: "/private/var/mobile/Containers/Shared/AppGroup/8D71FCAB-402E-4820-843E-564B0BEAD8CD/Documents/objects/Neebla.66242889-39CF-41C6-BF33-99FB6D8FC0FF.jpg")),
+            
+            (UUID(uuidString: "C0F990AD-8E46-46AE-A97B-3D3270F0EF78")!, URL(fileURLWithPath: "/private/var/mobile/Containers/Shared/AppGroup/8D71FCAB-402E-4820-843E-564B0BEAD8CD/Documents/objects/Neebla.7AECB75A-ED5C-4E61-B36D-82E274CD7485.jpg")),
+            
+            (UUID(uuidString: "75C95CC9-BF03-4B1D-AD2D-C5B1BE30AD11")!, URL(fileURLWithPath: "/private/var/mobile/Containers/Shared/AppGroup/8D71FCAB-402E-4820-843E-564B0BEAD8CD/Documents/objects/Neebla.8731E8E6-538A-4B8B-A00E-2B46E409160A.jpg"))
+        ]
+        
+        func fixOneFile(fileUUID: UUID, updatedLocalURL: URL) throws {
+            guard let fileTracker = try UploadFileTracker.fetchSingleRow(db: db, where: UploadFileTracker.fileUUIDField.description == fileUUID) else {
+                throw DatabaseError.notExactlyOneRow
+            }
+            
+            try fileTracker.update(setters: UploadFileTracker.localURLField.description <- updatedLocalURL)
+        }
+        
+        for change in changes {
+            try fixOneFile(fileUUID: change.fileUUID, updatedLocalURL: change.newURL)
+        }
+    }
+    
+#if DEBUG
+    static func allMigrations(configuration: UploadConfigurable, updateUploads: Bool = true, db: Connection) throws {
+        // MARK: Metadata
+        try migration_2021_5_30(db: db)
+        try migration_2021_8_2(db: db)
+        try migration_2021_8_7(db: db)
+        
+        // MARK: Content
+        try migration_2021_8_2_updateUploads(configuration: configuration, db: db)
+    }
+#endif
 }
 
 extension UploadFileTracker {    
