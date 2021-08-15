@@ -1,5 +1,10 @@
 iOSBasics
 
+Version 0.31.12 (8/15/21)
+	* Added more debugging output
+	* Removed an unused parameter, when checking for expired uploads.
+	* Changed configuration parameter to more suitable value for release
+
 Version 0.31.11 (8/14/21)
 	* Added retry of expired upload deletions
 		- Migrations for UploadDeletionTracker for expiry and networkCacheId field.

@@ -47,8 +47,7 @@ public struct Configuration: UploadConfigurable {
     public let maxConcurrentFileGroupUploads: Int
     
     // The number of seconds to allow before retrying a file upload, if the upload hasn't already completed in this time. The current default of 3 hours is probably too long. Probably this should be only slightly longer than the expiry of any access token for any account type that we're using in the app. Since, once an upload is triggered it has the same access token.
-    //public static let defaultUploadExpiryDuration:TimeInterval = 60 * 60 * 3 // 3 hours
-    public static let defaultUploadExpiryDuration:TimeInterval = 60 * 10 // 10 minutes-- **** Change back; this is for initial TestFlight builds only ****
+    public static let defaultUploadExpiryDuration:TimeInterval = 60 * 60 * 3 // 3 hours
     
     // Used for both file uploads and upload deletions.
     public let uploadExpiryDuration: TimeInterval

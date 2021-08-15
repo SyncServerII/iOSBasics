@@ -433,15 +433,30 @@ public class SyncServer {
             logger.notice("debug: fileEntry: No DirectoryFileEntry with UUID: \(fileUUID)")
         }
     }
-
-    // Logs debugging information for the object.
-    public func debug(fileGroupUUID: UUID) throws {
-        if let _ = try DownloadObjectTracker.fetchSingleRow(db: db, where: DownloadObjectTracker.fileGroupUUIDField.description == fileGroupUUID) {
-            logger.notice("debug: objectTracker: exists.")
+    
+    public func debugPendingDownloads() throws -> String? {
+        var result = ""
+        
+        let objectTrackers = try DownloadObjectTracker.fetch(db: db)
+        for objectTracker in objectTrackers {
+            let fileTrackers = try objectTracker.dependentFileTrackers()
+            
+            guard fileTrackers.count > 0 else {
+                continue
+            }
+            
+            result += "\nDownloadObjectTracker: fileGroupUUID: \(objectTracker.fileGroupUUID)\n"
+            
+            for fileTracker in fileTrackers {
+                result += "\tDownloadFileTracker: fileUUID: \(fileTracker.fileUUID); status: \(fileTracker.status)\n"
+            }
         }
-        else {
-            logger.notice("debug: objectTracker: No DownloadObjectTracker with UUID: \(fileGroupUUID)")
+        
+        guard result.count > 0 else {
+            return nil
         }
+        
+        return result
     }
     
     // Generate debugging information for pending uploads if any. Returns nil if none.

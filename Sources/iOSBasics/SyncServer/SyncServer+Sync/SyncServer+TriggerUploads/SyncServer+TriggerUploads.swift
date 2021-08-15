@@ -29,9 +29,7 @@ extension SyncServer {
         guard expiredUploadTrackers.count > 0 else {
             return
         }
-        
-        let backgroundCache = BackgroundCache(database: db)
-        
+                
         // Restarting v0 uploads is fairly straightforward. However, restarting vN uploads is not so simple.
         // Partition the upload trackers by their uploading object to assess v0 vs. vN.
         
@@ -58,16 +56,16 @@ extension SyncServer {
             }
             
             if v0Upload {
-                try retryExpiredUploads(uploadsForSingleObject: uploadsForSingleObject, object: uploadObject, backgroundCache: backgroundCache)
+                try retryExpiredUploads(uploadsForSingleObject: uploadsForSingleObject, object: uploadObject)
             }
             else {
                 // Check with the server to see if these have actually completed. We're trying to deal with the possibility that the server actually completed all of these uploads (but the results didn't get back to the client). vN uploads are more complicated because if they've all completed, an upload retry won't simply respond with success -- at the point we try to use the same batchUUID in the DeferredUpload table.
-                checkExpiredVNFileUploads(uploadsForSingleObject: uploadsForSingleObject, object: uploadObject, backgroundCache: backgroundCache)
+                checkExpiredVNFileUploads(uploadsForSingleObject: uploadsForSingleObject, object: uploadObject)
             }
         }
     }
     
-    func retryExpiredUploads(uploadsForSingleObject: [UploadFileTracker], object: UploadObjectTracker, backgroundCache: BackgroundCache) throws {
+    func retryExpiredUploads(uploadsForSingleObject: [UploadFileTracker], object: UploadObjectTracker) throws {
         for expiredUpload in uploadsForSingleObject {                    
             try retryFileUpload(fileTracker: expiredUpload, objectTracker: object)
         }

@@ -11,11 +11,11 @@ import SQLite
 
 extension SyncServer {
     // Check with the server to see if these vN uploads have actually completed.
-    func checkExpiredVNFileUploads(uploadsForSingleObject: [UploadFileTracker], object: UploadObjectTracker, backgroundCache: BackgroundCache) {
+    func checkExpiredVNFileUploads(uploadsForSingleObject: [UploadFileTracker], object: UploadObjectTracker) {
         
         serialQueue.async {
             do {
-                try self.checkExpiredVNFileUploadsAux(uploadsForSingleObject: uploadsForSingleObject, object: object, backgroundCache: backgroundCache)
+                try self.checkExpiredVNFileUploadsAux(uploadsForSingleObject: uploadsForSingleObject, object: object)
             }
             catch let error {
                 logger.error("checkExpiredVNFileUploads: \(error)")
@@ -23,7 +23,7 @@ extension SyncServer {
         }
     }
     
-    private func checkExpiredVNFileUploadsAux(uploadsForSingleObject: [UploadFileTracker], object: UploadObjectTracker, backgroundCache: BackgroundCache) throws {
+    private func checkExpiredVNFileUploadsAux(uploadsForSingleObject: [UploadFileTracker], object: UploadObjectTracker) throws {
 
         let id = ServerAPI.UploadsResultsId.batchUUID(object.batchUUID)
         
@@ -35,7 +35,7 @@ extension SyncServer {
                 guard let _ = status else {
                     // No deferred upload record. Should do retries.
                     do {
-                        try self.retryExpiredUploads(uploadsForSingleObject: uploadsForSingleObject, object: object, backgroundCache: backgroundCache)
+                        try self.retryExpiredUploads(uploadsForSingleObject: uploadsForSingleObject, object: object)
                     } catch let error {
                         logger.error("checkExpiredVNFileUploadsAux: success/retry: \(error)")
                     }
