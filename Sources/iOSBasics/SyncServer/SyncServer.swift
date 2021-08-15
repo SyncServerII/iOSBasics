@@ -164,6 +164,7 @@ public class SyncServer {
     // In this last regard, it is a best practice to do a v0 upload for all files in a declared object in it's first `queue` call. This way, having both v0 and vN files in the same queued batch *cannot* occur.
     // Uploads are done on a background networking URLSession.
     // You must do at least one `sync` call prior to this call after installing the app. (Not per launch of the app-- these results are persisted).
+    // See https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898940988 for the rules prioritizing deletions, uploads, and downloads.
     public func queue(upload: UploadableObject) throws {
         // `sync` because the immediate effect of this call is short running.
 
@@ -186,6 +187,7 @@ public class SyncServer {
     // This method is typically used to trigger downloads of files indicated in filesNeedingDownload, but it can also be used to trigger downloads independently of that.
     // The files must have been uploaded by this client before, or be available because it was seen in `filesNeedingDownload`.
     // If you queue an object that has a fileGroupUUID which is already queued or in progress of downloading, your request will be queued. i.e., the download will not be triggered right now. It will be triggered later.
+    // See https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898940988 for the rules prioritizing deletions, uploads, and downloads.
     public func queue<DWL: DownloadableObject>(download: DWL) throws {
         try backgroundAsssertable.syncRun { [weak self] in
             guard let self = self else { return }
@@ -212,6 +214,7 @@ public class SyncServer {
     }
     
     // The deletion of an entire existing object, referenced by its file group.
+    // See https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898940988 for the rules prioritizing deletions, uploads, and downloads.
     public func queue(objectDeletion fileGroupUUID: UUID, pushNotificationMessage: String? = nil) throws {
         // `sync` because the immediate effect of this call is short running.
             
@@ -275,7 +278,7 @@ public class SyncServer {
     
     public enum QueueType {
         case upload
-        case deletion
+        case deletion // this is an upload.
         case download
     }
     

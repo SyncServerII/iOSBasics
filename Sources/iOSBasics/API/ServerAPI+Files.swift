@@ -311,7 +311,7 @@ extension ServerAPI {
     
     // Background upload deletion request. On success, the `backgroundRequestCompleted` will have `SuccessResult.requestInfo` set as `DeletionRequestInfo` coded data.
     // The `trackerId` references a `UploadDeletionTracker`.
-    func uploadDeletion(fileGroupUUID: UUID, sharingGroupUUID: String, trackerId: Int64) -> Error? {
+    func uploadDeletion(fileGroupUUID: UUID, sharingGroupUUID: String, trackerId: Int64, fileTracker: BackgroundCacheFileTracker) -> Error? {
     
         let requestInfo = DeletionRequestInfo()
         requestInfo.fileGroupUUID = fileGroupUUID
@@ -329,6 +329,6 @@ extension ServerAPI {
             return error
         }
 
-        return networking.sendBackgroundRequestTo(serverURL, method: endpoint.method, uuid: fileGroupUUID, trackerId: trackerId, requestInfo: requestInfoData)
+        return networking.sendBackgroundRequestTo(serverURL, method: endpoint.method, uuid: fileGroupUUID, fileTracker: fileTracker, trackerId: trackerId, requestInfo: requestInfoData)
     }
 }

@@ -465,7 +465,7 @@ class Networking: NSObject {
     }
     
     // userInfo is for request specific info.
-    func sendBackgroundRequestTo(_ serverURL: URL, method: ServerHTTPMethod, uuid: UUID, trackerId: Int64, requestInfo: Data? = nil) -> Error? {
+    func sendBackgroundRequestTo(_ serverURL: URL, method: ServerHTTPMethod, uuid: UUID, fileTracker: BackgroundCacheFileTracker, trackerId: Int64, requestInfo: Data? = nil) -> Error? {
 
         let downloadResult = downloadFrom(serverURL, method: method)
         let task:URLSessionDownloadTask
@@ -476,9 +476,9 @@ class Networking: NSObject {
         case .success(let t):
             task = t
         }
-        
+
         do {
-            try backgroundCache.initializeRequestCache(uuid: uuid.uuidString, trackerId: trackerId, taskIdentifer: task.taskIdentifier, requestInfo: requestInfo)
+            try backgroundCache.initializeRequestCache(fileTracker: fileTracker, uuid: uuid.uuidString, trackerId: trackerId, taskIdentifer: task.taskIdentifier, requestInfo: requestInfo)
         } catch let error {
             task.cancel()
             delegate.backgroundRequestCompleted(self, result: .failure(error))

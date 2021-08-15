@@ -283,7 +283,8 @@ extension SyncServer {
         
         do {
             try tracker.update(setters:
-            UploadDeletionTracker.statusField.description <- .notStarted)
+                UploadDeletionTracker.statusField.description <- .notStarted,
+                UploadDeletionTracker.expiryField.description <- nil)
         } catch let error {
             reportError(error)
         }

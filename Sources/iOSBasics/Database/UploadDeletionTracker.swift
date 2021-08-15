@@ -6,10 +6,12 @@ import iOSShared
 
 // Represents a file or file group to be or being deleted on the server. Only a single tracker model object for deletion because we just send a single request to the server-- with a fileUUID or with a fileGroupUUID.
 
-class UploadDeletionTracker: DatabaseModel {
+class UploadDeletionTracker: DatabaseModel, BackgroundCacheFileTracker {
     enum UploadDeletionTrackerError: Error {
         case badDeletionType
         case noObjectEntry
+        case couldNotSetExpiry
+        case noExpiryDate
     }
     
     let db: Connection
@@ -47,13 +49,25 @@ class UploadDeletionTracker: DatabaseModel {
     static let pushNotificationMessageField = Field("pushNotificationMessage", \M.pushNotificationMessage)
     var pushNotificationMessage: String?
     
+    // MIGRATION: 8/13/21
+    static let expiryField = Field("expiry", \M.expiry)
+    // When should the upload deletion be retried if it is in an `deleting` state and hasn't yet been completed? This is optional because it will be nil until the state of the `UploadDeletionTracker` changes to `.deleting`.
+    var expiry: Date?
+    
+    // MIGRATION: 8/14/21
+    // NetworkCache Id, if deleting.
+    static let networkCacheIdField = Field("networkCacheId", \M.networkCacheId)
+    var networkCacheId: Int64?
+    
     init(db: Connection,
         id: Int64! = nil,
         uuid: UUID,
         deletionType: DeletionType,
         deferredUploadId: Int64? = nil,
         status: Status,
-        pushNotificationMessage: String? = nil) throws {
+        pushNotificationMessage: String? = nil,
+        expiry: Date? = nil,
+        networkCacheId: Int64? = nil) throws {
 
         self.db = db
         self.id = id
@@ -62,6 +76,8 @@ class UploadDeletionTracker: DatabaseModel {
         self.deferredUploadId = deferredUploadId
         self.status = status
         self.pushNotificationMessage = pushNotificationMessage
+        self.expiry = expiry
+        self.networkCacheId = networkCacheId
     }
     
     // MARK: DatabaseModel
@@ -74,6 +90,12 @@ class UploadDeletionTracker: DatabaseModel {
             t.column(uuidField.description)
             t.column(deletionTypeField.description)
             t.column(pushNotificationMessageField.description)
+            
+            // MIGRATION, 8/13/21
+            // t.column(expiryField.description)
+
+            // MIGRATION, 8/14/21
+            // t.column(networkCacheIdField.description)
         }
     }
     
@@ -84,7 +106,9 @@ class UploadDeletionTracker: DatabaseModel {
             deletionType: row[Self.deletionTypeField.description],
             deferredUploadId: row[Self.deferredUploadIdField.description],
             status: row[Self.statusField.description],
-            pushNotificationMessage: row[Self.pushNotificationMessageField.description]
+            pushNotificationMessage: row[Self.pushNotificationMessageField.description],
+            expiry: row[Self.expiryField.description],
+            networkCacheId: row[Self.networkCacheIdField.description]
         )
     }
     
@@ -94,12 +118,73 @@ class UploadDeletionTracker: DatabaseModel {
             Self.deletionTypeField.description <- deletionType,
             Self.statusField.description <- status,
             Self.deferredUploadIdField.description <- deferredUploadId,
-            Self.pushNotificationMessageField.description <- pushNotificationMessage
+            Self.pushNotificationMessageField.description <- pushNotificationMessage,
+            Self.expiryField.description <- expiry,
+            Self.networkCacheIdField.description <- networkCacheId
         )
     }
 }
 
+// MARK: Migrations
+
 extension UploadDeletionTracker {
+    // MARK: Metadata migrations
+
+    static func migration_2021_8_14_a(db: Connection) throws {
+        try addColumn(db: db, column: expiryField.description)
+    }
+    
+    static func migration_2021_8_14_b(db: Connection) throws {
+        try addColumn(db: db, column: networkCacheIdField.description)
+    }
+    
+    // MARK: Content migrations
+    
+    static func migration_2021_8_14_updateExpiries(configuration: UploadConfigurable, db: Connection) throws {
+        // For all upload deletion trackers that are in a .deleting state, give them an expiry date.
+        let deletionTrackers = try fetch(db: db, where: UploadDeletionTracker.statusField.description == .deleting)
+        let expiryDate = try expiryDate(uploadExpiryDuration: configuration.uploadExpiryDuration)
+        
+        for deletionTracker in deletionTrackers {
+            try deletionTracker.update(setters: UploadDeletionTracker.expiryField.description <- expiryDate)
+        }
+    }
+    
+#if DEBUG
+    static func allMigrations(configuration: UploadConfigurable, updateUploads: Bool = true, db: Connection) throws {
+        // MARK: Metadata
+        try migration_2021_8_14_a(db: db)
+        try migration_2021_8_14_b(db: db)
+        
+        // MARK: Content
+        try migration_2021_8_14_updateExpiries(configuration: configuration, db: db)
+    }
+#endif
+}
+
+extension UploadDeletionTracker {
+    func update(networkCacheId: Int64) throws {
+        try update(setters: UploadDeletionTracker.networkCacheIdField.description <- networkCacheId)
+    }
+    
+    static func expiryDate(uploadExpiryDuration: TimeInterval) throws -> Date {
+        let calendar = Calendar.current
+        guard let expiryDate = calendar.date(byAdding: .second, value: Int(uploadExpiryDuration), to: Date()) else {
+            throw UploadDeletionTrackerError.couldNotSetExpiry
+        }
+        
+        return expiryDate
+    }
+    
+    // Has the `expiry` Date of the UploadDeletionTracker expired? Assumes that this UploadDeletionTracker is in an .deleting state (and thus has a non-nil `expiry`) and throws an error if the `expiry` Date is nil.
+    func hasExpired() throws -> Bool {
+        guard let expiry = expiry else {
+            throw UploadDeletionTrackerError.noExpiryDate
+        }
+        
+        return expiry <= Date()
+    }
+    
     func getSharingGroup() throws -> UUID {
         guard deletionType == .fileGroupUUID else {
             throw UploadDeletionTrackerError.badDeletionType

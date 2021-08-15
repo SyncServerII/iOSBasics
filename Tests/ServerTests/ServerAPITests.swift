@@ -241,7 +241,8 @@ class ServerAPITests: XCTestCase, UserSetup, APITests, ServerAPIDelegator, Serve
         
         let trackerId:Int64 = 142
         
-        let error = api.uploadDeletion(fileGroupUUID: fileGroup.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, trackerId: trackerId)
+        let stub = FileTrackerStub()
+        let error = api.uploadDeletion(fileGroupUUID: fileGroup.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, trackerId: trackerId, fileTracker: stub)
         
         guard error == nil else {
             XCTFail()

@@ -42,6 +42,12 @@ extension SyncServer {
                 // There are existing upload trackers for this file group. I'm not going to allow downloading in this situation. See https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898779555
                 continue
             }
+            
+            // For safety: Not sure this can happen.
+            let deletionTrackers = try UploadDeletionTracker.fetch(db: db, where: UploadDeletionTracker.uuidField.description == first.fileGroupUUID)
+            guard deletionTrackers.count == 0 else {
+                continue
+            }
         
             // To account for an issue I'm seeing on 3/10/21 where an object tracker exists but file trackers don't.
             try DownloadObjectTracker.cleanupIfNeeded(fileGroupUUID: first.fileGroupUUID, db: db)
@@ -81,6 +87,12 @@ extension SyncServer {
         let uploadObjectTrackers = try UploadObjectTracker.fetch(db: db, where: UploadObjectTracker.fileGroupUUIDField.description == fileGroupUUID)
         guard uploadObjectTrackers.count == 0 else {
             // There are existing upload trackers for this file group. I'm not going to allow downloading in this situation.
+            return nil
+        }
+        
+        // Pending deletion?
+        let deletionTrackers = try UploadDeletionTracker.fetch(db: db, where: UploadDeletionTracker.uuidField.description == fileGroupUUID)
+        guard deletionTrackers.count == 0 else {
             return nil
         }
         

@@ -539,33 +539,6 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         XCTAssert(try UploadFileTracker.numberRows(db: database) == fileTrackerCount)
     }
     
-    func testUploadDeletedFileFails() throws {
-        try self.sync()
-        let sharingGroupUUID = try getSharingGroupUUID()
-        
-        let localFile = Self.exampleTextFileURL
-        
-        let (uploadObject, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
-
-        try delete(object: uploadObject.fileGroupUUID)
-        
-        // Technically, this is wrong. Because we're trying to upload v1 of a file that doesn't have a change resolver. But the failure will be detected before that.
-        
-        do {
-            try syncServer.queue(upload: uploadObject)
-        } catch let error {
-            guard let error = error as? SyncServerError else {
-                XCTFail()
-                return
-            }
-            
-            XCTAssert(error == SyncServerError.attemptToQueueADeletedFile)
-            return
-        }
-        
-        XCTFail()
-    }
-    
     func testUploadWrongMimeTypeWithSingleMimeTypeInDeclaration() throws {
         try self.sync()
         let sharingGroupUUID = try getSharingGroupUUID()
@@ -899,5 +872,205 @@ class UploadQueueTests_V0_SingleObjectDeclaration: XCTestCase, UserSetup, Server
         try syncServer.queue(upload: upload2)
         
         waitForUploadsToComplete(numberUploads: 1, expectedUploadType: .conflict)
+    }
+
+    // MARK: Prioritization tests
+    // See https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898940988
+
+    func testUploadDeletedFileFails() throws {
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let localFile = Self.exampleTextFileURL
+        
+        let (uploadObject, _) = try uploadExampleTextFile(sharingGroupUUID: sharingGroupUUID, localFile: localFile)
+
+        try delete(object: uploadObject.fileGroupUUID)
+        
+        // Technically, this is wrong. Because we're trying to upload v1 of a file that doesn't have a change resolver. But the failure will be detected before that.
+        
+        do {
+            try syncServer.queue(upload: uploadObject)
+        } catch let error {
+            guard let error = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssert(error == SyncServerError.attemptToQueueADeletedFile)
+            return
+        }
+        
+        XCTFail()
+    }
+    
+    func testUploadWhilePendingDeletionFails() throws {
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let localFile = Self.exampleTextFileURL
+        
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+        let objectType = "Foo"
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeTypes: [.text], changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2], objectWasDownloaded: nil)
+        try syncServer.register(object: example)
+                
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .copy(localFile), uuid: fileUUID1)
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        try syncServer.queue(upload: upload)
+                
+        waitForUploadsToComplete(numberUploads: 1)
+
+        try syncServer.queue(objectDeletion: upload.fileGroupUUID)
+
+        let fileUpload2 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .copy(localFile), uuid: fileUUID2)
+        let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload2])
+        
+        var failed = false
+        // This should fail because there is a pending deletion.
+        do {
+            try syncServer.queue(upload: upload2)
+        } catch let error {
+            failed = true
+            guard let error = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            
+            guard error == .attemptToQueueADeletedFile else {
+                XCTFail()
+                return
+            }
+        }
+        
+        guard failed else {
+            XCTFail()
+            return
+        }
+        
+        let exp = expectation(description: "exp")
+        handlers.deletionCompleted = { _, fgUUID in
+            XCTAssert(upload.fileGroupUUID == fgUUID)
+            exp.fulfill()
+        }
+        
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Wait for some period of time for the deferred deletion to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        let exp2 = expectation(description: "exp2")
+        handlers.syncCompleted = { _, _ in
+            exp2.fulfill()
+        }
+        
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+        
+        let exp3 = expectation(description: "exp2")
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
+            XCTAssert(operation == .deletion)
+            XCTAssert(fileGroupUUIDs.count == 1)
+            exp3.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+    }
+    
+    func testUploadWaitsUntilActiveDownloadFinishes() throws {
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let localFile = Self.exampleTextFileURL
+        
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+        let objectType = "Foo"
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeTypes: [.text], changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2], objectWasDownloaded: nil)
+        try syncServer.register(object: example)
+                
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .copy(localFile), uuid: fileUUID1)
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        try syncServer.queue(upload: upload)
+                
+        waitForUploadsToComplete(numberUploads: 1)
+
+        let downloadable1 = FileToDownload(uuid: fileUUID1, fileVersion: 0)
+        let downloadables = [downloadable1]
+        let downloadObject = ObjectToDownload(fileGroupUUID: upload.fileGroupUUID, downloads: downloadables)
+        try syncServer.queue(download: downloadObject)
+        
+        // Queue an upload; it shouldn't actually start.
+        let fileUpload2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, mimeType: .text, dataSource: .copy(localFile), uuid: fileUUID2)
+        let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload2])
+        try syncServer.queue(upload: upload2)
+        
+        let fileTracker = try UploadFileTracker.fetchSingleRow(db: database, where: UploadFileTracker.fileUUIDField.description == fileUUID2)
+        guard fileTracker?.status == .notStarted else {
+            XCTFail()
+            return
+        }
+        
+        waitForDownloadsToComplete(numberExpected: 1)
+        
+        // Trigger the upload and wait for it.
+        try syncServer.sync()
+        waitForUploadsToComplete(numberUploads: 1)
+    }
+    
+    func testUploadDoesNotWaitWhenInactiveDownload() throws {
+        try self.sync()
+        let sharingGroupUUID = try getSharingGroupUUID()
+        
+        let localFile = Self.exampleTextFileURL
+        
+        let fileUUID1 = UUID()
+        let fileUUID2 = UUID()
+        let objectType = "Foo"
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.text], changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeTypes: [.text], changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2], objectWasDownloaded: nil)
+        try syncServer.register(object: example)
+                
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .text, dataSource: .copy(localFile), uuid: fileUUID1)
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        try syncServer.queue(upload: upload)
+                
+        waitForUploadsToComplete(numberUploads: 1)
+
+        let downloadable1 = FileToDownload(uuid: fileUUID1, fileVersion: 0)
+        let downloadables = [downloadable1]
+        let downloadObject = ObjectToDownload(fileGroupUUID: upload.fileGroupUUID, downloads: downloadables)
+        try syncServer.queue(download: downloadObject)
+        
+        // This is an inactive download.
+        try syncServer.queue(download: downloadObject)
+        
+        // Wait for the first download to complete.
+        waitForDownloadsToComplete(numberExpected: 1)
+
+        // Queue an upload; it should start.
+        let fileUpload2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, mimeType: .text, dataSource: .copy(localFile), uuid: fileUUID2)
+        let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: upload.fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload2])
+        try syncServer.queue(upload: upload2)
+        
+        let fileTracker = try UploadFileTracker.fetchSingleRow(db: database, where: UploadFileTracker.fileUUIDField.description == fileUUID2)
+        guard fileTracker?.status == .uploading else {
+            XCTFail()
+            return
+        }
+        
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        // Trigger the download and wait for it.
+        try syncServer.sync()
+        waitForDownloadsToComplete(numberExpected: 1)
     }
 }

@@ -1,5 +1,13 @@
 iOSBasics
 
+Version 0.31.11 (8/14/21)
+	* Added retry of expired upload deletions
+		- Migrations for UploadDeletionTracker for expiry and networkCacheId field.
+		- With migration of expiry field values.
+	* Applied new priority rules for deletions, uploads, and downloads
+		- https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898940988
+		- Added associated tests.
+
 Version 0.31.10 (8/13/21)
     * Added some constraints to not allow downloading of files currently being uploaded: https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898779555
     * Added related tests.

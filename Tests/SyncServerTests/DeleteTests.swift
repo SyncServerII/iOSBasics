@@ -428,4 +428,324 @@ class DeleteTests: XCTestCase, UserSetup, ServerBasics, TestFiles, APITests, Del
     func testDeletionWithNonDeletedSharingGroupWorks() throws {
         try runDeletion(withDeletedSharingGroup: false)
     }
+    
+    // MARK: Prioritization tests
+    // See https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898940988
+
+    func testDeletionWhilePendingDeletionFails() throws {
+        let sharingGroupUUID = try getSharingGroup(db: database)
+        
+        let objectType = "Foo"
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
+
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .jpeg, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: UUID(), sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+
+        try syncServer.queue(upload: upload)
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        let exp = expectation(description: "exp")
+        handlers.deletionCompleted = { _, _ in
+            exp.fulfill()
+        }
+
+        // This first deletion should work.
+        try syncServer.queue(objectDeletion: upload.fileGroupUUID)
+
+        // A second deletion should fail.
+        var failed = false
+        do {
+            try syncServer.queue(objectDeletion: upload.fileGroupUUID)
+        } catch let error {
+            failed = true
+            guard let error = error as? SyncServerError else {
+                XCTFail()
+                return
+            }
+            guard error == .attemptToDeleteAnAlreadyDeletedFile else {
+                XCTFail()
+                return
+            }
+        }
+        
+        guard failed else {
+            XCTFail()
+            return
+        }
+            
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Wait for some period of time for the deferred deletion to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        let exp2 = expectation(description: "exp2")
+        handlers.syncCompleted = { _, _ in
+            exp2.fulfill()
+        }
+        
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+        
+        let exp3 = expectation(description: "exp2")
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
+            XCTAssert(operation == .deletion)
+            XCTAssert(fileGroupUUIDs.count == 1)
+            exp3.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+    }
+    
+    func testDeletionIsQueuedWhenActiveUpload() throws {
+        let sharingGroupUUID = try getSharingGroup(db: database)
+        
+        let objectType = "Foo"
+        let fileGroupUUID = UUID()
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .jpeg, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        try syncServer.queue(upload: upload)
+
+        try syncServer.queue(objectDeletion: upload.fileGroupUUID)
+        
+        // There is an active upload. The deletion shouldn't now be active.
+        let deletionTracker = try UploadDeletionTracker.fetchSingleRow(db: database, where: UploadDeletionTracker.uuidField.description == upload.fileGroupUUID)
+        guard deletionTracker?.status == .notStarted else {
+            XCTFail()
+            return
+        }
+
+        waitForUploadsToComplete(numberUploads: 1)
+
+        // Trigger the deletion and wait for it to complete.
+        try syncServer.sync()
+        
+        let exp = expectation(description: "exp")
+        handlers.deletionCompleted = { _, _ in
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Wait for some period of time for the deferred deletion to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        let exp2 = expectation(description: "exp2")
+        handlers.syncCompleted = { _, _ in
+            exp2.fulfill()
+        }
+        
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+        
+        let exp3 = expectation(description: "exp2")
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
+            XCTAssert(operation == .deletion)
+            XCTAssert(fileGroupUUIDs.count == 1)
+            exp3.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+    }
+    
+    func testDeletionIsQueuedWhenInactiveUpload() throws {
+        let sharingGroupUUID = try getSharingGroup(db: database)
+        
+        let objectType = "Foo"
+        let fileGroupUUID = UUID()
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
+        let fileDeclaration2 = FileDeclaration(fileLabel: "file2", mimeTypes: [.jpeg], changeResolverName: nil)
+        
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1, fileDeclaration2])
+        try syncServer.register(object: example)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .jpeg, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+
+        try syncServer.queue(upload: upload)
+        
+        // Setup an inactive upload
+        let fileUpload2 = FileUpload(fileLabel: fileDeclaration2.fileLabel, mimeType: .jpeg, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+        let upload2 = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload2])
+        try syncServer.queue(upload: upload2)
+        
+        // Wait for first upload to complete.
+        waitForUploadsToComplete(numberUploads: 1)
+
+        try syncServer.queue(objectDeletion: upload.fileGroupUUID)
+        
+        // There is an inactive upload. The deletion shouldn't now be active.
+        let deletionTracker = try UploadDeletionTracker.fetchSingleRow(db: database, where: UploadDeletionTracker.uuidField.description == upload.fileGroupUUID)
+        guard deletionTracker?.status == .notStarted else {
+            XCTFail()
+            return
+        }
+        
+        // Trigger the inactive upload and wait for it.
+        try syncServer.sync()
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        // Trigger the deletion and wait for it to complete.
+        try syncServer.sync()
+        
+        let exp = expectation(description: "exp")
+        handlers.deletionCompleted = { _, _ in
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Wait for some period of time for the deferred deletion to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        let exp2 = expectation(description: "exp2")
+        handlers.syncCompleted = { _, _ in
+            exp2.fulfill()
+        }
+        
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+        
+        let exp3 = expectation(description: "exp2")
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
+            XCTAssert(operation == .deletion)
+            XCTAssert(fileGroupUUIDs.count == 1)
+            exp3.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+    }
+    
+    func testDeletionIsQueuedWhenActiveDownload() throws {
+        let sharingGroupUUID = try getSharingGroup(db: database)
+        
+        let objectType = "Foo"
+        let fileGroupUUID = UUID()
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .jpeg, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        try syncServer.queue(upload: upload)
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        let downloadable1 = FileToDownload(uuid: fileUpload1.uuid, fileVersion: 0)
+        let downloadables = [downloadable1]
+        let downloadObject = ObjectToDownload(fileGroupUUID: fileGroupUUID, downloads: downloadables)
+        try syncServer.queue(download: downloadObject)
+
+        try syncServer.queue(objectDeletion: upload.fileGroupUUID)
+        
+        // There is an active download. The deletion shouldn't now be active.
+        let deletionTracker = try UploadDeletionTracker.fetchSingleRow(db: database, where: UploadDeletionTracker.uuidField.description == upload.fileGroupUUID)
+        guard deletionTracker?.status == .notStarted else {
+            XCTFail()
+            return
+        }
+        
+        // Trigger the inactive download and wait for it.
+        try syncServer.sync()
+        waitForDownloadsToComplete(numberExpected: 1)
+        
+        // Trigger the deletion and wait for it to complete.
+        try syncServer.sync()
+        
+        let exp = expectation(description: "exp")
+        handlers.deletionCompleted = { _, _ in
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Wait for some period of time for the deferred deletion to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        let exp2 = expectation(description: "exp2")
+        handlers.syncCompleted = { _, _ in
+            exp2.fulfill()
+        }
+        
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+        
+        let exp3 = expectation(description: "exp2")
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
+            XCTAssert(operation == .deletion)
+            XCTAssert(fileGroupUUIDs.count == 1)
+            exp3.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+    }
+    
+    func testDeletionIsQueuedWhenInactiveDownload() throws {
+        let sharingGroupUUID = try getSharingGroup(db: database)
+        
+        let objectType = "Foo"
+        let fileGroupUUID = UUID()
+        
+        let fileDeclaration1 = FileDeclaration(fileLabel: "file1", mimeTypes: [.jpeg], changeResolverName: nil)
+        let example = ExampleDeclaration(objectType: objectType, declaredFiles: [fileDeclaration1])
+        try syncServer.register(object: example)
+        
+        let fileUpload1 = FileUpload(fileLabel: fileDeclaration1.fileLabel, mimeType: .jpeg, dataSource: .copy(exampleTextFileURL), uuid: UUID())
+        let upload = ObjectUpload(objectType: objectType, fileGroupUUID: fileGroupUUID, sharingGroupUUID: sharingGroupUUID, uploads: [fileUpload1])
+        try syncServer.queue(upload: upload)
+        waitForUploadsToComplete(numberUploads: 1)
+        
+        let downloadable1 = FileToDownload(uuid: fileUpload1.uuid, fileVersion: 0)
+        let downloadables = [downloadable1]
+        let downloadObject = ObjectToDownload(fileGroupUUID: fileGroupUUID, downloads: downloadables)
+        try syncServer.queue(download: downloadObject)
+
+        // This second one will be queued.
+        try syncServer.queue(download: downloadObject)
+        
+        // Wait for the first download to complete.
+        waitForDownloadsToComplete(numberExpected: 1)
+
+        try syncServer.queue(objectDeletion: upload.fileGroupUUID)
+        
+        // There is an inactive download. The deletion shouldn't now be active.
+        let deletionTracker = try UploadDeletionTracker.fetchSingleRow(db: database, where: UploadDeletionTracker.uuidField.description == upload.fileGroupUUID)
+        guard deletionTracker?.status == .notStarted else {
+            XCTFail()
+            return
+        }
+        
+        // Trigger the inactive download and wait for it.
+        try syncServer.sync()
+        waitForDownloadsToComplete(numberExpected: 1)
+        
+        // Trigger the deletion and wait for it to complete.
+        try syncServer.sync()
+        
+        let exp = expectation(description: "exp")
+        handlers.deletionCompleted = { _, _ in
+            exp.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+        
+        // Wait for some period of time for the deferred deletion to complete.
+        Thread.sleep(forTimeInterval: 5)
+
+        let exp2 = expectation(description: "exp2")
+        handlers.syncCompleted = { _, _ in
+            exp2.fulfill()
+        }
+        
+        // This `sync` is to trigger the check for the deferred upload completion.
+        try syncServer.sync()
+        
+        let exp3 = expectation(description: "exp2")
+        handlers.deferredCompleted = { _, operation, fileGroupUUIDs in
+            XCTAssert(operation == .deletion)
+            XCTAssert(fileGroupUUIDs.count == 1)
+            exp3.fulfill()
+        }
+        waitForExpectations(timeout: 10, handler: nil)
+    }
 }

@@ -50,6 +50,7 @@ public struct Configuration: UploadConfigurable {
     //public static let defaultUploadExpiryDuration:TimeInterval = 60 * 60 * 3 // 3 hours
     public static let defaultUploadExpiryDuration:TimeInterval = 60 * 10 // 10 minutes-- **** Change back; this is for initial TestFlight builds only ****
     
+    // Used for both file uploads and upload deletions.
     public let uploadExpiryDuration: TimeInterval
     
     /// This is for debugging; if you set this to `false`, then no uploads and downloads will take place. In that case, uploads and downloads will only be queued for later. Similarly, deletions too will be queued.

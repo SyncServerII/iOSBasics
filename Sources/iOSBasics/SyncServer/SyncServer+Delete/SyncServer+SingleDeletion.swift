@@ -31,8 +31,8 @@ extension SyncServer {
         guard let objectEntry = try DirectoryObjectEntry.fetchSingleRow(db: db, where: DirectoryObjectEntry.fileGroupUUIDField.description == fileGroupUUID) else {
             throw SyncServerError.noObject
         }
-        
-        if let error = api.uploadDeletion(fileGroupUUID: fileGroupUUID, sharingGroupUUID: objectEntry.sharingGroupUUID.uuidString, trackerId: trackerId) {
+                
+        if let error = api.uploadDeletion(fileGroupUUID: fileGroupUUID, sharingGroupUUID: objectEntry.sharingGroupUUID.uuidString, trackerId: trackerId, fileTracker: tracker) {
             // As with uploads and downloads, don't make this a fatal error. We can restart this later.
             delegator { [weak self] delegate in
                 guard let self = self else { return }
@@ -40,7 +40,11 @@ extension SyncServer {
             }
         }
         else {
-            try tracker.update(setters: UploadDeletionTracker.statusField.description <- .deleting)
+            let expiryDate = try UploadDeletionTracker.expiryDate(uploadExpiryDuration: configuration.uploadExpiryDuration)
+
+            try tracker.update(setters: UploadDeletionTracker.statusField.description <- .deleting,
+                UploadDeletionTracker.expiryField.description <- expiryDate
+            )
         }
     }
 }

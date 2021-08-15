@@ -96,6 +96,11 @@ extension SyncServer {
             throw SyncServerError.noUploads
         }
         
+        let deletions = try UploadDeletionTracker.fetch(db: db, where: UploadDeletionTracker.uuidField.description == upload.fileGroupUUID)
+        guard deletions.count == 0 else {
+            throw SyncServerError.attemptToQueueADeletedFile
+        }
+                
         guard let sharingEntry = try SharingEntry.fetchSingleRow(db: db, where: SharingEntry.sharingGroupUUIDField.description == upload.sharingGroupUUID) else {
             throw SyncServerError.sharingGroupNotFound
         }
@@ -122,7 +127,7 @@ extension SyncServer {
             guard matches(upload: upload, objectInfo: objectInfo) else {
                 throw SyncServerError.internalError("Upload did not match objectInfo")
             }
-                        
+
             let v0Uploads = try newUploads(upload: upload, objectInfo: objectInfo)
             
             // If there is an active upload for this fileGroupUUID, then this upload will be locally queued for later processing.
@@ -144,14 +149,16 @@ extension SyncServer {
                         
             let activeUploadsForThisFileGroup = activeUploads.count > 0 || pendingV0Uploads.count > 0
 
+            let activeDownloadsForThisFileGroup = try DownloadObjectTracker.anyDownloadsWith(status: .downloading, fileGroupUUID: upload.fileGroupUUID, db: db)
+
             // All files must be either v0 or vN
             if v0Uploads.count == 0 {
                 // vN uploads
-                try uploadExisting(upload: upload, objectModel: declaredObject, objectEntry: objectInfo, activeUploadsForThisFileGroup: activeUploadsForThisFileGroup)
+                try uploadExisting(upload: upload, objectModel: declaredObject, objectEntry: objectInfo, activeUploadsForThisFileGroup: activeUploadsForThisFileGroup, activeDownloadsForThisFileGroup: activeDownloadsForThisFileGroup)
             }
             else if v0Uploads.count == upload.uploads.count {
                 // v0 uploads
-                try uploadNew(upload: upload, objectType: declaredObject, objectEntryType: .existing(objectInfo.objectEntry), activeUploadsForThisFileGroup: activeUploadsForThisFileGroup)
+                try uploadNew(upload: upload, objectType: declaredObject, objectEntryType: .existing(objectInfo.objectEntry), activeUploadsForThisFileGroup: activeUploadsForThisFileGroup, activeDownloadsForThisFileGroup: activeDownloadsForThisFileGroup)
             }
             else {
                 throw SyncServerError.someUploadFilesV0SomeVN
@@ -159,7 +166,7 @@ extension SyncServer {
         }
         else {
             // This specific object has not been uploaded before-- upload for the first time.
-            try uploadNew(upload: upload, objectType: declaredObject, objectEntryType: .newInstance, activeUploadsForThisFileGroup: false)
+            try uploadNew(upload: upload, objectType: declaredObject, objectEntryType: .newInstance, activeUploadsForThisFileGroup: false, activeDownloadsForThisFileGroup: false)
         }
     }
     
@@ -191,7 +198,7 @@ extension SyncServer {
     }
     
     // This is an upload for files already in the directory. i.e., a vN upload.
-    private func uploadExisting(upload: UploadableObject, objectModel: DeclaredObjectModel, objectEntry: DirectoryObjectEntry.ObjectInfo, activeUploadsForThisFileGroup: Bool) throws {
+    private func uploadExisting(upload: UploadableObject, objectModel: DeclaredObjectModel, objectEntry: DirectoryObjectEntry.ObjectInfo, activeUploadsForThisFileGroup: Bool, activeDownloadsForThisFileGroup:Bool) throws {
     
         // These uploads must all have change resolvers since this is a vN upload.
         for upload in upload.uploads {
@@ -213,20 +220,23 @@ extension SyncServer {
         
         let maxReached = try reachedMaxUploadFileGroups()
         
-        if activeUploadsForThisFileGroup || !requestable.canMakeNetworkRequests || maxReached {
+        guard !activeDownloadsForThisFileGroup && !activeUploadsForThisFileGroup &&
+            !maxReached &&
+            requestable.canMakeNetworkRequests else {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
                 delegate.uploadQueue(self, event: .queued(fileGroupUUID: upload.fileGroupUUID))
             }
-        } else {
-            for uploadFile in upload.uploads {
-                try singleUpload(objectType: objectModel, objectTracker: newObjectTracker, objectEntry: objectEntry.objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid)
-            }
+            return
+        }
+            
+        for uploadFile in upload.uploads {
+            try singleUpload(objectType: objectModel, objectTracker: newObjectTracker, objectEntry: objectEntry.objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid)
         }
     }
     
     // This is either the first upload for the file group. i.e., the first upload for this specific object. OR, it's the first upload for only some of the files in the file group.
-    private func uploadNew(upload: UploadableObject, objectType: DeclaredObjectModel, objectEntryType: DirectoryObjectEntry.ObjectEntryType, activeUploadsForThisFileGroup: Bool) throws {
+    private func uploadNew(upload: UploadableObject, objectType: DeclaredObjectModel, objectEntryType: DirectoryObjectEntry.ObjectEntryType, activeUploadsForThisFileGroup: Bool, activeDownloadsForThisFileGroup: Bool) throws {
 
         // Make sure all of the mime types in the upload match those needed.
         try newUploadsHaveValidMimeType(upload: upload, objectModel: objectType)
@@ -246,16 +256,18 @@ extension SyncServer {
         
         let maxReached = try reachedMaxUploadFileGroups()
 
-        if activeUploadsForThisFileGroup || !requestable.canMakeNetworkRequests || maxReached {
+        guard !activeDownloadsForThisFileGroup && !activeUploadsForThisFileGroup &&
+            !maxReached &&
+            requestable.canMakeNetworkRequests else {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
                 delegate.uploadQueue(self, event: .queued(fileGroupUUID: upload.fileGroupUUID))
             }
+            return
         }
-        else {
-            for uploadFile in upload.uploads {
-                try singleUpload(objectType: objectType, objectTracker: newObjectTracker, objectEntry: objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid)
-            }
+
+        for uploadFile in upload.uploads {
+            try singleUpload(objectType: objectType, objectTracker: newObjectTracker, objectEntry: objectEntry, fileLabel: uploadFile.fileLabel, fileUUID: uploadFile.uuid)
         }
     }
 }

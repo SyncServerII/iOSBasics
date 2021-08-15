@@ -151,7 +151,8 @@ class FilesNeedingDownloadTests: XCTestCase, UserSetup, ServerBasics, TestFiles,
         XCTAssert(download.uuid == fileUUID1)
     }
     
-    func testFilesNeedingDownload_NotNeededWhenUploadingWorks() throws {
+    // When there is a queued upload, `objectsNeedingDownload` should return 0
+    func testObjectsDoNotNeedDownloadWhenUploading() throws {
         let sharingGroupUUID = try syncToGetSharingGroupUUID()
         let fileUUID1 = UUID()
         let fileUUID2 = UUID()

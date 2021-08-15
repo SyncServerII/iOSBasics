@@ -18,6 +18,11 @@ enum SpecificMigration {
     public static let m2021_08_02: Int32 = 2021_08_02
     public static let m2021_08_07: Int32 = 2021_08_07
     public static let m2021_08_13: Int32 = 2021_08_13
+    public static let m2021_08_14_a: Int32 = 2021_08_14
+
+    // From here on, using a suffix of _00, _01, _02, etc. to allow for possibly multiple migrations in a day.
+    
+    public static let m2021_08_14_b: Int32 = 2021_08_14_01
 }
 
 class Migration: VersionedMigrationRunner {
@@ -76,6 +81,12 @@ class Migration: VersionedMigrationRunner {
             MigrationObject(version: SpecificMigration.m2021_08_07, apply: {
                 try UploadFileTracker.migration_2021_8_7(db: db)
             }),
+            MigrationObject(version: SpecificMigration.m2021_08_14_a, apply: {
+                try UploadDeletionTracker.migration_2021_8_14_a(db: db)
+            }),
+            MigrationObject(version: SpecificMigration.m2021_08_14_b, apply: {
+                try UploadDeletionTracker.migration_2021_8_14_b(db: db)
+            }),
         ]
     }
     
@@ -88,6 +99,10 @@ class Migration: VersionedMigrationRunner {
             }),
             MigrationObject(version: SpecificMigration.m2021_08_13, apply: {
                 try UploadFileTracker.migration_2021_8_13_Rod(currentUserId: currentUserId, db: db)
+            }),
+            MigrationObject(version: SpecificMigration.m2021_08_14_a, apply: {
+                try UploadDeletionTracker.migration_2021_8_14_updateExpiries(
+                    configuration: configuration, db: db)
             }),
         ]
     }

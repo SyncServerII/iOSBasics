@@ -33,11 +33,18 @@ extension SyncServer {
             throw SyncServerError.attemptToDeleteAnAlreadyDeletedFile
         }
         
+        let uploads = try UploadObjectTracker.fetch(db: db, where: UploadObjectTracker.fileGroupUUIDField.description == fileGroupUUID)
+        let pendingUploads = uploads.count > 0
+        
+        let downloads = try DownloadObjectTracker.fetch(db: db, where: DownloadObjectTracker.fileGroupUUIDField.description == fileGroupUUID)
+        let pendingDownloads = downloads.count > 0
+        
         let tracker = try UploadDeletionTracker(db: db, uuid: objectInfo.objectEntry.fileGroupUUID, deletionType: .fileGroupUUID, status: .notStarted, pushNotificationMessage: pushNotificationMessage)
         try tracker.insert()
         
-        guard requestable.canMakeNetworkRequests else {
-            logger.warning("Could not queue deletion request: Network not reachable")
+        guard !pendingUploads &&
+            !pendingDownloads &&
+            requestable.canMakeNetworkRequests else {
             return
         }
         
@@ -58,7 +65,8 @@ extension SyncServer {
             }
         } catch let error {
             _ = try? tracker.update(setters:
-                UploadDeletionTracker.statusField.description <- .notStarted)
+                UploadDeletionTracker.statusField.description <- .notStarted,
+                UploadDeletionTracker.expiryField.description <- nil)
             reportError(error)
             return
         }

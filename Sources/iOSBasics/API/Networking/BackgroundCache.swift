@@ -50,13 +50,20 @@ class BackgroundCache {
         try cache.insert()
     }
     
-    func initializeRequestCache(uuid:String, trackerId: Int64, taskIdentifer: Int, requestInfo: Data?) throws {
+    func initializeRequestCache(fileTracker: BackgroundCacheFileTracker, uuid:String, trackerId: Int64, taskIdentifer: Int, requestInfo: Data?) throws {
         guard let uuid = UUID(uuidString: uuid) else {
             throw BackgroundCacheError.badUUID
+        }
+
+        if let priorNetworkCacheId = fileTracker.networkCacheId {
+            let priorCache = try NetworkCache.fetchSingleRow(db: database, where: NetworkCache.idField.description == priorNetworkCacheId)
+            try priorCache?.delete()
         }
         
         let cache = try NetworkCache(db: database, taskIdentifier: taskIdentifer, uuid: uuid, trackerId: trackerId, fileVersion: nil, transfer: .request(nil), requestInfo: requestInfo)
         try cache.insert()
+        
+        try fileTracker.update(networkCacheId: cache.id)
     }
     
     func lookupCache(taskIdentifer: Int) throws -> NetworkCache {

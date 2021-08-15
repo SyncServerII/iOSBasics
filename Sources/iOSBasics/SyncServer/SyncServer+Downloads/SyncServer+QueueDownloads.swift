@@ -8,13 +8,12 @@ extension SyncServer {
         guard download.downloads.count > 0 else {
             throw SyncServerError.noDownloads
         }
-        
-        let uploadObjectTrackers = try UploadObjectTracker.fetch(db: db, where: UploadObjectTracker.fileGroupUUIDField.description == download.fileGroupUUID)
-        guard uploadObjectTrackers.count == 0 else {
-            // There are existing upload trackers for this file group. I'm not going to allow downloading in this situation. See https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898779555
-            throw SyncServerError.downloadingObjectCurrentlyBeingUploaded
+
+        let deletionTrackers = try UploadDeletionTracker.fetch(db: db, where: UploadDeletionTracker.uuidField.description == download.fileGroupUUID)
+        guard deletionTrackers.count == 0 else {
+            throw SyncServerError.attemptToQueueADeletedFile
         }
-        
+
         let fileUUIDsToDownload = download.downloads.map {$0.uuid}
         
         // Make sure all files in the downloads have distinct uuid's
@@ -51,12 +50,18 @@ extension SyncServer {
                 
         // If there is an active download for this fileGroupUUID, then this download will be locally queued for later processing. If there is not one, we'll trigger the download now.
         let activeDownloadsForThisFileGroup = try DownloadObjectTracker.anyDownloadsWith(status: .downloading, fileGroupUUID: download.fileGroupUUID, db: db)
+        
+        // If there are any (active or inactive) uploads for this file group, also queue this download. See https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898779555
+        // and https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898940988
+        let uploadObjectTrackers = try UploadObjectTracker.fetch(db: db, where: UploadObjectTracker.fileGroupUUIDField.description == download.fileGroupUUID)
+        let pendingUploads = uploadObjectTrackers.count > 0
                 
         // Create a DownloadObjectTracker and DownloadFileTracker(s)
         let (newObjectTrackerId, _, fileTrackers) = try createNewTrackers(fileGroupUUID: download.fileGroupUUID, downloads: download.downloads)
 
-        guard !activeDownloadsForThisFileGroup && requestable.canMakeNetworkRequests else {
-            // There are active downloads for this file group.
+        guard !activeDownloadsForThisFileGroup &&
+            !pendingUploads &&
+            requestable.canMakeNetworkRequests else {
             delegator { [weak self] delegate in
                 guard let self = self else { return }
                 delegate.downloadQueue(self, event: .queued(fileGroupUUID: download.fileGroupUUID))

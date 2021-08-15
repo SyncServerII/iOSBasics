@@ -108,7 +108,8 @@ class NetworkingTests: XCTestCase, UserSetup, ServerBasics, ServerAPIDelegator {
             exp.fulfill()
         }
         
-        let error = networking.sendBackgroundRequestTo(serverURL, method: endpoint.method, uuid: UUID(), trackerId: trackerId, requestInfo: requestInfoData)
+        let stub = FileTrackerStub()
+        let error = networking.sendBackgroundRequestTo(serverURL, method: endpoint.method, uuid: UUID(), fileTracker: stub, trackerId: trackerId, requestInfo: requestInfoData)
         waitForExpectations(timeout: 10, handler: nil)
         
         guard error == nil else {

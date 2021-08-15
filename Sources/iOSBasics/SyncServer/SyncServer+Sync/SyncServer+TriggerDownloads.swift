@@ -29,6 +29,14 @@ extension SyncServer {
                 continue
             }
             
+            // And, uploads take priority over downloads for a specific object.
+            // See https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898940988
+            let uploadObjectTrackers = try UploadObjectTracker.fetch(db: db, where: UploadObjectTracker.fileGroupUUIDField.description == download.object.fileGroupUUID)
+            let pendingUploads = uploadObjectTrackers.count > 0
+            guard !pendingUploads else {
+                continue
+            }
+            
             currentObjects.insert(download.object.fileGroupUUID)
             toTrigger += [download]
         }

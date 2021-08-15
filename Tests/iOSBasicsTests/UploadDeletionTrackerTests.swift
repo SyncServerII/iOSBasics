@@ -4,7 +4,10 @@ import SQLite
 import ServerShared
 import iOSShared
 
-class UploadDeletionTrackerTests: XCTestCase {
+class UploadDeletionTrackerTests: XCTestCase, UploadConfigurable {
+    // MARK: UploadConfigurable
+    let uploadExpiryDuration: TimeInterval = 100
+    
     var database: Connection!
     let fileUUID = UUID()
     var entry:UploadDeletionTracker!
@@ -26,22 +29,27 @@ class UploadDeletionTrackerTests: XCTestCase {
         XCTAssert(entry1.deletionType == entry2.deletionType)
     }
 
-    func testCreateTable() throws {
+    func createTable() throws {
         try UploadDeletionTracker.createTable(db: database)
+        try UploadDeletionTracker.allMigrations(configuration: self, db: database)
+    }
+    
+    func testCreateTable() throws {
+        try createTable()
     }
     
     func testDoubleCreateTable() throws {
-        try UploadDeletionTracker.createTable(db: database)
+        try createTable()
         try UploadDeletionTracker.createTable(db: database)
     }
     
     func testInsertIntoTable() throws {
-        try UploadDeletionTracker.createTable(db: database)
+        try createTable()
         try entry.insert()
     }
     
     func testFilterWhenRowNotFound() throws {
-        try UploadDeletionTracker.createTable(db: database)
+        try createTable()
         
         var count = 0
         try UploadDeletionTracker.fetch(db: database,
@@ -53,7 +61,7 @@ class UploadDeletionTrackerTests: XCTestCase {
     }
     
     func testFilterWhenRowFound() throws {
-        try UploadDeletionTracker.createTable(db: database)
+        try createTable()
         try entry.insert()
         
         var count = 0
@@ -67,7 +75,7 @@ class UploadDeletionTrackerTests: XCTestCase {
     }
     
     func testFilterWhenTwoRowsFound() throws {
-        try UploadDeletionTracker.createTable(db: database)
+        try createTable()
         try entry.insert()
         
         // Second entry-- to have a different fileUUID, the primary key.
@@ -84,7 +92,7 @@ class UploadDeletionTrackerTests: XCTestCase {
     }
     
     func testUpdate() throws {
-        try UploadDeletionTracker.createTable(db: database)
+        try createTable()
         try entry.insert()
                 
         let replacement = UUID()
@@ -106,14 +114,14 @@ class UploadDeletionTrackerTests: XCTestCase {
     }
     
     func testDelete() throws {
-        try UploadDeletionTracker.createTable(db: database)
+        try createTable()
         try entry.insert()
         
         try entry.delete()
     }
     
     func testChangeStatusOfExactlyOneRecord() throws {
-        try UploadDeletionTracker.createTable(db: database)
+        try createTable()
         
         let originalStatus: UploadDeletionTracker.Status = .notStarted
         
@@ -137,7 +145,7 @@ class UploadDeletionTrackerTests: XCTestCase {
     func testGetSharingGroup() throws {
         // There has to be a DirectoryObjectEntry for the UploadDeletionTracker
 
-        try UploadDeletionTracker.createTable(db: database)
+        try createTable()
         try DirectoryObjectEntry.createTable(db: database)
 
         let sharingGroupUUID = UUID()

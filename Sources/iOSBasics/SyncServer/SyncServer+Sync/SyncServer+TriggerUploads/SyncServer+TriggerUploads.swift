@@ -43,9 +43,14 @@ extension SyncServer {
             }
             
             let firstFileTracker = uploadsForSingleObject[0]
-            
+                        
             guard let uploadObject = try UploadObjectTracker.fetchSingleRow(db: db, where: UploadObjectTracker.idField.description == firstFileTracker.uploadObjectTrackerId) else {
                 throw DatabaseError.notExactlyOneRow
+            }
+
+            let activeDownloadsForThisFileGroup = try DownloadObjectTracker.anyDownloadsWith(status: .downloading, fileGroupUUID: uploadObject.fileGroupUUID, db: db)
+            guard !activeDownloadsForThisFileGroup else {
+                continue
             }
             
             guard let v0Upload = uploadObject.v0Upload else {
@@ -87,6 +92,11 @@ extension SyncServer {
         toTrigger = Array<UploadObjectTracker.UploadWithStatus>(toTrigger.prefix(additional))
                 
         for uploadObject in toTrigger {
+            let activeDownloadsForThisFileGroup = try DownloadObjectTracker.anyDownloadsWith(status: .downloading, fileGroupUUID: uploadObject.object.fileGroupUUID, db: db)
+            guard !activeDownloadsForThisFileGroup else {
+                continue
+            }
+            
             try triggerUploads(uploadObject: uploadObject)
         }
     }
@@ -112,6 +122,11 @@ extension SyncServer {
         for fileTracker in filesToTrigger {
             guard let objectTracker = try UploadObjectTracker.fetchSingleRow(db: db, where: UploadObjectTracker.idField.description == fileTracker.uploadObjectTrackerId) else {
                 throw SyncServerError.internalError("Could not get UploadObjectTracker")
+            }
+            
+            let activeDownloadsForThisFileGroup = try DownloadObjectTracker.anyDownloadsWith(status: .downloading, fileGroupUUID: objectTracker.fileGroupUUID, db: db)
+            guard !activeDownloadsForThisFileGroup else {
+                continue
             }
             
             try retryFileUpload(fileTracker: fileTracker, objectTracker: objectTracker)
