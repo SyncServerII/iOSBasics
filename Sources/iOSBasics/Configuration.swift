@@ -2,11 +2,11 @@ import Foundation
 import Version
 import iOSShared
 
-protocol UploadConfigurable {
-    var uploadExpiryDuration: TimeInterval { get }
+protocol ExpiryConfigurable {
+    var expiryDuration: TimeInterval { get }
 }
 
-public struct Configuration: UploadConfigurable {
+public struct Configuration: ExpiryConfigurable {
     // https://stackoverflow.com/questions/26172783
     // https://stackoverflow.com/questions/25438709
     // If your app uses an app group identifier to have a shared container between extensions and your app.
@@ -46,11 +46,12 @@ public struct Configuration: UploadConfigurable {
     public static let defaultMaxConcurrentFileGroupUploads:Int = 5
     public let maxConcurrentFileGroupUploads: Int
     
-    // The number of seconds to allow before retrying a file upload, if the upload hasn't already completed in this time. The current default of 3 hours is probably too long. Probably this should be only slightly longer than the expiry of any access token for any account type that we're using in the app. Since, once an upload is triggered it has the same access token.
-    public static let defaultUploadExpiryDuration:TimeInterval = 60 * 60 * 3 // 3 hours
+    // The number of seconds to allow before retrying a file upload, deletion, or download if the request hasn't already completed in this time. The current default of 3 hours is probably too long. Probably this should be only slightly longer than the expiry of any access token for any account type that we're using in the app. Since, once an request is triggered it has the same access token.
+    // public static let defaultExpiryDuration:TimeInterval = 60 * 60 * 3 // 3 hours
+    public static let defaultExpiryDuration:TimeInterval = 60 * 10
     
-    // Used for both file uploads and upload deletions.
-    public let uploadExpiryDuration: TimeInterval
+    // Used for file uploads, upload deletions, and downloads.
+    public let expiryDuration: TimeInterval
     
     /// This is for debugging; if you set this to `false`, then no uploads and downloads will take place. In that case, uploads and downloads will only be queued for later. Similarly, deletions too will be queued.
     public let allowUploadDownload: Bool
@@ -93,7 +94,7 @@ public struct Configuration: UploadConfigurable {
     public init(appGroupIdentifier: String?, urlSessionBackgroundIdentifier: String? = nil, serverURL: URL, minimumServerVersion:Version?, currentClientAppVersion: Version? = nil, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryFiles:TemporaryFiles = Self.defaultTemporaryFiles, packageTests: Bool = false, timeoutIntervalForRequest: TimeInterval = Self.defaultTimeoutIntervalForRequest, timeoutIntervalForResource: TimeInterval = Self.defaultTimeoutIntervalForResource,
         deferredCheckInterval: TimeInterval? = Self.defaultDeferredCheckInterval,
         maxConcurrentFileGroupUploads: Int = Self.defaultMaxConcurrentFileGroupUploads,
-        uploadExpiryDuration: TimeInterval = Self.defaultUploadExpiryDuration,
+        expiryDuration: TimeInterval = Self.defaultExpiryDuration,
         allowUploadDownload: Bool = true) {
         
         self.appGroupIdentifier = appGroupIdentifier
@@ -109,7 +110,7 @@ public struct Configuration: UploadConfigurable {
         self.timeoutIntervalForResource = timeoutIntervalForResource
         self.deferredCheckInterval = deferredCheckInterval
         self.maxConcurrentFileGroupUploads = maxConcurrentFileGroupUploads
-        self.uploadExpiryDuration = uploadExpiryDuration
+        self.expiryDuration = expiryDuration
         self.allowUploadDownload = allowUploadDownload
         
 #if !DEBUG

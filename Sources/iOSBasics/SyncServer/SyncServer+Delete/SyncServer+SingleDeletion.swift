@@ -40,7 +40,7 @@ extension SyncServer {
             }
         }
         else {
-            let expiryDate = try UploadDeletionTracker.expiryDate(uploadExpiryDuration: configuration.uploadExpiryDuration)
+            let expiryDate = try UploadDeletionTracker.expiryDate(expiryDuration: configuration.expiryDuration)
 
             try tracker.update(setters: UploadDeletionTracker.statusField.description <- .deleting,
                 UploadDeletionTracker.expiryField.description <- expiryDate

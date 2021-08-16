@@ -2,8 +2,14 @@ import Foundation
 import SQLite
 
 extension SyncServer {
-    // Re-check of queued downloads.
     func triggerDownloads() throws {
+        // This needs to come before the recheck method because it just resets, it doesn't actually restart.
+        try resetExpiredDownloads()
+        
+        try recheckQueuedDownloads()
+    }
+    
+    private func recheckQueuedDownloads() throws {
         // What DownloadObjectTracker's have some files not started?
         let notStartedDownloads = try DownloadObjectTracker.downloadsWith(status: .notStarted, scope: .some, db: db)
         guard notStartedDownloads.count > 0 else {
@@ -61,7 +67,7 @@ extension SyncServer {
             }
             
             for file in downloadObject.files {                
-                try singleDownload(fileUUID: file.fileUUID, fileVersion: file.fileVersion, tracker: file, objectTrackerId: objectId, sharingGroupUUID: objectEntry.sharingGroupUUID)
+                try singleDownload(fileTracker: file, fileUUID: file.fileUUID, fileVersion: file.fileVersion, tracker: file, objectTrackerId: objectId, sharingGroupUUID: objectEntry.sharingGroupUUID)
             }
         }
         

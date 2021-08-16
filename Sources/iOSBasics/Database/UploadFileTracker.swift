@@ -5,7 +5,7 @@ import Foundation
 import ServerShared
 import iOSShared
 
-class UploadFileTracker: DatabaseModel {
+class UploadFileTracker: DatabaseModel, ExpiringTracker {
     enum UploadFileTrackerError: Error {
         case notExactlyOneMimeType
         case couldNotSetExpiry
@@ -202,11 +202,11 @@ extension UploadFileTracker {
     
     // MARK: Content migrations
     
-    static func migration_2021_8_2_updateUploads(configuration: UploadConfigurable, db: Connection) throws {
+    static func migration_2021_8_2_updateUploads(configuration: ExpiryConfigurable, db: Connection) throws {
         // For all upload file trackers that are in an .uploading state, give them an expiry date.
         let uploadingFileTrackers = try fetch(db: db, where: UploadFileTracker.statusField.description == .uploading)
         for uploadingFileTracker in uploadingFileTrackers {
-            let expiryDate = try expiryDate(uploadExpiryDuration: configuration.uploadExpiryDuration)
+            let expiryDate = try expiryDate(expiryDuration: configuration.expiryDuration)
             try uploadingFileTracker.update(setters: UploadFileTracker.expiryField.description <- expiryDate)
         }
     }
@@ -246,7 +246,7 @@ extension UploadFileTracker {
     }
     
 #if DEBUG
-    static func allMigrations(configuration: UploadConfigurable, updateUploads: Bool = true, db: Connection) throws {
+    static func allMigrations(configuration: ExpiryConfigurable, updateUploads: Bool = true, db: Connection) throws {
         // MARK: Metadata
         try migration_2021_5_30(db: db)
         try migration_2021_8_2(db: db)
@@ -258,25 +258,7 @@ extension UploadFileTracker {
 #endif
 }
 
-extension UploadFileTracker {    
-    static func expiryDate(uploadExpiryDuration: TimeInterval) throws -> Date {
-        let calendar = Calendar.current
-        guard let expiryDate = calendar.date(byAdding: .second, value: Int(uploadExpiryDuration), to: Date()) else {
-            throw UploadFileTrackerError.couldNotSetExpiry
-        }
-        
-        return expiryDate
-    }
-    
-    // Has the `expiry` Date of the UploadFileTracker expired? Assumes that this UploadFileTracker is in an .uploading state (and thus has a non-nil `expiry`) and throws an error if the `expiry` Date is nil.
-    func hasExpired() throws -> Bool {
-        guard let expiry = expiry else {
-            throw UploadFileTrackerError.noExpiryDate
-        }
-        
-        return expiry <= Date()
-    }
-    
+extension UploadFileTracker {        
     // Creates an `UploadFileTracker` and copies data from the file's UploadableDataSource to a temporary file location if needed.
     // The returned `UploadFileTracker` has been inserted into the database.
     // The objectTrackerId is the id of the UploadObjectTracker for this file.

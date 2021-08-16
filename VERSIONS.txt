@@ -1,5 +1,9 @@
 iOSBasics
 
+Version 0.31.13 (8/15/21)
+	* Added support for restarting downloads when they expire
+	* Generalized an expiry protocol for use across three models that have expiries.
+
 Version 0.31.12 (8/15/21)
 	* Added more debugging output
 	* Removed an unused parameter, when checking for expired uploads.

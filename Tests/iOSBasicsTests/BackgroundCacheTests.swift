@@ -46,7 +46,9 @@ class BackgroundCacheTests: XCTestCase {
     
     func testInitializeDownloadCache() throws {
         let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1, trackerId: -1)
-        try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: taskIdentifier)
+        let stub = FileTrackerStub()
+
+        try backgroundCache.initializeDownloadCache(fileTracker: stub, file: file, taskIdentifer: taskIdentifier)
         
         guard let result = try NetworkCache.fetchSingleRow(db: database, where:
             taskIdentifier == NetworkCache.taskIdentifierField.description) else {
@@ -66,7 +68,9 @@ class BackgroundCacheTests: XCTestCase {
     
     func testCacheResultWithURL() throws {
         let file = FileObject(fileUUID: UUID().uuidString, fileVersion: 1, trackerId: -1)
-        try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: taskIdentifier)
+        let stub = FileTrackerStub()
+
+        try backgroundCache.initializeDownloadCache(fileTracker: stub, file: file, taskIdentifer: taskIdentifier)
         
         let url = URL(fileURLWithPath: "foobly")
         let response = HTTPURLResponse(url: URL(fileURLWithPath: ""), mimeType: "text/plain", expectedContentLength: 0, textEncodingName: nil)

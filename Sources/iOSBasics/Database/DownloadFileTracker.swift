@@ -5,7 +5,7 @@ import Foundation
 import ServerShared
 import iOSShared
 
-class DownloadFileTracker: DatabaseModel {
+class DownloadFileTracker: DatabaseModel, ExpiringTracker, BackgroundCacheFileTracker {
     let db: Connection
     var id: Int64!
     
@@ -41,6 +41,16 @@ class DownloadFileTracker: DatabaseModel {
     static let appMetaDataField = Field("appMetaData", \M.appMetaData)
     var appMetaData: String?
     
+    // MIGRATION: 8/15/21
+    static let expiryField = Field("expiry", \M.expiry)
+    // When should the download be retried if it is in an `downloading` state and hasn't yet been completed? This is optional because it will be nil until the state of the `DownloadFileTracker` changes to `.downloading`.
+    var expiry: Date?
+    
+    // MIGRATION: 8/15/21
+    // NetworkCache Id, if downloading.
+    static let networkCacheIdField = Field("networkCacheId", \M.networkCacheId)
+    var networkCacheId: Int64?
+    
     init(db: Connection,
         id: Int64! = nil,
         downloadObjectTrackerId: Int64,
@@ -49,7 +59,9 @@ class DownloadFileTracker: DatabaseModel {
         fileUUID: UUID,
         fileVersion: FileVersionInt,
         localURL:URL?,
-        appMetaData: String? = nil) throws {
+        appMetaData: String? = nil,
+        expiry: Date? = nil,
+        networkCacheId: Int64? = nil) throws {
 
         self.db = db
         self.id = id
@@ -60,6 +72,8 @@ class DownloadFileTracker: DatabaseModel {
         self.fileVersion = fileVersion
         self.localURL = localURL
         self.appMetaData = appMetaData
+        self.expiry = expiry
+        self.networkCacheId = networkCacheId
     }
     
     // MARK: DatabaseModel
@@ -79,18 +93,14 @@ class DownloadFileTracker: DatabaseModel {
             
             // Added in migration_2021_5_8
             // t.column(appMetaDataField.description)
+            
+            // Migration
+            // t.column(expiryField.description)
+            
+            // Migration
+            // t.column(networkCacheIdField.description)
         }
     }
-    
-    static func migration_2021_5_8(db: Connection) throws {
-        try addColumn(db: db, column: appMetaDataField.description)
-    }
-    
-#if DEBUG
-    static func allMigrations(db: Connection) throws {
-        try migration_2021_5_8(db: db)
-    }
-#endif
 
     static func rowToModel(db: Connection, row: Row) throws -> DownloadFileTracker {
         return try DownloadFileTracker(db: db,
@@ -101,7 +111,9 @@ class DownloadFileTracker: DatabaseModel {
             fileUUID: row[Self.fileUUIDField.description],
             fileVersion: row[Self.fileVersionField.description],
             localURL: row[Self.localURLField.description],
-            appMetaData: row[Self.appMetaDataField.description]
+            appMetaData: row[Self.appMetaDataField.description],
+            expiry: row[Self.expiryField.description],
+            networkCacheId: row[Self.networkCacheIdField.description]
         )
     }
     
@@ -113,37 +125,67 @@ class DownloadFileTracker: DatabaseModel {
             Self.fileUUIDField.description <- fileUUID,
             Self.fileVersionField.description <- fileVersion,
             Self.localURLField.description <- localURL,
-            Self.appMetaDataField.description <- appMetaData
+            Self.appMetaDataField.description <- appMetaData,
+            Self.expiryField.description <- expiry,
+            Self.networkCacheIdField.description <- networkCacheId
         )
     }
 }
 
+// MARK: Migrations
+
 extension DownloadFileTracker {
-    // Returns the `DownloadFileTracker` corresponding to the fileUUID and objectTrackerId.
-    @discardableResult
-    static func reset(fileUUID: String?, objectTrackerId: Int64, db: Connection) throws -> DownloadFileTracker {
-        guard let fileUUIDString = fileUUID,
-            let fileUUID = try UUID.from(fileUUIDString) else {
-            throw SyncServerError.internalError("UUID conversion failed")
+    // MARK: Metadata migrations
+
+    static func migration_2021_5_8(db: Connection) throws {
+        try addColumn(db: db, column: appMetaDataField.description)
+    }
+    
+    static func migration_2021_8_15_a(db: Connection) throws {
+        try addColumn(db: db, column: expiryField.description)
+    }
+    
+    static func migration_2021_8_15_b(db: Connection) throws {
+        try addColumn(db: db, column: networkCacheIdField.description)
+    }
+    
+    // MARK: Content migrations
+    
+    static func migration_2021_8_15_updateExpiries(configuration: ExpiryConfigurable, db: Connection) throws {
+        // For download file trackers that are in an .downloading state, give them an expiry date.
+        let fileTrackers = try fetch(db: db, where: DownloadFileTracker.statusField.description == .downloading)
+        let expiryDate = try expiryDate(expiryDuration: configuration.expiryDuration)
+
+        for fileTracker in fileTrackers {
+            try fileTracker.update(setters: DownloadFileTracker.expiryField.description <- expiryDate)
         }
+    }
+    
+#if DEBUG
+    static func allMigrations(db: Connection) throws {
+        try migration_2021_5_8(db: db)
+        try migration_2021_8_15_a(db: db)
+        try migration_2021_8_15_b(db: db)
+    }
+#endif
+}
+
+extension DownloadFileTracker {
+    func update(networkCacheId: Int64) throws {
+        try update(setters: DownloadFileTracker.networkCacheIdField.description <- networkCacheId)
+    }
+    
+    func reset() throws {
+        try update(setters:
+            DownloadFileTracker.statusField.description <- .notStarted,
+            DownloadFileTracker.expiryField.description <- nil,
+            DownloadFileTracker.numberRetriesField.description <- numberRetries + 1)
         
-        guard let fileTracker =
-            try DownloadFileTracker.fetchSingleRow(db: db, where:
-                DownloadFileTracker.downloadObjectTrackerIdField.description == objectTrackerId &&
-                DownloadFileTracker.fileUUIDField.description == fileUUID) else {
-            throw SyncServerError.internalError("Nil DownloadFileTracker")
-        }
-        
-        try fileTracker.update(setters: DownloadFileTracker.statusField.description <- .notStarted,
-            DownloadFileTracker.numberRetriesField.description <- fileTracker.numberRetries + 1)
-        
-        if let localURL = fileTracker.localURL {
+        if let localURL = localURL {
             logger.debug("Removing file: \(localURL)")
             try FileManager.default.removeItem(at: localURL)
-            try fileTracker.update(setters: DownloadFileTracker.localURLField.description <- nil)
+            try update(setters: DownloadFileTracker.localURLField.description <- nil)
         }
-        
-        return fileTracker
     }
 }
 

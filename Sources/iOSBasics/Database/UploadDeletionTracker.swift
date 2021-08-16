@@ -6,7 +6,7 @@ import iOSShared
 
 // Represents a file or file group to be or being deleted on the server. Only a single tracker model object for deletion because we just send a single request to the server-- with a fileUUID or with a fileGroupUUID.
 
-class UploadDeletionTracker: DatabaseModel, BackgroundCacheFileTracker {
+class UploadDeletionTracker: DatabaseModel, BackgroundCacheFileTracker, ExpiringTracker {
     enum UploadDeletionTrackerError: Error {
         case badDeletionType
         case noObjectEntry
@@ -140,10 +140,10 @@ extension UploadDeletionTracker {
     
     // MARK: Content migrations
     
-    static func migration_2021_8_14_updateExpiries(configuration: UploadConfigurable, db: Connection) throws {
+    static func migration_2021_8_14_updateExpiries(configuration: ExpiryConfigurable, db: Connection) throws {
         // For all upload deletion trackers that are in a .deleting state, give them an expiry date.
         let deletionTrackers = try fetch(db: db, where: UploadDeletionTracker.statusField.description == .deleting)
-        let expiryDate = try expiryDate(uploadExpiryDuration: configuration.uploadExpiryDuration)
+        let expiryDate = try expiryDate(expiryDuration: configuration.expiryDuration)
         
         for deletionTracker in deletionTrackers {
             try deletionTracker.update(setters: UploadDeletionTracker.expiryField.description <- expiryDate)
@@ -151,7 +151,7 @@ extension UploadDeletionTracker {
     }
     
 #if DEBUG
-    static func allMigrations(configuration: UploadConfigurable, updateUploads: Bool = true, db: Connection) throws {
+    static func allMigrations(configuration: ExpiryConfigurable, updateUploads: Bool = true, db: Connection) throws {
         // MARK: Metadata
         try migration_2021_8_14_a(db: db)
         try migration_2021_8_14_b(db: db)
@@ -165,24 +165,6 @@ extension UploadDeletionTracker {
 extension UploadDeletionTracker {
     func update(networkCacheId: Int64) throws {
         try update(setters: UploadDeletionTracker.networkCacheIdField.description <- networkCacheId)
-    }
-    
-    static func expiryDate(uploadExpiryDuration: TimeInterval) throws -> Date {
-        let calendar = Calendar.current
-        guard let expiryDate = calendar.date(byAdding: .second, value: Int(uploadExpiryDuration), to: Date()) else {
-            throw UploadDeletionTrackerError.couldNotSetExpiry
-        }
-        
-        return expiryDate
-    }
-    
-    // Has the `expiry` Date of the UploadDeletionTracker expired? Assumes that this UploadDeletionTracker is in an .deleting state (and thus has a non-nil `expiry`) and throws an error if the `expiry` Date is nil.
-    func hasExpired() throws -> Bool {
-        guard let expiry = expiry else {
-            throw UploadDeletionTrackerError.noExpiryDate
-        }
-        
-        return expiry <= Date()
     }
     
     func getSharingGroup() throws -> UUID {

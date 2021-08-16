@@ -440,7 +440,7 @@ class Networking: NSObject {
         return .success(backgroundSession.downloadTask(with: request))
     }
     
-    func download(file:Filenaming, downloadObjectTrackerId: Int64, fromServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
+    func download(fileTracker: BackgroundCacheFileTracker, file:Filenaming, downloadObjectTrackerId: Int64, fromServerURL serverURL: URL, method: ServerHTTPMethod) -> Error? {
     
         let task:URLSessionDownloadTask
         
@@ -453,7 +453,7 @@ class Networking: NSObject {
         }
         
         do {
-            try backgroundCache.initializeDownloadCache(file: file, taskIdentifer: task.taskIdentifier)
+            try backgroundCache.initializeDownloadCache(fileTracker: fileTracker, file: file, taskIdentifer: task.taskIdentifier)
         } catch let error {
             task.cancel()
             delegate.downloadCompleted(self, file: file, result: .failure(error))

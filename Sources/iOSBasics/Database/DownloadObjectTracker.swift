@@ -128,7 +128,7 @@ extension DownloadObjectTracker {
         
         // The status of the `.files` here are only `.downloading` due to the `DownloadObjectTracker.downloadsWith` call above.
         for file in current.files {
-            try DownloadFileTracker.reset(fileUUID: file.fileUUID.uuidString, objectTrackerId: file.downloadObjectTrackerId, db: db)
+            try file.reset()
         }
         
         logger.notice("Successfully reset downloads for fileGroupUUID: \(fileGroupUUID)")

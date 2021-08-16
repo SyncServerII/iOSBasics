@@ -71,7 +71,7 @@ extension SyncServer {
         
         // Can trigger these downloads.
         for (download, tracker) in zip(download.downloads, fileTrackers) {
-            try singleDownload(fileUUID: download.uuid, fileVersion: download.fileVersion, tracker: tracker, objectTrackerId: newObjectTrackerId, sharingGroupUUID: objectEntry.sharingGroupUUID)
+            try singleDownload(fileTracker: tracker, fileUUID: download.uuid, fileVersion: download.fileVersion, tracker: tracker, objectTrackerId: newObjectTrackerId, sharingGroupUUID: objectEntry.sharingGroupUUID)
         }
     }
     

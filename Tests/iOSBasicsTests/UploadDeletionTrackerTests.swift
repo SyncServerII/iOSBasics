@@ -4,9 +4,9 @@ import SQLite
 import ServerShared
 import iOSShared
 
-class UploadDeletionTrackerTests: XCTestCase, UploadConfigurable {
-    // MARK: UploadConfigurable
-    let uploadExpiryDuration: TimeInterval = 100
+class UploadDeletionTrackerTests: XCTestCase, ExpiryConfigurable {
+    // MARK: ExpiryConfigurable
+    let expiryDuration: TimeInterval = 100
     
     var database: Connection!
     let fileUUID = UUID()

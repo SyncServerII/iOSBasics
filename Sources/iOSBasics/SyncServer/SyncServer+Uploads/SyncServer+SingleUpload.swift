@@ -70,7 +70,7 @@ extension SyncServer {
             }
         }
         else {
-            let expiry = try UploadFileTracker.expiryDate(uploadExpiryDuration: configuration.uploadExpiryDuration)
+            let expiry = try UploadFileTracker.expiryDate(expiryDuration: configuration.expiryDuration)
             try fileTracker.update(setters:
                 UploadFileTracker.statusField.description <- .uploading,
                 UploadFileTracker.expiryField.description <- expiry)
