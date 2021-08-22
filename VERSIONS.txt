@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.31.15 (8/22/21)
+    * Attempted fix for Rod saw a crash on 8/21/21.
+
 Version 0.31.14 (8/22/21)
 	* Added more debugging for DownloadFileTracker
     

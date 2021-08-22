@@ -492,10 +492,15 @@ class Networking: NSObject {
 
 extension Networking: CredentialsRefreshDelegate {
     func cache(refresh: CredentialsRefresh) {
-        store.insert(refresh)
+        // Rod saw a crash on 8/21/21-- didn't have these `Synchronized` blocks at the time. I think that crash might have been due to concurrent access to the `store`.
+        Synchronized.block(self) {
+            store.insert(refresh)
+        }
     }
     
     func removeFromCache(refresh: CredentialsRefresh) {
-        store.remove(refresh)
+        Synchronized.block(self) {
+            store.remove(refresh)
+        }
     }
 }
