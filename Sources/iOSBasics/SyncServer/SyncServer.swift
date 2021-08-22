@@ -448,7 +448,7 @@ public class SyncServer {
             result += "\nDownloadObjectTracker: fileGroupUUID: \(objectTracker.fileGroupUUID)\n"
             
             for fileTracker in fileTrackers {
-                result += "\tDownloadFileTracker: fileUUID: \(fileTracker.fileUUID); status: \(fileTracker.status)\n"
+                result += "\tDownloadFileTracker: fileUUID: \(fileTracker.fileUUID); status: \(fileTracker.status); expiry: \(String(describing: fileTracker.expiry)); numberRetries: \(fileTracker.numberRetries)\n"
             }
         }
         

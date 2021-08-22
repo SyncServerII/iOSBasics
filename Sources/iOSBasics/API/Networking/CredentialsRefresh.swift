@@ -94,7 +94,9 @@ class CredentialsRefresh: Hashable {
             return
         }
         
+        // On 8/22/21, Rod's getting a crash here. So far not seeing anything that would cause this in my code.
         delegate?.cache(refresh: self)
+        
         networkRequest?(authentication.headers)
     }
     
