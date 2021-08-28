@@ -1,7 +1,10 @@
 iOSBasics
 
+Version 0.32.0 (8/27/21)
+    * Add creation/update to attributes returned from fileAttributes
+    
 Version 0.31.15 (8/22/21)
-    * Attempted fix for Rod saw a crash on 8/21/21.
+    * Attempted fix for crash Rod saw on 8/21/21.
 
 Version 0.31.14 (8/22/21)
 	* Added more debugging for DownloadFileTracker

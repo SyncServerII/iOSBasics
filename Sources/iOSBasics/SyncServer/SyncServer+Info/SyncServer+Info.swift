@@ -43,7 +43,7 @@ extension SyncServer {
             return nil
         }
                 
-        return FileAttributes(fileVersion: fileEntry.fileVersion, serverVersion: fileEntry.serverFileVersion)
+        return FileAttributes(fileVersion: fileEntry.fileVersion, serverVersion: fileEntry.serverFileVersion, creationDate: fileEntry.creationDate, updateDate: fileEntry.updateDate)
     }
     
     func fileGroupInfoHelper(fileGroupUUID: UUID) throws -> FileGroupAttributes? {

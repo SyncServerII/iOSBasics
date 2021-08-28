@@ -288,6 +288,9 @@ public class SyncServer {
         
         // The file version on the server. Updated on a sync.
         public let serverVersion: FileVersionInt?
+        
+        public let creationDate: Date
+        public let updateDate: Date?
     }
     
     // Returns attributes tracked by iOSBasics about a file. Returns nil if fileUUID isn't yet known to iOSBasics. A file won't yet be known if a sync for a specific sharing group, in which the file is contained, hasn't yet been done.
