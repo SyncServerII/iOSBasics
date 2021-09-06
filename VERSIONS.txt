@@ -1,5 +1,9 @@
 iOSBasics
 
+Version 0.32.2 (8/28/21)
+    * Update packages, for ChangeResolvers-- and `notNew`.
+        Allow `notNew` key to be nil.
+    
 Version 0.32.1 (8/28/21)
     * Update packages, for ChangeResolvers-- and `notNew`.
     
