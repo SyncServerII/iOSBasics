@@ -28,6 +28,7 @@ public struct Configuration: ExpiryConfigurable {
     public let failoverMessageURL:URL?
 
     // The name of the folder to use in cloud storage for services that need a folder name. E.g., Google Drive.
+    // For some cloud storage services, this is the default. E.g., for Solid Pod's.
     public let cloudFolderName:String?
     
     public let deviceUUID: UUID
@@ -91,11 +92,17 @@ public struct Configuration: ExpiryConfigurable {
         return TemporaryFiles(directory: directory, filePrefix: "SyncServer", fileExtension: "dat")
     }
     
+    // Set this with care: 1) There are limits based on server configuration,
+    // and 2) it can strongly affect server performance.
+    public static let defaultMaxFileSizeBytes: Int = 1024 * 1024 * 10
+    public let maxFileSizeBytes: Int
+    
     public init(appGroupIdentifier: String?, urlSessionBackgroundIdentifier: String? = nil, serverURL: URL, minimumServerVersion:Version?, currentClientAppVersion: Version? = nil, failoverMessageURL:URL?, cloudFolderName:String?, deviceUUID: UUID, temporaryFiles:TemporaryFiles = Self.defaultTemporaryFiles, packageTests: Bool = false, timeoutIntervalForRequest: TimeInterval = Self.defaultTimeoutIntervalForRequest, timeoutIntervalForResource: TimeInterval = Self.defaultTimeoutIntervalForResource,
         deferredCheckInterval: TimeInterval? = Self.defaultDeferredCheckInterval,
         maxConcurrentFileGroupUploads: Int = Self.defaultMaxConcurrentFileGroupUploads,
         expiryDuration: TimeInterval = Self.defaultExpiryDuration,
-        allowUploadDownload: Bool = true) {
+        allowUploadDownload: Bool = true,
+        maxFileSizeBytes: Int = Self.defaultMaxFileSizeBytes) {
         
         self.appGroupIdentifier = appGroupIdentifier
         self.urlSessionBackgroundIdentifier = urlSessionBackgroundIdentifier
@@ -112,6 +119,7 @@ public struct Configuration: ExpiryConfigurable {
         self.maxConcurrentFileGroupUploads = maxConcurrentFileGroupUploads
         self.expiryDuration = expiryDuration
         self.allowUploadDownload = allowUploadDownload
+        self.maxFileSizeBytes = maxFileSizeBytes
         
 #if !DEBUG
         assert(!packageTests)

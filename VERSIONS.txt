@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.33.0 (10/25/21)
+    * Add max file size configuration.
+
 Version 0.32.2 (8/28/21)
     * Update packages, for ChangeResolvers-- and `notNew`.
         Allow `notNew` key to be nil.
