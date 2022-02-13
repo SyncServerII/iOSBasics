@@ -43,7 +43,7 @@ extension SyncServer {
             let firstFileTracker = uploadsForSingleObject[0]
                         
             guard let uploadObject = try UploadObjectTracker.fetchSingleRow(db: db, where: UploadObjectTracker.idField.description == firstFileTracker.uploadObjectTrackerId) else {
-                throw DatabaseError.notExactlyOneRow
+                throw DatabaseError.notExactlyOneRow(message: "triggerRetryOfExpiredFileUploads")
             }
 
             let activeDownloadsForThisFileGroup = try DownloadObjectTracker.anyDownloadsWith(status: .downloading, fileGroupUUID: uploadObject.fileGroupUUID, db: db)

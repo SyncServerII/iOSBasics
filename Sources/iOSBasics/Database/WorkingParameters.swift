@@ -58,7 +58,7 @@ extension WorkingParameters {
     static func singleton(db: Connection) throws -> WorkingParameters {
         let rows = try WorkingParameters.fetch(db: db)
         guard rows.count == 1 else {
-            throw DatabaseError.notExactlyOneRow
+            throw DatabaseError.notExactlyOneRow(message: "WorkingParameters:  singleton")
         }
         
         return rows[0]

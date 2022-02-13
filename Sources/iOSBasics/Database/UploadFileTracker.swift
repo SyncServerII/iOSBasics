@@ -212,6 +212,7 @@ extension UploadFileTracker {
     }
 
     // This is a specific fix for Rod for https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898773102
+/*
     static func migration_2021_8_13_Rod(currentUserId: UserId?, db: Connection) throws {
         
         let makeChangeForUserId: UserId = 3 // Rod's user Id.
@@ -234,7 +235,7 @@ extension UploadFileTracker {
         
         func fixOneFile(fileUUID: UUID, updatedLocalURL: URL) throws {
             guard let fileTracker = try UploadFileTracker.fetchSingleRow(db: db, where: UploadFileTracker.fileUUIDField.description == fileUUID) else {
-                throw DatabaseError.notExactlyOneRow
+                throw DatabaseError.notExactlyOneRow(message: "fixOneFile")
             }
             
             try fileTracker.update(setters: UploadFileTracker.localURLField.description <- updatedLocalURL)
@@ -244,6 +245,7 @@ extension UploadFileTracker {
             try fixOneFile(fileUUID: change.fileUUID, updatedLocalURL: change.newURL)
         }
     }
+*/
     
 #if DEBUG
     static func allMigrations(configuration: ExpiryConfigurable, updateUploads: Bool = true, db: Connection) throws {

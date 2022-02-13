@@ -1,12 +1,12 @@
 import Foundation
 
-enum DatabaseError: Error {
+enum DatabaseError: Error, Equatable {
     case noObject
     case noObjectType
     case notExactlyOneWithFileLabel
     case tooManyObjects
     case declarationDifferentThanModel
-    case notExactlyOneRow
+    case notExactlyOneRow(message: String)
     case invalidUUID
     case invalidSharingGroupUUID
     case badMimeType
