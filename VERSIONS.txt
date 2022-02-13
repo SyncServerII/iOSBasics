@@ -1,5 +1,8 @@
 iOSBasics
 
+Version 0.33.2 (2/12/22)
+    * Removed unused code.
+        
 Version 0.33.1 (2/12/22)
     * Added message to an exception enum.
     * Removed a specific fix for Rod. This may have been causing his

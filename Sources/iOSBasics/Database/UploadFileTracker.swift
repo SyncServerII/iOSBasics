@@ -210,42 +210,6 @@ extension UploadFileTracker {
             try uploadingFileTracker.update(setters: UploadFileTracker.expiryField.description <- expiryDate)
         }
     }
-
-    // This is a specific fix for Rod for https://github.com/SyncServerII/Neebla/issues/25#issuecomment-898773102
-/*
-    static func migration_2021_8_13_Rod(currentUserId: UserId?, db: Connection) throws {
-        
-        let makeChangeForUserId: UserId = 3 // Rod's user Id.
-        
-        guard currentUserId == makeChangeForUserId else {
-            logger.notice("migration_2021_8_13_Rod: Didn't have needed userId: \(String(describing: currentUserId))")
-            return
-        }
-        
-        let changes:[(fileUUID: UUID, newURL: URL)] = [
-            (UUID(uuidString: "5E0531A2-6E86-435E-859B-D4A13F3C7F54")!,
-                URL(fileURLWithPath: "/private/var/mobile/Containers/Shared/AppGroup/8D71FCAB-402E-4820-843E-564B0BEAD8CD/Documents/objects/Neebla.B3B4EDB9-F2C0-430F-B4E5-2F8BFA6AFAC2.url")),
-                
-            (UUID(uuidString: "B22449D3-BCAB-4E93-8B4A-74DCFC2E6C34")!, URL(fileURLWithPath: "/private/var/mobile/Containers/Shared/AppGroup/8D71FCAB-402E-4820-843E-564B0BEAD8CD/Documents/objects/Neebla.66242889-39CF-41C6-BF33-99FB6D8FC0FF.jpg")),
-            
-            (UUID(uuidString: "C0F990AD-8E46-46AE-A97B-3D3270F0EF78")!, URL(fileURLWithPath: "/private/var/mobile/Containers/Shared/AppGroup/8D71FCAB-402E-4820-843E-564B0BEAD8CD/Documents/objects/Neebla.7AECB75A-ED5C-4E61-B36D-82E274CD7485.jpg")),
-            
-            (UUID(uuidString: "75C95CC9-BF03-4B1D-AD2D-C5B1BE30AD11")!, URL(fileURLWithPath: "/private/var/mobile/Containers/Shared/AppGroup/8D71FCAB-402E-4820-843E-564B0BEAD8CD/Documents/objects/Neebla.8731E8E6-538A-4B8B-A00E-2B46E409160A.jpg"))
-        ]
-        
-        func fixOneFile(fileUUID: UUID, updatedLocalURL: URL) throws {
-            guard let fileTracker = try UploadFileTracker.fetchSingleRow(db: db, where: UploadFileTracker.fileUUIDField.description == fileUUID) else {
-                throw DatabaseError.notExactlyOneRow(message: "fixOneFile")
-            }
-            
-            try fileTracker.update(setters: UploadFileTracker.localURLField.description <- updatedLocalURL)
-        }
-        
-        for change in changes {
-            try fixOneFile(fileUUID: change.fileUUID, updatedLocalURL: change.newURL)
-        }
-    }
-*/
     
 #if DEBUG
     static func allMigrations(configuration: ExpiryConfigurable, updateUploads: Bool = true, db: Connection) throws {

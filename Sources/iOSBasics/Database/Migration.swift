@@ -105,11 +105,6 @@ class Migration: VersionedMigrationRunner {
                 try UploadFileTracker.migration_2021_8_2_updateUploads(
                     configuration: configuration, db: db)
             }),
-/*
-            MigrationObject(version: SpecificMigration.m2021_08_13, apply: {
-                try UploadFileTracker.migration_2021_8_13_Rod(currentUserId: currentUserId, db: db)
-            }),
-*/
             MigrationObject(version: SpecificMigration.m2021_08_14_a, apply: {
                 try UploadDeletionTracker.migration_2021_8_14_updateExpiries(
                     configuration: configuration, db: db)
